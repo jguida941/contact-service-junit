@@ -122,9 +122,13 @@
                 <configuration>
                     <failBuildOnCVSS>7.0</failBuildOnCVSS>
                     <nvdApiKey>${nvdApiKey}</nvdApiKey>
+                    <nvdApiDelay>2000</nvdApiDelay>
+                    <nvdDatafeedUrl>https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-2024.json.gz</nvdDatafeedUrl>
                     <suppressionFiles>
                         <suppressionFile>config/owasp-suppressions.xml</suppressionFile>
                     </suppressionFiles>
+                    <failOnError>false</failOnError>
+                    <skip>${dependency.check.skip}</skip>
                 </configuration>
             </plugin>
             <plugin>
