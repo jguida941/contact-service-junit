@@ -165,19 +165,13 @@
                     </targetTests>
                     <mutationThreshold>80</mutationThreshold>
                     <threads>2</threads>
-                    <timeoutConst>8000</timeoutConst>
                     <timeoutFactor>1.5</timeoutFactor>
                     <timestampedReports>false</timestampedReports>
-                    <failWhenNoMutations>false</failWhenNoMutations>
-                    <failWhenNoCoverage>false</failWhenNoCoverage>
                     <outputFormats>
                         <param>XML</param>
                         <param>HTML</param>
                     </outputFormats>
                     <features>
-                        <feature>+classloader:pooled</feature>
-                        <feature>+java17</feature>
-                        <feature>+junit5</feature>
                         <feature>+CLASSLIMIT(limit[1000])</feature>
                     </features>
                     <jvmArgs>
