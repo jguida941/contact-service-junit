@@ -9,7 +9,7 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 
 ## Getting Started
 1. Install Java 17 and Apache Maven (3.9+).
-2. Run `mvn test` from the project root to compile everything and execute the JUnit suite.
+2. Run `mvn verify` from the project root to compile everything, execute the JUnit suite, and run Checkstyle/SpotBugs/JaCoCo quality gates.
 3. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
 
 ## Folder Highlights
@@ -20,10 +20,11 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 | `requirements/`            | Assignment write-up and checklist from the instructor.     |
 | `docs/index.md`            | Quick reference guide for the repo layout.                 |
 | `pom.xml`                  | Maven build file (dependencies, plugins, compiler config). |
+| `config/checkstyle/...`    | Checkstyle configuration used by Maven/CI quality gates.   |
 
 ## Notes
 - Keep the `package contactapp;` declaration at the top of every Java file so the folder layout and compiler stay in sync.
 - `Validation.java` centralizes the not-blank, length, and 10-digit checks; the unit tests assert on those messages via AssertJ.
 - Every requirement from `requirements/requirements.md` has at least one test case to demonstrate full coverage.
-- GitHub Actions (`.github/workflows/java-ci.yml`) now runs `mvn -B test` on every push/PR to `main` (with caching for faster builds).
+- GitHub Actions (`.github/workflows/java-ci.yml`) now runs `mvn -B verify` (tests + Checkstyle + JaCoCo, SpotBugs to be reintroduced later) on every push/PR to `main`/`master` across Java 17 and 21, with caching for faster builds and artifacts for all reports; published releases automatically build a JAR and upload it as an artifact. Dependabot and CodeQL workflows keep dependencies up to date and scan for security issues.
 - `docs/index.md` shows all the key files and folders for easy navigation.

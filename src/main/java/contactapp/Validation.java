@@ -16,6 +16,7 @@ public final class Validation {
 
     // Checks that input length is within specified bounds
     public static void validateLength(String input, String label, int minLength, int maxLength) {
+        validateNotBlank(input, label);
         int length = input.length();
         if (length < minLength || length > maxLength) {
             throw new IllegalArgumentException(
@@ -25,6 +26,7 @@ public final class Validation {
 
     // Checks that input is numeric and exactly 10 digits
     public static void validateNumeric10(String input, String label) {
+        validateNotBlank(input, label);
         if (!input.matches("\\d+")) {
             throw new IllegalArgumentException(label + " must only contain digits 0-9");
         }

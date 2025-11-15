@@ -21,6 +21,8 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | `src/test/java/contactapp/ContactTest.java`        | JUnit tests covering the `Contact` validation requirements.    |
 | `src/test/java/contactapp/ContactServiceTest.java` | JUnit tests covering add, delete, and update behavior.         |
 | `pom.xml`                                          | Maven project file defining dependencies and plugins.          |
+| `config/checkstyle/checkstyle.xml`                 | Custom Checkstyle rules enforced in CI.                        |
+| `.github/workflows/*.yml`                          | GitHub Actions pipelines (CI, release packaging, CodeQL).      |
 
 ## Requirements & Notes
 
