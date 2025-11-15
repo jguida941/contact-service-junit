@@ -187,7 +187,7 @@ Each layer runs automatically in CI, so local `mvn verify` mirrors the hosted pi
 
 ### Caching Strategy
 - Maven artifacts are cached via `actions/cache@v4` (`~/.m2/repository`) to keep builds fast.
-- NVD data caching will be added once the feed directory is configured, further reducing Dependency-Check warmup time.
+- OWASP Dependency-Check data is cached (`~/.m2/repository/org/owasp/dependency-check-data`) so NVD updates reuse the previously downloaded feeds.
 
 ### Mutation Lane (Self-Hosted)
 - Hosted runners cannot use the JVM attach API, so a dedicated `mutation-test` job targets a self-hosted runner with `MAVEN_OPTS="--enable-native-access=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true"`.
