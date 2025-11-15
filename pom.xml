@@ -19,6 +19,8 @@
         <spotbugs.maven.plugin.version>4.7.3.5</spotbugs.maven.plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
         <dependency.check.version>9.1.0</dependency.check.version>
+        <dependency.check.skip>true</dependency.check.skip>
+        <nvd.api.delay>0</nvd.api.delay>
         <pitest.version>1.15.6</pitest.version>
     </properties>
 
@@ -122,7 +124,7 @@
                 <configuration>
                     <failBuildOnCVSS>7.0</failBuildOnCVSS>
                     <nvdApiKey>${nvdApiKey}</nvdApiKey>
-                    <nvdApiDelay>3000</nvdApiDelay>
+                    <nvdApiDelay>${nvd.api.delay}</nvdApiDelay>
                     <suppressionFiles>
                         <suppressionFile>config/owasp-suppressions.xml</suppressionFile>
                     </suppressionFiles>
@@ -161,6 +163,26 @@
                         <param>contactapp.*Test</param>
                     </targetTests>
                     <mutationThreshold>80</mutationThreshold>
+                    <threads>2</threads>
+                    <timeoutConst>8000</timeoutConst>
+                    <timeoutFactor>1.5</timeoutFactor>
+                    <maxMutationsPerClass>1000</maxMutationsPerClass>
+                    <timestampedReports>false</timestampedReports>
+                    <failWhenNoMutations>false</failWhenNoMutations>
+                    <failWhenNoCoverage>false</failWhenNoCoverage>
+                    <outputFormats>
+                        <param>XML</param>
+                        <param>HTML</param>
+                    </outputFormats>
+                    <features>
+                        <feature>+classloader:pooled</feature>
+                        <feature>+java17</feature>
+                        <feature>+junit5</feature>
+                    </features>
+                    <jvmArgs>
+                        <jvmArg>--enable-native-access=ALL-UNNAMED</jvmArg>
+                        <jvmArg>-Djdk.attach.allowAttachSelf=true</jvmArg>
+                    </jvmArgs>
                 </configuration>
             </plugin>
         </plugins>

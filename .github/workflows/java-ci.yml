@@ -49,8 +49,8 @@ jobs:
             echo "::warning::NVD_API_KEY not set; skipping Dependency-Check"
             mvn -B -Ddependency-check.skip=true verify
           else
-            echo "::notice::Running with NVD API Key (with 2s delay between API calls)"
-            mvn -B -DnvdApiKey="${NVD_API_KEY}" -Ddependency.check.skip=false verify || {
+            echo "::notice::Running with NVD API Key (with increased delay for CI environment)"
+            mvn -B -DnvdApiKey="${NVD_API_KEY}" -DnvdApiDelay=5000 -Ddependency.check.skip=false verify || {
               echo "::warning::Dependency Check failed (common in CI), running without it"
               mvn -B -Ddependency-check.skip=true verify
             }
