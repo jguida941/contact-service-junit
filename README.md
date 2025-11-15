@@ -87,8 +87,8 @@ graph TD
     A --> B --> C --> D
     B --> X
     C --> X
-    D -->|no| F
-    D -->|yes| E --> F
+    D --> F
+    D --> E --> F
     E --> X
 ```
 - IDs and names take the first two steps, addresses stop after `validateLength` (1-30 chars), and phones add the numeric guard so they remain digits-only at ten characters.
@@ -118,9 +118,9 @@ graph TD
     A[Client request] --> B[ContactService]
     B --> C[Validation]
     C --> D{valid?}
-    D -->|no| E[IllegalArgumentException]
+    D --> E[IllegalArgumentException]
     E --> F[Client handles/fails fast]
-    D -->|yes| G[State assignment]
+    D --> G[State assignment]
 ```
 - Fail-fast means invalid state never reaches persistence/logs, and callers/tests can react immediately.
 
@@ -207,11 +207,10 @@ graph TD
     F[Artifacts + release]
     G[Self-hosted mutation job]
     H[Release notes / publish]
-    I[Release notes]
 
     A --> B --> C --> D
-    D -->|yes| E --> B
-    D -->|no| F --> G --> H --> I
+    D --> E --> B
+    D --> F --> G --> H
 ```
 
 ## Self-Hosted Mutation Runner Setup
