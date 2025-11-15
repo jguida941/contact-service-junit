@@ -22,6 +22,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | `src/test/java/contactapp/ContactServiceTest.java` | JUnit tests covering add, delete, and update behavior.         |
 | `pom.xml`                                          | Maven project file defining dependencies and plugins.          |
 | `config/checkstyle/checkstyle.xml`                 | Custom Checkstyle rules enforced in CI.                        |
+| `config/owasp-suppressions.xml`                    | Placeholder suppression list for OWASP Dependency-Check.       |
 | `.github/workflows/*.yml`                          | GitHub Actions pipelines (CI, release packaging, CodeQL).      |
 
 ## Requirements & Notes
