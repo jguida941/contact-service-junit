@@ -187,6 +187,7 @@ jobs:
 
   mutation-test:
     needs: build-test
+    if: vars.RUN_SELF_HOSTED == 'true'
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
