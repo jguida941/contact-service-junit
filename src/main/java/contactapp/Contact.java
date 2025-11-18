@@ -1,4 +1,5 @@
 package contactapp;
+
 /**
  * Contact domain object.
  *
@@ -11,7 +12,6 @@ package contactapp;
  * All violations result in {@link IllegalArgumentException} being thrown
  * by the underlying {@link Validation} helper.
  */
-
 public class Contact {
     private static final int MIN_LENGTH = 1;
     private static final int ID_MAX_LENGTH = 10;
@@ -71,22 +71,61 @@ public class Contact {
 
     // Setters
     public void setFirstName(final String firstName) {
-        Validation.validateLength(firstName, "firstName", MIN_LENGTH, NAME_MAX_LENGTH);
-        this.firstName = firstName.trim(); // trim once after validation
+        this.firstName = validateAndTrimText(firstName, "firstName", NAME_MAX_LENGTH);
     }
 
     public void setLastName(final String lastName) {
-        Validation.validateLength(lastName, "lastName", MIN_LENGTH, NAME_MAX_LENGTH);
-        this.lastName = lastName.trim(); // trim once after validation
+        this.lastName = validateAndTrimText(lastName, "lastName", NAME_MAX_LENGTH);
     }
 
     public void setPhone(final String phone) {
-        Validation.validateNumeric10(phone, "phone", PHONE_LENGTH);
-        this.phone = phone;
+        this.phone = validatePhoneNumber(phone);
     }
 
     public void setAddress(final String address) {
-        Validation.validateLength(address, "address", MIN_LENGTH, ADDRESS_MAX_LENGTH);
-        this.address = address.trim(); // trim once after validation
+        this.address = validateAndTrimText(address, "address", ADDRESS_MAX_LENGTH);
+    }
+
+    /**
+     * Updates all mutable fields after validating every new value first.
+     * If any value fails validation, nothing is changed, so callers never
+     * see a partially updated contact. (Atomic update behavior.)
+     *
+     * @throws IllegalArgumentException if any new value violates the Contact constraints
+     */
+    public void update(
+            final String newFirstName,
+            final String newLastName,
+            final String newPhone,
+            final String newAddress) {
+        // Validate all incoming values before mutating state so the update is all-or-nothing
+        final String validatedFirst = validateAndTrimText(newFirstName, "firstName", NAME_MAX_LENGTH);
+        final String validatedLast = validateAndTrimText(newLastName, "lastName", NAME_MAX_LENGTH);
+        final String validatedPhone = validatePhoneNumber(newPhone);
+        final String validatedAddress = validateAndTrimText(newAddress, "address", ADDRESS_MAX_LENGTH);
+
+        this.firstName = validatedFirst;
+        this.lastName = validatedLast;
+        this.phone = validatedPhone;
+        this.address = validatedAddress;
+    }
+
+    /**
+     * Validates min/max length for a text field and returns the trimmed value.
+     */
+    private static String validateAndTrimText(
+            final String value,
+            final String label,
+            final int maxLength) {
+        Validation.validateLength(value, label, MIN_LENGTH, maxLength);
+        return value.trim();
+    }
+
+    /**
+     * Validates a phone entry (digits only, required length) and returns it unchanged.
+     */
+    private static String validatePhoneNumber(final String phone) {
+        Validation.validateNumeric10(phone, "phone", PHONE_LENGTH);
+        return phone;
     }
 }

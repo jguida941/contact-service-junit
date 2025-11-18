@@ -45,11 +45,12 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 | [`.github/workflows`](.github/workflows)                                                       | CI/CD pipelines (tests, quality gates, release packaging, CodeQL).  |
 
 ## Design Decisions & Highlights
-- **Immutable identifiers** - `contactId` is set once in the constructor and never mutates, which keeps HashMap keys stable and mirrors real-world record identifiers.
-- **Centralized validation** - Every constructor/setter call funnels through `Validation.validateNotBlank`, `validateLength`, and (for phones) `validateNumeric10`, so IDs, names, phones, and addresses all share one enforcement pipeline.
+- **Immutable identifiers** - `contactId` is set once in the constructor and never mutates, which keeps map keys stable and mirrors real-world record identifiers.
+- **Centralized validation** - Constructors, setters, and service methods all delegate to the shared `Validation` helpers (`validateLength` wraps `validateNotBlank`, and phones go through `validateNumeric10`), so every field uses the same rules whether it’s being created or updated.
 - **Fail-fast IllegalArgumentException** - Invalid input is a caller bug, so we throw standard JDK exceptions with precise messages and assert on them in tests.
-- **HashMap-first storage strategy** - Milestone 1 sticks to an in-memory `HashMap<String, Contact>` (living inside the singleton `ContactService`) for predictable O(1) CRUD while leaving that service class as the seam for future persistence layers.
-- **Boolean service API** - The service’s `add/delete/update` methods return `boolean` so callers know immediately whether the operation succeeded (`true`) or why it failed (`false` for duplicate IDs, missing IDs, etc.). That keeps the milestone interface lightweight while still letting JUnit assertions check the outcome without extra exception types.
+- **ConcurrentHashMap storage strategy** - Milestone 1 sticks to an in-memory, thread-safe `ConcurrentHashMap<String, Contact>` (owned by the singleton `ContactService`) for predictable O(1) CRUD while leaving that service class as the seam for future persistence layers.
+- **Boolean service API** - The service’s `add/delete/update` methods return `boolean` so callers know immediately whether the operation succeeded (`true`) or why it failed (`false` for duplicate IDs, missing IDs, etc.). 
+    That keeps the milestone interface lightweight while still letting JUnit assertions check the outcome without extra exception types.
 - **Security posture** - Input validation acts as the first defense layer; nothing touches storage/logs unless it passes the guards.
 - **Testing depth** - Parameterized JUnit 5 tests, AssertJ assertions, JaCoCo coverage, and PITest mutation scores combine to prove the validation logic rather than just executing it.
 
@@ -62,15 +63,15 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 ### Validation Layer (`Validation.java`)
 - `validateNotBlank(input, label)` - rejects null, empty, and whitespace-only fields with label-specific messages.
 - `validateLength(input, label, min, max)` - enforces 1-10 char IDs/names and 1-30 char addresses (bounds are parameters, so future changes touch one file).
-- `validateNumeric10(input, label)` - requires digits-only phone numbers with exact length.
+- `validateNumeric10(input, label, requiredLength)` - requires digits-only phone numbers with the specified exact length (10 for this project).
 - These helpers double as both correctness logic and security filtering.
 
 ### Service Layer (`ContactService`)
-- Currently a scaffold to keep milestone scope manageable. It will host in-memory storage via a `HashMap<String, Contact>`, add/update/delete orchestration, and uniqueness checks.
+- Provides in-memory storage via a `ConcurrentHashMap<String, Contact>`, add/update/delete orchestration, and uniqueness checks.
 - By keeping this layer separate from the domain model, we can slot in persistence or caching without rewriting the entity/tests. The singleton wrapper ensures every caller sees the same map instance.
 
 ### Storage & Extension Points
-**HashMap<String, Contact> (planned backing store)**
+**ConcurrentHashMap<String, Contact> (backing store)**
 | Operation | Average | Worst | Space |
 |-----------|---------|-------|-------|
 | add/get   | O(1)    | O(n)  | O(1)  |
@@ -84,6 +85,7 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 - `Contact` acts as the immutable ID holder with mutable first/last name, phone, and address fields.
 - Constructor delegates to setters so validation stays centralized and consistent for both creation and updates.
 - Validation trims IDs/names/addresses before storing them, guaranteeing normalized state once objects are created.
+- The dedicated `update(...)` helper validates all four mutable fields first, then applies them together so callers never observe partially updated contacts.
 
 ## Validation & Error Handling
 
@@ -94,7 +96,7 @@ graph TD
     B[validateNotBlank]
     C[validateLength]
     D{phone field?}
-    E[validateNumeric10]
+    E[validateNumeric10 (with required length)]
     F[field assignment]
     X[IllegalArgumentException]
 
@@ -180,8 +182,8 @@ void testInvalidContactId(String id, String expectedMessage) {
 ### Service Snapshot
 - **Singleton access** – `getInstance()` exposes one shared service so every caller sees the same `ConcurrentHashMap` backing store.
 - **Atomic uniqueness guard** – `addContact` rejects null inputs up front and calls `ConcurrentHashMap.putIfAbsent(...)` directly so duplicate IDs never overwrite state even under concurrent access.
-- **Shared validation** – `deleteContact` uses `Validation.validateNotBlank` for IDs and `updateContact` delegates to the `Contact` setters, guaranteeing the constructor’s length/null/phone rules apply to updates too.
-- **Defensive views** – `getDatabase()` returns an unmodifiable snapshot (tests now use `clearAllContacts()` to reset state) so callers can’t mutate the internal map accidentally.
+- **Shared validation** – `deleteContact` uses `Validation.validateNotBlank` for IDs and `updateContact` delegates to `Contact.update(...)`, guaranteeing every field is validated before any state changes.
+- **Defensive views** – `getDatabase()` returns a `Map.copyOf(...)` snapshot (tests call `clearAllContacts()` to reset state) so callers can’t mutate the internal map accidentally.
 
 ## Validation & Error Handling
 
@@ -198,16 +200,16 @@ graph TD
     C -->|delete| H["remove(contactId)"]
     C -->|update| I[fetch existing]
     I -->|missing| F
-    I -->|found| J[Contact setters reuse Validation]
+    I -->|found| J[Contact.update validates inputs]
     J --> K[updated contact]
 ```
 - All entry points validate the `contactId` before touching the map so we never store blank keys.
-- Setter delegation ensures errors surface with the same messages as the constructor (e.g., “phone must be exactly 10 digits”).
+- Delegation to `Contact.update(...)` ensures all fields are validated up front and reuse the same messages as the constructor (e.g., “phone must be exactly 10 digits”).
 
 ### Error Message Philosophy
 - Null service inputs raise `IllegalArgumentException` with explicit labels (e.g., “contact must not be null”).
 - ID validation errors come from the shared `Validation` helper so delete/update use the exact strings already asserted in `ContactTest`.
-- Field-level issues rely on the `Contact` setters, so callers receive consistent messaging whether the data was supplied in the constructor or during an update.
+- Field-level issues rely on `Contact.update(...)` (and the underlying setters), so callers receive consistent messaging whether the data was supplied in the constructor or during an update.
 
 ### Propagation Flow
 ```mermaid
@@ -232,7 +234,6 @@ graph TD
 - Field assertions after update reuse `hasFieldOrPropertyWithValue` so the tests read like a change log.
 - Boolean outcomes are asserted explicitly (`isTrue()/isFalse()`) so duplicate and missing-ID branches stay verified.
 
-
 ### Scenario Coverage
 - `testGetInstance` ensures the singleton accessor always returns a concrete service before any CRUD logic runs.
 - `testGetInstanceReturnsSameReference` proves repeated invocations return the same singleton instance.
@@ -242,7 +243,7 @@ graph TD
 - `testDeleteContact` exercises removal plus assertion that the key disappears.
 - `testDeleteMissingContactReturnsFalse` covers the branch where no contact exists for the given id.
 - `testDeleteContactBlankIdThrows` shows ID validation runs even on deletes, surfacing the standard “contactId must not be null or blank” message.
-- `testUpdateContact` verifies every mutable field changes via setter delegation.
+- `testUpdateContact` verifies every mutable field changes in one call through the atomic `Contact.update(...)` helper.
 - `testUpdateMissingContactReturnsFalse` covers the “not found” branch so callers can rely on the boolean result.
 
 ## [Task.java](src/main/java/taskapp/Task.java) / [TaskTest.java](src/test/java/taskapp/TaskTest.java)

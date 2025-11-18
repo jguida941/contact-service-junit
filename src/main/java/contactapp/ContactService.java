@@ -1,8 +1,6 @@
 package contactapp;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,6 +42,10 @@ public final class ContactService {
      * Returns the global {@code ContactService} instance.
      * The method is synchronized so that only one instance is created
      * even if multiple threads call it at the same time.
+     *
+     * SpotBugs warning MS_EXPOSE_REP is suppressed on purpose because this getter must
+     * return the shared instance. {@code value} names the warning and {@code justification}
+     * states why returning it is safe here.
      *
      * @return the singleton {@code ContactService} instance
      */
@@ -99,6 +101,10 @@ public final class ContactService {
      * @param phone     new phone number
      * @param address   new address
      * @return true if the contact exists and was updated, false if no contact with that id exists
+     *
+     * If any value is invalid, {@link Contact#update(String, String, String, String)} throws before
+     * the contact is changed, so callers never see a half-updated record (atomic update behavior).
+     *
      * @throws IllegalArgumentException if any new field value is invalid (from Contact setters)
      */
     public boolean updateContact(
@@ -112,37 +118,30 @@ public final class ContactService {
             return false;
         }
 
-        // Reuse Contact's setter validation
-        contact.setFirstName(firstName);
-        contact.setLastName(lastName);
-        contact.setPhone(phone);
-        contact.setAddress(address);
+        // Delegate to Contact so validation happens once and the change is atomic
+        contact.update(firstName, lastName, phone, address);
         return true;
     }
 
     /**
-     * Returns the internal contact store (contacts keyed by contactId).
+     * Returns a read-only snapshot of the contact store (contacts keyed by contactId).
      *
-     * This exists so the unit tests can directly verify that
-     * addContact, deleteContact, and updateContact change the
-     * in-memory state as expected.
+     * Tests use this to confirm add, delete, and update methods mutate state as expected.
+     * The snapshot is created with {@link Map#copyOf(Map)} so callers cannot modify the
+     * internal {@link ConcurrentHashMap} backing the service.
      *
-     * In a real application we would normally keep this map private
-     * and only expose behavior through service methods, not through
-     * a raw Map getter.
+     * In production code we would usually expose behaviors rather than the raw map,
+     * but exposing the snapshot keeps the test suite simple for this milestone.
      */
     public Map<String, Contact> getDatabase() {
-        // Return a defensive, read-only snapshot so tests/callers can inspect state
-        // without mutating the internal ConcurrentHashMap
-        return Collections.unmodifiableMap(new HashMap<>(database));
+        return Map.copyOf(database);
     }
 
     /**
-     * Clears all contacts from the in-memory store.
-     * Primarily used by tests to reset state between cases.
+     * Removes every contact from the in-memory store.
+     * Tests call this to start with a clean slate.
      */
     public void clearAllContacts() {
-        // Tests invoke this instead of mutating the unmodifiable snapshot returned by getDatabase()
-        database.clear();
+        database.clear(); // reset the shared map
     }
 }

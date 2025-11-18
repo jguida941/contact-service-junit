@@ -13,6 +13,8 @@ All notable changes to this project will be documented here. Follow the
   summary table looks like for a representative run.
 - Created `docs/backlog.md`, moving the detailed
   backlog/sample content out of the README to keep it focused.
+- Introduced `Contact#update(...)` so multi-field updates validate every value
+  before committing changes, preventing partially updated contacts.
 
 ### Changed
 - Java CI workflow now installs Python 3.12 for every matrix leg so the QA
@@ -41,9 +43,12 @@ All notable changes to this project will be documented here. Follow the
 - Expanded Checkstyle configuration (imports, indentation, line length, braces, etc.)
   and wired `spotbugs-maven-plugin` (auto-skipped on JDK 23+) so bug patterns fail
   `mvn verify`.
-- `ContactService#getDatabase()` now returns an unmodifiable snapshot and a new
-  `clearAllContacts()` helper was added for tests, eliminating SpotBugs exposure
-  warnings for the service internals.
+- `ContactService#getDatabase()` now returns an unmodifiable `Map.copyOf(...)`
+  snapshot and a new `clearAllContacts()` helper was added for tests, eliminating
+  SpotBugs exposure warnings for the service internals.
+- `ContactService#updateContact` now routes through the atomic
+  `Contact#update(...)` helper so updates either fully apply or leave the contact
+  unchanged while reusing the constructor’s validation messages.
 - Expanded service tests to cover singleton reuse, missing delete branch, and a
   last-name change during updates so mutation testing can kill the remaining
   ContactService mutants.
@@ -57,8 +62,9 @@ All notable changes to this project will be documented here. Follow the
 - README now documents why the `release-artifacts` job is skipped on PRs and
   tracks upcoming reporting enhancements.
 - Added Codecov integration (GitHub Action upload + README instructions/badge).
-- Clarified README sections describing the `HashMap<String, Contact>` storage
-  managed by `ContactService`.
+- Clarified README sections describing the `ConcurrentHashMap<String, Contact>`
+  storage, the `Map.copyOf(...)` snapshot, and the atomic update helper managed
+  by `ContactService`.
 - Added a README note explaining why the service methods return `boolean`
   (simple success/failure signaling for this milestone).
 - Updated README caching section to explain that Dependency-Check caches are
