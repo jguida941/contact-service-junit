@@ -31,6 +31,9 @@ All notable changes to this project will be documented here. Follow the
   helper methods, giving PIT visibility into those behaviors.
 - Extended `ValidationTest` with explicit null-path checks so the helper’s
   `validateNotBlank` logic triggers before length/numeric math.
+- Removed redundant `validateNotBlank` calls from `Contact` so setters and the
+  constructor rely solely on the shared `Validation` helpers (eliminating the
+  equivalent PIT mutants and enabling a 100% mutation score).
 - Expanded service tests to cover singleton reuse, missing delete branch, and a
   last-name change during updates so mutation testing can kill the remaining
   ContactService mutants.
