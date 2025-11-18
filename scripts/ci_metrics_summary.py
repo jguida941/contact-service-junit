@@ -17,17 +17,20 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 
+# Repo root + Maven `target/` folder.
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "target"
 
 
 def percent(part: float, whole: float) -> float:
+    """Return percentage helper rounded to 0.1 with zero guard."""
     if whole == 0:
         return 0.0
     return round((part / whole) * 100, 1)
 
 
 def load_jacoco() -> Optional[Dict[str, float]]:
+    """Parse JaCoCo XML and return a dict with line-level coverage."""
     report = TARGET / "site" / "jacoco" / "jacoco.xml"
     if not report.exists():
         return None
@@ -55,6 +58,7 @@ def load_jacoco() -> Optional[Dict[str, float]]:
 
 
 def load_pitest() -> Optional[Dict[str, float]]:
+    """Parse PITest mutations.xml for kill/survive counts."""
     report = TARGET / "pit-reports" / "mutations.xml"
     if not report.exists():
         return None
@@ -81,6 +85,7 @@ def load_pitest() -> Optional[Dict[str, float]]:
 
 
 def load_dependency_check() -> Optional[Dict[str, int]]:
+    """Parse Dependency-Check JSON for vulnerability counts."""
     report = ROOT / "target" / "dependency-check-report.json"
     if not report.exists():
         return None
@@ -106,6 +111,7 @@ def load_dependency_check() -> Optional[Dict[str, int]]:
 
 
 def load_surefire() -> Optional[Dict[str, float]]:
+    """Aggregate JUnit results from Surefire XML reports."""
     report_dir = TARGET / "surefire-reports"
     if not report_dir.exists():
         return None
@@ -144,12 +150,14 @@ def bar(pct: float, width: int = 20) -> str:
 
 
 def section_header() -> str:
+    """Identify the current matrix entry (os + JDK)."""
     matrix_os = os.environ.get("MATRIX_OS", "unknown-os")
     matrix_java = os.environ.get("MATRIX_JAVA", "unknown")
     return f"### QA Metrics ({matrix_os}, JDK {matrix_java})"
 
 
 def format_row(metric: str, value: str, detail: str) -> str:
+    """Helper for Markdown table rows."""
     return f"| {metric} | {value} | {detail} |"
 
 
