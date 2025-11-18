@@ -211,14 +211,18 @@ graph TD
 
 ### Scenario Coverage
 - `testGetInstance` ensures the singleton accessor always returns a concrete service before any CRUD logic runs.
+- `testGetInstanceReturnsSameReference` proves repeated invocations return the same singleton instance.
 - `testAddContact` proves the happy path and that the map contains the stored entry.
 - `testAddDuplicateContactFails` confirms the boolean contract for duplicates and that the original object remains untouched.
 - `testAddContactNullThrows` hits the defensive null guard so callers see a clear `IllegalArgumentException` instead of an NPE.
 - `testDeleteContact` exercises removal plus assertion that the key disappears.
+- `testDeleteMissingContactReturnsFalse` covers the branch where no contact exists for the given id.
 - `testDeleteContactBlankIdThrows` shows ID validation runs even on deletes, surfacing the standard “contactId must not be null or blank” message.
 - `testUpdateContact` verifies every mutable field changes via setter delegation.
 - `testUpdateMissingContactReturnsFalse` covers the “not found” branch so callers can rely on the boolean result.
-- `ValidationTest` hits the shared helper methods directly (boundary acceptance + blank rejection) so PIT can see those behaviors even though the Contact setters already guard against blanks.
+- `ValidationTest.validateLengthAcceptsBoundaryValues` proves 1/10-char names and 30-char addresses are accepted so boundary mutations fail.
+- `ValidationTest.validateLengthRejectsBlankStrings` confirms helper-level blank checks fire even when the caller passes valid lengths.
+- `ValidationTest.validateNumeric10RejectsBlankStrings` ensures the phone validator refuses whitespace before digit/length checks.
 
 ### Assertion Patterns
 - AssertJ collections helpers (`containsEntry`, `doesNotContainEntry`) keep the CRUD expectations concise.
@@ -242,14 +246,14 @@ graph TD
 
 ## Static Analysis & Quality Gates
 
-| Layer               | Tool                       | Focus                                                              |
-|---------------------|----------------------------|--------------------------------------------------------------------|
-| Coverage            | **JaCoCo**                 | Line/branch coverage enforcement during `mvn verify`.              |
-| Mutation            | **PITest**                 | Ensures assertions catch injected faults; threshold currently 70%. |
-| Style & complexity  | **Checkstyle**             | Formatting, naming, and `CyclomaticComplexity` caps.               |
-| Bug patterns        | **SpotBugs** *(planned)*    | TODO: wire plugin + CI step; currently documented for upcoming bug-pattern scanning. |
-| Dependency security | **OWASP Dependency-Check** | CVE scanning backed by `NVD_API_KEY` with optional skip fallback.  |
-| Semantic security   | **CodeQL**                 | Detects SQLi/XSS/path-traversal patterns in a separate workflow.   |
+| Layer               | Tool                       | Focus                                                                                |
+|---------------------|----------------------------|--------------------------------------------------------------------------------------|
+| Coverage            | **JaCoCo**                 | Line/branch coverage enforcement during `mvn verify`.                                |
+| Mutation            | **PITest**                 | Ensures assertions catch injected faults; threshold currently 70%.                   |
+| Style & complexity  | **Checkstyle**             | Formatting, naming, and `CyclomaticComplexity` caps.                                 |
+| Bug patterns        | **SpotBugs** *(planned)*   | TODO: wire plugin + CI step; currently documented for upcoming bug-pattern scanning. |
+| Dependency security | **OWASP Dependency-Check** | CVE scanning backed by `NVD_API_KEY` with optional skip fallback.                    |
+| Semantic security   | **CodeQL**                 | Detects SQLi/XSS/path-traversal patterns in a separate workflow.                     |
 
 Each layer runs automatically in CI, so local `mvn verify` mirrors the hosted pipelines.
 

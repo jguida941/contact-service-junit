@@ -29,6 +29,9 @@ All notable changes to this project will be documented here. Follow the
   warnings during `javac`.
 - Added `ValidationTest` to assert boundary acceptance and blank rejection in
   helper methods, giving PIT visibility into those behaviors.
+- Expanded service tests to cover singleton reuse, missing delete branch, and a
+  last-name change during updates so mutation testing can kill the remaining
+  ContactService mutants.
 - Fixed the Java CI workflow so `dependency-check.skip` uses the correct
   hyphenated property, Codecov upload keys off `secrets.CODECOV_TOKEN`, and
   quality-report artifacts no longer fail the job when reports are absent.

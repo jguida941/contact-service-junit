@@ -29,6 +29,14 @@ public class ContactServiceTest {
         assertThat(ContactService.getInstance()).isNotNull();
     }
 
+    // getInstance should always return the same singleton reference
+    @Test
+    void testGetInstanceReturnsSameReference() {
+        ContactService first = ContactService.getInstance();
+        ContactService second = ContactService.getInstance();
+        assertThat(first).isSameAs(second);
+    }
+
     // Test adding a new contact to the ContactService
     @Test
     void testAddContact() {
@@ -78,6 +86,14 @@ public class ContactServiceTest {
                 .doesNotContainEntry("100", contact);
     }
 
+    // Deleting an ID that doesn't exist should return false and leave the map untouched
+    @Test
+    void testDeleteMissingContactReturnsFalse() {
+        ContactService contactService = ContactService.getInstance();
+        assertThat(contactService.deleteContact("missing-id")).isFalse();
+        assertThat(contactService.getDatabase()).isEmpty();
+    }
+
     // Test updating an existing contact's mutable fields
     @Test
     void testUpdateContact() {
@@ -99,7 +115,7 @@ public class ContactServiceTest {
         boolean updated = contactService.updateContact(
                 "100",
                 "Sebastian",
-                "Guida",
+                "Walker",
                 "0987654321",
                 "1234 Test Street"
         );
@@ -109,7 +125,7 @@ public class ContactServiceTest {
 
         assertThat(contactService.getDatabase().get("100"))
                 .hasFieldOrPropertyWithValue("firstName", "Sebastian")
-                .hasFieldOrPropertyWithValue("lastName", "Guida")
+                .hasFieldOrPropertyWithValue("lastName", "Walker")
                 .hasFieldOrPropertyWithValue("phone", "0987654321")
                 .hasFieldOrPropertyWithValue("address", "1234 Test Street");
     }
