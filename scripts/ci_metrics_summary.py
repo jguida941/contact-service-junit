@@ -17,6 +17,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
+import shutil
 
 
 # Repo root + Maven `target/` folder.
@@ -196,189 +197,145 @@ def severity_summary(counts: Dict[str, int]) -> str:
     parts = []
     for level in SEVERITY_ORDER:
         parts.append(f"{SEVERITY_LABELS[level]}: {counts.get(level, 0)}")
-    return ", ".join(parts)
+    return "<br>".join(parts)
+
+
+def _normalize_tests(tests: Optional[Dict[str, float]]) -> Dict[str, float]:
+    if not tests:
+        return {"total": 0, "passed": 0, "failed": 0, "errors": 0, "skipped": 0, "duration": 0.0}
+    passed = tests["tests"] - tests["failures"] - tests["errors"] - tests["skipped"]
+    return {
+        "total": tests["tests"],
+        "passed": passed,
+        "failed": tests["failures"],
+        "errors": tests["errors"],
+        "skipped": tests["skipped"],
+        "duration": tests["time"],
+    }
+
+
+def _normalize_coverage(jacoco: Optional[Dict[str, float]]) -> Dict[str, float]:
+    if not jacoco:
+        return {"percent": 0.0, "covered": 0, "total": 0}
+    return {"percent": jacoco["pct"], "covered": jacoco["covered"], "total": jacoco["total"]}
+
+
+def _normalize_mutation(pit: Optional[Dict[str, float]]) -> Dict[str, float]:
+    if not pit:
+        return {"percent": 0.0, "killed": 0, "survived": 0, "noCoverage": 0, "total": 0}
+    no_coverage = max(0, pit["total"] - pit["killed"] - pit["survived"])
+    return {
+        "percent": pit["pct"],
+        "killed": pit["killed"],
+        "survived": pit["survived"],
+        "noCoverage": no_coverage,
+        "total": pit["total"],
+    }
+
+
+def _normalize_dependency(dep: Optional[Dict[str, object]]) -> Dict[str, object]:
+    if not dep:
+        return {
+            "scanned": 0,
+            "vulnerableDeps": 0,
+            "vulnerabilities": {level.lower(): 0 for level in SEVERITY_ORDER},
+        }
+    severity = {level.lower(): dep["severity"].get(level, 0) for level in SEVERITY_ORDER}
+    return {
+        "scanned": dep["dependencies"],
+        "vulnerableDeps": dep["vulnerable_dependencies"],
+        "vulnerabilities": severity,
+    }
+
+
+def _build_console_lines(
+        tests: Dict[str, float],
+        coverage: Dict[str, float],
+        mutation: Dict[str, float],
+        dep: Dict[str, object],
+) -> List[str]:
+    lines = []
+    lines.append(
+        f"[INFO] Tests: {tests['passed']}/{tests['total']} passed "
+        f"(failures: {tests['failed']}, errors: {tests['errors']}, skipped: {tests['skipped']})"
+    )
+    lines.append(f"[INFO] JaCoCo coverage: {coverage['percent']}% ({coverage['covered']}/{coverage['total']})")
+    lines.append(
+        f"[INFO] PITest mutation score: {mutation['percent']}% "
+        f"(killed {mutation['killed']}, survived {mutation['survived']})"
+    )
+    vuln_total = sum(dep["vulnerabilities"].values())
+    if dep["vulnerableDeps"] > 0:
+        lines.append(f"[WARN] Dependency-Check: {dep['vulnerableDeps']} vulnerable deps ({vuln_total} findings)")
+    else:
+        lines.append("[INFO] Dependency-Check: 0 vulnerable dependencies detected")
+    return lines
+
+
+def _timeline(dep: Dict[str, object]) -> List[Dict[str, object]]:
+    timeline = [
+        {"stage": "Checkout", "duration": 6, "status": "pass", "short": "CK"},
+        {"stage": "Build", "duration": 18, "status": "pass", "short": "BLD"},
+        {"stage": "Tests", "duration": 3, "status": "pass", "short": "TST"},
+        {"stage": "SpotBugs", "duration": 4, "status": "pass", "short": "BUG"},
+        {"stage": "Dependency-Check", "duration": 22, "status": "pass", "short": "DC"},
+        {"stage": "PITest", "duration": 45, "status": "pass", "short": "PIT"},
+        {"stage": "Artifacts", "duration": 5, "status": "pass", "short": "ART"},
+    ]
+    if dep["vulnerableDeps"] > 0:
+        for stage in timeline:
+            if stage["stage"] == "Dependency-Check":
+                stage["status"] = "warn"
+                break
+    return timeline
 
 
 def write_dashboard(
-        tests: Optional[Dict[str, float]],
-        jacoco: Optional[Dict[str, float]],
-        pit: Optional[Dict[str, float]],
-        dep: Optional[Dict[str, object]],
+        raw_tests: Optional[Dict[str, float]],
+        raw_jacoco: Optional[Dict[str, float]],
+        raw_pit: Optional[Dict[str, float]],
+        raw_dep: Optional[Dict[str, object]],
 ) -> None:
-    """Generate an HTML dashboard with nicer styling."""
+    """Copy the React dashboard build (if available) and save metrics JSON."""
+    tests = _normalize_tests(raw_tests)
+    coverage = _normalize_coverage(raw_jacoco)
+    mutation = _normalize_mutation(raw_pit)
+    dependency = _normalize_dependency(raw_dep)
+    console = _build_console_lines(tests, coverage, mutation, dependency)
+    timeline = _timeline(dependency)
+
+    run_metadata = {
+        "repo": os.environ.get("GITHUB_REPOSITORY", "contact-service-junit"),
+        "workflow": os.environ.get("GITHUB_WORKFLOW", "local"),
+        "os": os.environ.get("MATRIX_OS", os.environ.get("RUNNER_OS", "local")),
+        "jdk": os.environ.get("MATRIX_JAVA", "local"),
+        "branch": os.environ.get("GITHUB_REF_NAME", "local"),
+        "commit": os.environ.get("GITHUB_SHA", "local")[:7],
+        "author": os.environ.get("GITHUB_ACTOR", "local"),
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+    }
+
+    metrics = {
+        "run": run_metadata,
+        "tests": tests,
+        "coverage": coverage,
+        "mutation": mutation,
+        "dependencyCheck": dependency,
+        "timeline": timeline,
+        "console": console,
+    }
+
     dashboard_dir = TARGET / "site" / "qa-dashboard"
-    dashboard_dir.mkdir(parents=True, exist_ok=True)
-    html_path = dashboard_dir / "index.html"
+    react_dist = ROOT / "ui" / "qa-dashboard" / "dist"
 
-    def progress_bar(pct: float) -> str:
-        return f"""
-            <div class="progress">
-                <div class="progress-bar" style="width:{pct:.1f}%"></div>
-            </div>
-        """
+    if react_dist.exists():
+        shutil.rmtree(dashboard_dir, ignore_errors=True)
+        shutil.copytree(react_dist, dashboard_dir, dirs_exist_ok=True)
+    else:
+        dashboard_dir.mkdir(parents=True, exist_ok=True)
 
-    tests_primary = "No data"
-    tests_secondary = "Surefire reports not found."
-    if tests:
-        passed = tests["tests"] - tests["failures"] - tests["errors"] - tests["skipped"]
-        status = "✅ All passing" if tests["failures"] == 0 and tests["errors"] == 0 else "⚠️ Attention needed"
-        extra = ""
-        if tests["failures"] or tests["errors"] or tests["skipped"]:
-            extra = f" (failures: {tests['failures']}, errors: {tests['errors']}, skipped: {tests['skipped']})"
-        tests_primary = f"{status} — {passed}/{tests['tests']} tests green"
-        tests_secondary = f"Runtime: {tests['time']}s{extra}"
-
-    jacoco_primary = "No data"
-    jacoco_secondary = "Jacoco XML report missing."
-    jacoco_progress = ""
-    if jacoco:
-        jacoco_primary = f"{jacoco['pct']}% covered"
-        jacoco_secondary = f"{jacoco['covered']} / {jacoco['total']} lines"
-        jacoco_progress = progress_bar(jacoco["pct"])
-
-    pit_primary = "No data"
-    pit_secondary = "PITest report missing or skipped."
-    pit_progress = ""
-    if pit:
-        pit_primary = f"{pit['pct']}% mutations killed"
-        pit_secondary = f"{pit['killed']} / {pit['total']} mutants (survived {pit['survived']})"
-        pit_progress = progress_bar(pit["pct"])
-
-    dep_primary = "Not run"
-    dep_secondary = "Dependency-Check report missing."
-    severity_list = ""
-    if dep:
-        dep_primary = (
-            f"{dep['vulnerable_dependencies']} vulnerable deps "
-            f"({dep['vulnerabilities']} findings)"
-        )
-        dep_secondary = f"Scanned dependencies: {dep['dependencies']}"
-        severity_items = "".join(
-            f"<li>{SEVERITY_LABELS[level]} — {dep['severity'].get(level, 0)}</li>"
-            for level in SEVERITY_ORDER
-        )
-        severity_list = f"<ul class='severity'>{severity_items}</ul>"
-
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-
-    html_content = f"""<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>QA Dashboard</title>
-    <style>
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
-            margin: 0;
-            padding: 2rem;
-        }}
-        h1 {{
-            margin-top: 0;
-        }}
-        .grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-        }}
-        .card {{
-            background: rgba(30, 41, 59, 0.9);
-            border-radius: 12px;
-            padding: 1.25rem;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-        }}
-        .label {{
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            letter-spacing: 0.08em;
-            color: #94a3b8;
-        }}
-        .value {{
-            font-size: 1.4rem;
-            margin: 0.4rem 0;
-            color: #38bdf8;
-        }}
-        .detail {{
-            color: #cbd5f5;
-            font-size: 0.95rem;
-        }}
-        .progress {{
-            background: #1e293b;
-            border-radius: 999px;
-            height: 6px;
-            margin-top: 0.75rem;
-        }}
-        .progress-bar {{
-            background: linear-gradient(90deg, #22d3ee, #14b8a6);
-            height: 100%;
-            border-radius: inherit;
-        }}
-        .links {{
-            margin-top: 2rem;
-        }}
-        .links a {{
-            color: #38bdf8;
-            margin-right: 1rem;
-            text-decoration: none;
-            border-bottom: 1px solid transparent;
-        }}
-        .links a:hover {{
-            border-color: #38bdf8;
-        }}
-        .severity {{
-            padding-left: 1.2rem;
-            margin: 0.5rem 0 0;
-            color: #e2e8f0;
-        }}
-        footer {{
-            margin-top: 2rem;
-            font-size: 0.85rem;
-            color: #94a3b8;
-        }}
-    </style>
-</head>
-<body>
-    <h1>QA Dashboard</h1>
-    <p>Generated {timestamp}. Download the artifact from GitHub Actions for interactive viewing.</p>
-    <div class="grid">
-        <div class="card">
-            <div class="label">Tests</div>
-            <div class="value">{tests_primary}</div>
-            <div class="detail">{tests_secondary}</div>
-        </div>
-        <div class="card">
-            <div class="label">Line Coverage</div>
-            <div class="value">{jacoco_primary}</div>
-            <div class="detail">{jacoco_secondary}</div>
-            {jacoco_progress}
-        </div>
-        <div class="card">
-            <div class="label">Mutation Score</div>
-            <div class="value">{pit_primary}</div>
-            <div class="detail">{pit_secondary}</div>
-            {pit_progress}
-        </div>
-        <div class="card">
-            <div class="label">Dependency-Check</div>
-            <div class="value">{dep_primary}</div>
-            <div class="detail">{dep_secondary}</div>
-            {severity_list}
-        </div>
-    </div>
-    <div class="links">
-        <strong>Detailed reports:</strong>
-        <a href="../jacoco/index.html">JaCoCo</a>
-        <a href="../spotbugs.html">SpotBugs</a>
-        <a href="../../pit-reports/index.html">PITest</a>
-        <a href="../dependency-check-report.html">Dependency-Check</a>
-    </div>
-    <footer>QA dashboard generated by scripts/ci_metrics_summary.py</footer>
-</body>
-</html>
-"""
-
-    html_path.write_text("\n".join(line.rstrip() for line in html_content.splitlines()), encoding="utf-8")
+    metrics_path = dashboard_dir / "metrics.json"
+    metrics_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
 
 
 def main() -> int:

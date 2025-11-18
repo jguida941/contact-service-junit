@@ -70,6 +70,9 @@ All notable changes to this project will be documented here. Follow the
 - Enhanced `scripts/ci_metrics_summary.py` to show colored icons/bars, severity
   breakdowns, and generate a dark-mode `target/site/qa-dashboard/index.html`
   page with quick links to JaCoCo/SpotBugs/Dependency-Check/PITest reports.
+- React-based QA dashboard (`ui/qa-dashboard`) now builds during CI, consumes the
+  generated `metrics.json`, and replaces the old static HTML so artifacts ship a
+  fully interactive console.
 - Added a README note explaining why the service methods return `boolean`
   (simple success/failure signaling for this milestone).
 - Updated README caching section to explain that Dependency-Check caches are

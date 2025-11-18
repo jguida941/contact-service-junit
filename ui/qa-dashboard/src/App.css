@@ -1,0 +1,323 @@
+:root {
+  font-family: "Inter", "JetBrains Mono", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #e2e8f0;
+  background-color: #080f1c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #050919;
+  color: #e2e8f0;
+  position: relative;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+}
+
+body::before {
+  background: radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.35), transparent 45%),
+    radial-gradient(circle at 80% 0%, rgba(236, 72, 153, 0.25), transparent 50%);
+}
+
+body::after {
+  background-image: linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 80px 80px;
+  opacity: 0.4;
+  z-index: -1;
+  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.8), transparent 65%);
+}
+
+.app {
+  padding: 2.5rem clamp(1rem, 4vw, 4rem);
+  width: min(1600px, 96vw);
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: 0.02em;
+}
+
+.header small {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.badge-row {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #cbd5f5;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: rgba(11, 17, 33, 0.95);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.45);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(236, 72, 153, 0.15));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card:hover::after {
+  opacity: 1;
+}
+
+.card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.card .label {
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  color: #94a3b8;
+}
+
+.card .value {
+  font-size: 1.9rem;
+  font-weight: 600;
+  margin: 0.4rem 0;
+  color: #38bdf8;
+}
+
+.card .detail {
+  color: #cbd5f5;
+  font-size: 0.9rem;
+}
+
+.card.coverage {
+  text-align: center;
+  align-items: center;
+}
+
+.coverage-ring {
+  width: 180px;
+  height: 180px;
+  margin: 1.5rem auto;
+  position: relative;
+}
+
+.coverage-ring .ring {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.coverage-ring .ring::after {
+  content: "";
+  position: absolute;
+  inset: 24px;
+  border-radius: 50%;
+  background: #050919;
+  box-shadow: inset 0 0 25px rgba(56, 189, 248, 0.2);
+}
+
+.coverage-ring .ring span {
+  position: relative;
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: #38bdf8;
+}
+
+.progress {
+  height: 8px;
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 999px;
+  margin-top: 1rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #22d3ee, #a855f7);
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.4);
+}
+
+.timeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  position: relative;
+}
+
+.stage {
+  flex: 1;
+  min-width: 140px;
+  position: relative;
+  text-align: center;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(5, 9, 25, 0.9);
+  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.35);
+}
+
+.stage .orb {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 0.8rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.15);
+}
+
+.stage.pass .orb {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.35), rgba(15, 23, 42, 0.95));
+  border: 2px solid rgba(16, 185, 129, 0.6);
+}
+
+.stage.warn .orb {
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.35), rgba(15, 23, 42, 0.95));
+  border: 2px solid rgba(249, 115, 22, 0.6);
+}
+
+.stage .name {
+  font-size: 0.95rem;
+  color: #f1f5f9;
+}
+
+.stage .duration {
+  font-family: "JetBrains Mono", monospace;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.severity-list {
+  margin-top: 0.8rem;
+  padding-left: 0;
+  list-style: none;
+}
+
+.severity-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: #cbd5f5;
+}
+
+.severity-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.console {
+  margin-top: 2rem;
+  background: rgba(4, 7, 16, 0.95);
+  border-radius: 12px;
+  font-family: "JetBrains Mono", monospace;
+  padding: 1.2rem;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #8cf5ff;
+  position: relative;
+}
+
+.console::before {
+  content: "LOG";
+  position: absolute;
+  top: 0.3rem;
+  right: 0.8rem;
+  font-size: 0.7rem;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.console-line {
+  margin: 0.2rem 0;
+  display: flex;
+  gap: 0.6rem;
+}
+
+.console-tag {
+  width: 60px;
+  text-align: right;
+  color: #38bdf8;
+}
+
+.console-msg {
+  flex: 1;
+}
+
+.links {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.link-button {
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  text-decoration: none;
+  color: #38bdf8;
+  font-size: 0.9rem;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.link-button:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.8);
+}
