@@ -31,7 +31,7 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 | [`src/main/java/contactapp/ContactService.java`](src/main/java/contactapp/ContactService.java) | Service shell for add/update/delete logic (to be implemented).      |
 | [`src/main/java/contactapp/Validation.java`](src/main/java/contactapp/Validation.java)         | Centralized validation helpers (not blank, length, numeric checks). |
 | [`src/test/java/contactapp/ContactTest.java`](src/test/java/contactapp/ContactTest.java)       | Unit tests for the `Contact` class (valid + invalid scenarios).     |
-| [`requirements/`](requirements/)                                                               | Assignment write-up and checklist from the instructor.              |
+| [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/)            | Assignment write-up and checklist from the instructor (now under `docs/`). |
 | [`docs/index.md`](docs/index.md)                                                               | Quick reference guide for the repo layout.                          |
 | [`pom.xml`](pom.xml)                                                                           | Maven build file (dependencies, plugins, compiler config).          |
 | [`config/checkstyle`](config/checkstyle)                                                       | Checkstyle configuration used by Maven/CI quality gates.            |
@@ -258,7 +258,7 @@ Leave `./run.sh` running so the `mutation-test` job can execute on your machine.
 
 ## How to Use This Repository
 If you're working through CS320 (or just exploring the project), the recommended flow is:
-1. Read the requirements in `requirements/` so you understand the contact rules and service behavior.
+1. Read the requirements in `docs/requirements/contact-requirements/` so you understand the contact rules and service behavior.
 2. Study `Contact.java`, `ContactService.java`, and `Validation.java` to see how the rules are enforced in code.
 3. Run `mvn verify` and inspect the JUnit, JaCoCo, PITest, and dependency reports in `target/` to understand how the quality gates evaluate the project.
 4. Experiment by breaking a rule on purpose, rerunning the build, and seeing which tests/gates fail, then fix the tests or code as needed.
@@ -266,7 +266,7 @@ If you're working through CS320 (or just exploring the project), the recommended
 ## Resources & References
 | Item                                                                    | Purpose                                                                  |
 |-------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| [requirements/](requirements/)                                          | Instructor brief and acceptance criteria.                                |
+| [docs/requirements/contact-requirements/](docs/requirements/contact-requirements/) | Instructor brief and acceptance criteria.                                |
 | [docs/index.md](docs/index.md)                                          | Repo structure reference (future `docs/design.md` will hold deep dives). |
 | [GitHub Actions workflows](.github/workflows)                           | CI/CD definitions described above.                                       |
 | [config/checkstyle](config/checkstyle)                                  | Checkstyle rules enforced in CI.                                         |
