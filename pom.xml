@@ -18,10 +18,10 @@
         <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
         <spotbugs.maven.plugin.version>4.7.3.5</spotbugs.maven.plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
-        <dependency.check.version>12.1.0</dependency.check.version>
+        <dependency.check.version>12.1.9</dependency.check.version>
         <dependency.check.skip>false</dependency.check.skip>
         <nvd.api.delay>5000</nvd.api.delay>
-        <pitest.version>1.15.6</pitest.version>
+        <pitest.version>1.21.1</pitest.version>
         <pit.skip>false</pit.skip>
     </properties>
 
@@ -148,7 +148,7 @@
                     <dependency>
                         <groupId>org.pitest</groupId>
                         <artifactId>pitest-junit5-plugin</artifactId>
-                        <version>1.2.1</version>
+                        <version>1.2.3</version>
                     </dependency>
                 </dependencies>
                 <executions>

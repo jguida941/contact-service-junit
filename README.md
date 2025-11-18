@@ -161,7 +161,8 @@ graph TD
 - Today the emphasis is on the base of the pyramid; upper layers (service/integration) will sit on top once persistence is added.
 
 ### Mutation Testing & Quality Gates
-- PITest runs in CI with a 70% threshold on a self-hosted runner (needed for the JVM attach API). A red mutation run means the unit tests failed to catch a deliberate fault.
+- PITest now runs inside the regular GitHub-hosted matrix (Ubuntu + Windows, Java 17/21) using `MAVEN_OPTS="--enable-native-access=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true"`. A red mutation run means the unit tests failed to catch a deliberate fault.
+- A separate self-hosted lane remains available as a fallback when extra capacity or debugging is required; see the optional lane below.
 
 ## Static Analysis & Quality Gates
 
@@ -176,6 +177,25 @@ graph TD
 
 Each layer runs automatically in CI, so local `mvn verify` mirrors the hosted pipelines.
 
+### Sonatype OSS Index (optional)
+Dependency-Check also pings the Sonatype OSS Index service. When requests are anonymous the analyzer often rate-limits, which is why CI prints warnings like “An error occurred while analyzing … (Sonatype OSS Index Analyzer)”. To receive full results:
+1. Create a free account at [ossindex.sonatype.org](https://ossindex.sonatype.org/) and generate an API token.
+2. Add the credentials to your Maven `settings.xml`:
+   ```xml
+   <settings>
+     <servers>
+       <server>
+         <id>ossindex</id>
+         <username>YOUR_OSS_INDEX_USERNAME</username>
+         <password>YOUR_OSS_INDEX_API_TOKEN</password>
+       </server>
+     </servers>
+   </settings>
+   ```
+3. Run Maven with `-DossIndexServerId=ossindex` (or set the property permanently with `export MAVEN_OPTS="$MAVEN_OPTS -DossIndexServerId=ossindex"`). GitHub Actions can do the same by storing the username/token as repository secrets and writing the snippet above before `mvn verify`.
+
+If you skip these steps, the OSS Index analyzer simply logs warnings while the rest of Dependency-Check continues to rely on the NVD feed.
+
 ## CI/CD Pipeline
 
 ### Matrix Verification
@@ -184,17 +204,20 @@ Each layer runs automatically in CI, so local `mvn verify` mirrors the hosted pi
 ### Quality Gate Behavior
 - Each matrix job executes the full suite (tests, JaCoCo, Checkstyle, SpotBugs, Dependency-Check, PITest).
 - If Dependency-Check or PITest flakes because of environment constraints, the workflow retries with `-Ddependency-check.skip=true` or `-Dpit.skip=true` so contributors stay unblocked but warnings remain visible.
+- Mutation coverage now relies on GitHub-hosted runners by default; the self-hosted lane is opt-in and only fires when the repository variable `RUN_SELF_HOSTED` is set.
+- After every matrix job, `scripts/ci_metrics_summary.py` posts a table to the GitHub Actions run summary showing tests, JaCoCo coverage, PITest mutation score, and Dependency-Check counts (with ASCII bars for quick scanning).
 
 ### Caching Strategy
 - Maven artifacts are cached via `actions/cache@v4` (`~/.m2/repository`) to keep builds fast.
 - OWASP Dependency-Check data is cached (`~/.m2/repository/org/owasp/dependency-check-data`) so NVD updates reuse the previously downloaded feeds.
 
-### Mutation Lane (Self-Hosted)
-- Hosted runners cannot use the JVM attach API, so a dedicated `mutation-test` job targets a self-hosted runner with `MAVEN_OPTS="--enable-native-access=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true"`.
-- This lane enforces the 70% mutation threshold that mirrors local expectations.
+### Mutation Lane (Optional Self-Hosted Fallback)
+- The standard matrix already executes PITest, but some contributors keep a self-hosted runner handy for long mutation sessions, experiments, or when GitHub-hosted capacity is saturated.
+- Toggling the repository variable `RUN_SELF_HOSTED` to `true` enables the `mutation-test` job, which mirrors the hosted command line but runs on your own hardware with `MAVEN_OPTS="--enable-native-access=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true"`.
 
 ### Release Automation
 - Successful workflows publish build artifacts, and the release workflow packages release notes so we can trace which commit delivered which binary.
+- The `release-artifacts` job is intentionally gated with `if: github.event_name == 'release' && github.event.action == 'published'`, so you will see it marked as “skipped” on normal pushes or pull requests. It only runs when a GitHub release/tag is published.
 
 ### CI/CD Flow Diagram
 ```mermaid
@@ -264,21 +287,25 @@ If you're working through CS320 (or just exploring the project), the recommended
 4. Experiment by breaking a rule on purpose, rerunning the build, and seeing which tests/gates fail, then fix the tests or code as needed.
 
 ## Resources & References
-| Item                                                                    | Purpose                                                                  |
-|-------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| Item                                                                               | Purpose                                                                  |
+|------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
 | [docs/requirements/contact-requirements/](docs/requirements/contact-requirements/) | Instructor brief and acceptance criteria.                                |
-| [docs/index.md](docs/index.md)                                          | Repo structure reference (future `docs/design.md` will hold deep dives). |
-| [GitHub Actions workflows](.github/workflows)                           | CI/CD definitions described above.                                       |
-| [config/checkstyle](config/checkstyle)                                  | Checkstyle rules enforced in CI.                                         |
-| [Java 17 (Temurin)](https://adoptium.net/temurin/releases/)             | JDK used locally and in CI.                                              |
-| [Apache Maven](https://maven.apache.org/)                               | Build tool powering the project.                                         |
-| [JUnit 5](https://junit.org/junit5/)                                    | Test framework leveraged in `ContactTest`.                               |
-| [AssertJ](https://assertj.github.io/doc/)                               | Fluent assertion library.                                                |
-| [PITest](https://pitest.org/)                                           | Mutation testing engine enforced in CI.                                  |
-| [OWASP Dependency-Check](https://jeremylong.github.io/DependencyCheck/) | CVE scanning tool wired into Maven/CI.                                   |
-| [Checkstyle](https://checkstyle.sourceforge.io/)                        | Style/complexity checks.                                                 |
-| [SpotBugs](https://spotbugs.github.io/)                                 | Bug pattern detector.                                                    |
-| [CodeQL](https://codeql.github.com/docs/)                               | Semantic security analysis.                                              |
+| [docs/index.md](docs/index.md)                                                     | Repo structure reference (future `docs/design.md` will hold deep dives). |
+| [GitHub Actions workflows](.github/workflows)                                      | CI/CD definitions described above.                                       |
+| [config/checkstyle](config/checkstyle)                                             | Checkstyle rules enforced in CI.                                         |
+| [Java 17 (Temurin)](https://adoptium.net/temurin/releases/)                        | JDK used locally and in CI.                                              |
+| [Apache Maven](https://maven.apache.org/)                                          | Build tool powering the project.                                         |
+| [JUnit 5](https://junit.org/junit5/)                                               | Test framework leveraged in `ContactTest`.                               |
+| [AssertJ](https://assertj.github.io/doc/)                                          | Fluent assertion library.                                                |
+| [PITest](https://pitest.org/)                                                      | Mutation testing engine enforced in CI.                                  |
+| [OWASP Dependency-Check](https://jeremylong.github.io/DependencyCheck/)            | CVE scanning tool wired into Maven/CI.                                   |
+| [Checkstyle](https://checkstyle.sourceforge.io/)                                   | Style/complexity checks.                                                 |
+| [SpotBugs](https://spotbugs.github.io/)                                            | Bug pattern detector.                                                    |
+| [CodeQL](https://codeql.github.com/docs/)                                          | Semantic security analysis.                                              |
 
 ## License
 Distributed under the MIT License. See [LICENSE](LICENSE) for details.
+
+## Reporting Backlog
+- Attach richer visual artifacts (HTML dashboards or charts) that combine the JaCoCo/PITest/Dependency-Check data already posted in the run summary.
+- Track progress for these items in `docs/CI-CD/ci_cd_plan.md` as they land so improvements to observability stay visible.

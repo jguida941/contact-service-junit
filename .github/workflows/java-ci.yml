@@ -110,6 +110,13 @@ jobs:
             target/checkstyle-result.xml
             target/dependency-check-report.html
 
+      - name: Publish QA summary
+        if: always()
+        env:
+          MATRIX_OS: ${{ matrix.os }}
+          MATRIX_JAVA: ${{ matrix.java-version }}
+        run: python3 scripts/ci_metrics_summary.py
+
   release-artifacts:
     needs: build-test
     if: github.event_name == 'release' && github.event.action == 'published'
