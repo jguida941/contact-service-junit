@@ -16,6 +16,8 @@ on:
 jobs:
   build-test:
     runs-on: ${{ matrix.os }}
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
@@ -118,12 +120,12 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload coverage to Codecov
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
+        if: ${{ env.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v4
         with:
           files: target/site/jacoco/jacoco.xml
           flags: ${{ matrix.os }}-jdk${{ matrix.java-version }}
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ env.CODECOV_TOKEN }}
 
       - name: Publish QA summary
         if: always()
