@@ -376,9 +376,9 @@ Leave `./run.sh` running so the `mutation-test` job can execute on your machine.
 ## How to Use This Repository
 If you're working through CS320 (or just exploring the project), the recommended flow is:
 1. Read the requirements in `docs/requirements/contact-requirements/` so you understand the contact rules and service behavior.
-2. Study `Contact.java`, `ContactService.java`, and `Validation.java` to see how the rules are enforced in code.
-3. Run `mvn verify` and inspect the JUnit, JaCoCo, PITest, and dependency reports in `target/` to understand how the quality gates evaluate the project.
-4. Experiment by breaking a rule on purpose, rerunning the build, and seeing which tests/gates fail, then fix the tests or code as needed.
+2. Study `Contact.java`, `ContactService.java`, and `Validation.java`, then jump into the paired tests (`ContactTest.java` and `ContactServiceTest.java`) to see every rule exercised.
+3. Run `mvn verify` and inspect the JUnit (Contact + service suites), JaCoCo, PITest, and dependency reports in `target/` to understand how the quality gates evaluate the project.
+4. Experiment by breaking a rule on purpose, rerunning the build, and seeing which tests/gates fail, then fix the tests or code (and add/update assertions in both test classes) as needed.
 
 ## Resources & References
 | Item                                                                               | Purpose                                                                  |
@@ -389,8 +389,8 @@ If you're working through CS320 (or just exploring the project), the recommended
 | [config/checkstyle](config/checkstyle)                                             | Checkstyle rules enforced in CI.                                         |
 | [Java 17 (Temurin)](https://adoptium.net/temurin/releases/)                        | JDK used locally and in CI.                                              |
 | [Apache Maven](https://maven.apache.org/)                                          | Build tool powering the project.                                         |
-| [JUnit 5](https://junit.org/junit5/)                                               | Test framework leveraged in `ContactTest`.                               |
-| [AssertJ](https://assertj.github.io/doc/)                                          | Fluent assertion library.                                                |
+| [JUnit 5](https://junit.org/junit5/)                                               | Test framework leveraged in `ContactTest` and `ContactServiceTest`.      |
+| [AssertJ](https://assertj.github.io/doc/)                                          | Fluent assertion library used across the test suites.                    |
 | [PITest](https://pitest.org/)                                                      | Mutation testing engine enforced in CI.                                  |
 | [OWASP Dependency-Check](https://jeremylong.github.io/DependencyCheck/)            | CVE scanning tool wired into Maven/CI.                                   |
 | [Checkstyle](https://checkstyle.sourceforge.io/)                                   | Style/complexity checks.                                                 |
