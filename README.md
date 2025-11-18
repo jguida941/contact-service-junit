@@ -217,7 +217,7 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 
 ### Caching Strategy
 - Maven artifacts are cached via `actions/cache@v4` (`~/.m2/repository`) to keep builds fast.
-- OWASP Dependency-Check data is cached (`~/.m2/repository/org/owasp/dependency-check-data`) so NVD updates reuse the previously downloaded feeds.
+- Dependency-Check data is intentionally purged every run (see the “Purge Dependency-Check database cache” step) to avoid stale or corrupted NVD downloads. If feed reliability improves we can re-enable caching in the workflow, but for now the clean slate proved more stable.
 
 ### Mutation Lane (Optional Self-Hosted Fallback)
 - The standard matrix already executes PITest, but some contributors keep a self-hosted runner handy for long mutation sessions, experiments, or when GitHub-hosted capacity is saturated.
