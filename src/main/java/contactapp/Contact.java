@@ -66,12 +66,12 @@ public class Contact {
     // Setters
     public void setFirstName(String firstName) {
         Validation.validateLength(firstName, "firstName", 1, 10);
-        this.firstName = firstName;
+        this.firstName = firstName.trim(); // normalize whitespace after validation
     }
 
     public void setLastName(String lastName) {
         Validation.validateLength(lastName, "lastName", 1, 10);
-        this.lastName = lastName;
+        this.lastName = lastName.trim(); // normalize whitespace after validation
     }
     public void setPhone(String phone) {
         Validation.validateNumeric10(phone, "phone");
@@ -80,6 +80,6 @@ public class Contact {
 
     public void setAddress(String address) {
         Validation.validateLength(address, "address", 1, 30);
-        this.address = address;
-    }
+        this.address = address.trim(); // normalize whitespace after validation
+}
 }
