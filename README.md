@@ -244,7 +244,7 @@ graph TD
 | Coverage            | **JaCoCo**                 | Line/branch coverage enforcement during `mvn verify`.              |
 | Mutation            | **PITest**                 | Ensures assertions catch injected faults; threshold currently 70%. |
 | Style & complexity  | **Checkstyle**             | Formatting, naming, and `CyclomaticComplexity` caps.               |
-| Bug patterns        | **SpotBugs**               | Null dereferences, resource leaks, concurrency/perf issues.        |
+| Bug patterns        | **SpotBugs** *(planned)*    | TODO: wire plugin + CI step; currently documented for upcoming bug-pattern scanning. |
 | Dependency security | **OWASP Dependency-Check** | CVE scanning backed by `NVD_API_KEY` with optional skip fallback.  |
 | Semantic security   | **CodeQL**                 | Detects SQLi/XSS/path-traversal patterns in a separate workflow.   |
 
