@@ -25,7 +25,6 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`config/owasp-suppressions.xml`](../config/owasp-suppressions.xml)                                       | Placeholder suppression list for OWASP Dependency-Check.    |
 | [`scripts/ci_metrics_summary.py`](../scripts/ci_metrics_summary.py)                                       | Prints the QA metrics table (tests/coverage/mutations/dependencies) in GitHub Actions. |
 | [`docs/backlog.md`](backlog.md)                                                                           | Backlog for reporting and domain enhancements.                      |
-| [`docs/qa-summary.md`](qa-summary.md)                                                                     | Sample QA summary table used in the README/Actions summary.         |
 | [`.github/workflows`](../.github/workflows)                                                               | GitHub Actions pipelines (CI, release packaging, CodeQL).   |
 
 ## Requirements & Notes

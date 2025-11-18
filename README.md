@@ -234,8 +234,8 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
   3. Re-run the workflow; each matrix job uploads coverage with a `flags` label (`os-jdk`).
 - The badge at the top of this README pulls from the default `master` branch; adjust the URL if you maintain long-lived release branches.
 
-## Sample QA Summary
-The GitHub Actions “Summary” tab shows a QA metrics table for each matrix job. Use this section as a placeholder for the screenshot you plan to add; the raw table lives in [`docs/qa-summary.md`](docs/qa-summary.md) for reference.
+## QA Summary
+Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. Use this section to embed a screenshot once the workflow run finishes; until then, open any workflow’s “Summary” tab and look for the “QA Metrics” table for the latest numbers.
 
 ### CI/CD Flow Diagram
 ```mermaid
