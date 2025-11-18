@@ -46,7 +46,7 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 - **Immutable identifiers** - `contactId` is set once in the constructor and never mutates, which keeps HashMap keys stable and mirrors real-world record identifiers.
 - **Centralized validation** - Every constructor/setter call funnels through `Validation.validateNotBlank`, `validateLength`, and (for phones) `validateNumeric10`, so IDs, names, phones, and addresses all share one enforcement pipeline.
 - **Fail-fast IllegalArgumentException** - Invalid input is a caller bug, so we throw standard JDK exceptions with precise messages and assert on them in tests.
-- **HashMap-first storage strategy** - Milestone 1 sticks to an in-memory `HashMap<String, Contact>` for O(1) CRUD while leaving `ContactService` as the seam for future persistence layers.
+- **HashMap-first storage strategy** - Milestone 1 sticks to an in-memory `HashMap<String, Contact>` (living inside the singleton `ContactService`) for predictable O(1) CRUD while leaving that service class as the seam for future persistence layers.
 - **Security posture** - Input validation acts as the first defense layer; nothing touches storage/logs unless it passes the guards.
 - **Testing depth** - Parameterized JUnit 5 tests, AssertJ assertions, JaCoCo coverage, and PITest mutation scores combine to prove the validation logic rather than just executing it.
 
@@ -63,8 +63,8 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 - These helpers double as both correctness logic and security filtering.
 
 ### Service Layer (`ContactService`)
-- Currently a scaffold to keep milestone scope manageable. It is intended to host add/update/delete orchestration and uniqueness checks.
-- By keeping this layer separate from the domain model, we can slot in persistence or caching without rewriting the entity/tests.
+- Currently a scaffold to keep milestone scope manageable. It will host in-memory storage via a `HashMap<String, Contact>`, add/update/delete orchestration, and uniqueness checks.
+- By keeping this layer separate from the domain model, we can slot in persistence or caching without rewriting the entity/tests. The singleton wrapper ensures every caller sees the same map instance.
 
 ### Storage & Extension Points
 **HashMap<String, Contact> (planned backing store)**

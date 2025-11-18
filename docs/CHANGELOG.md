@@ -22,6 +22,8 @@ All notable changes to this project will be documented here. Follow the
 - README now documents why the `release-artifacts` job is skipped on PRs and
   tracks upcoming reporting enhancements.
 - Added Codecov integration (GitHub Action upload + README instructions/badge).
+- Clarified README sections describing the `HashMap<String, Contact>` storage
+  managed by `ContactService`.
 
 ### Security
 - Bumped `org.pitest:pitest-maven` to `1.21.1` and `org.pitest:pitest-junit5-plugin`
