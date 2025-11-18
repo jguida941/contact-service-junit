@@ -25,20 +25,20 @@
 
 ## ContactService
 
-- [ ] addContact adds a contact with a unique contactId
-- [ ] addContact rejects duplicate contactId
-- [ ] deleteContact removes contact by contactId
-- [ ] updateFirstName updates firstName by contactId and enforces validation
-- [ ] updateLastName updates lastName by contactId and enforces validation
-- [ ] updatePhone updates phone by contactId and enforces validation
-- [ ] updateAddress updates address by contactId and enforces validation
+- [x] addContact adds a contact with a unique contactId (2025-11-18)
+- [x] addContact rejects duplicate contactId (2025-11-18)
+- [x] deleteContact removes contact by contactId (2025-11-18)
+- [x] updateFirstName updates firstName by contactId and enforces validation (2025-11-18)
+- [x] updateLastName updates lastName by contactId and enforces validation (2025-11-18)
+- [x] updatePhone updates phone by contactId and enforces validation (2025-11-18)
+- [x] updateAddress updates address by contactId and enforces validation (2025-11-18)
 
 ## Tests
 
 - [x] Tests cover valid Contact creation (2025-11-14)
 - [x] Tests cover invalid contactId (null and >10) (2025-11-14)
 - [x] Tests cover invalid firstName, lastName, phone, address (2025-11-14)
-- [ ] Tests cover adding a contact
-- [ ] Tests cover rejecting duplicate contactId
-- [ ] Tests cover deleting a contact
-- [ ] Tests cover each update method
+- [x] Tests cover adding a contact (2025-11-18)
+- [x] Tests cover rejecting duplicate contactId (2025-11-18)
+- [x] Tests cover deleting a contact (2025-11-18)
+- [x] Tests cover each update method (2025-11-18)

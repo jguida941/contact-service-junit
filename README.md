@@ -19,7 +19,7 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 - [Static Analysis & Quality Gates](#static-analysis--quality-gates)
 - [Backlog](#backlog)
 - [CI/CD Pipeline](#cicd-pipeline)
-- [Sample QA Summary](#sample-qa-summary)
+- [QA Summary](#qa-summary)
 - [Self-Hosted Mutation Runner Setup](#self-hosted-mutation-runner-setup)
 
 ## Getting Started
@@ -31,7 +31,7 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 | Path                                                                                           | Description                                                         |
 |------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
 | [`src/main/java/contactapp/Contact.java`](src/main/java/contactapp/Contact.java)               | Contact entity enforcing the ID/name/phone/address constraints.     |
-| [`src/main/java/contactapp/ContactService.java`](src/main/java/contactapp/ContactService.java) | Service shell for add/update/delete logic (to be implemented).      |
+| [`src/main/java/contactapp/ContactService.java`](src/main/java/contactapp/ContactService.java) | Singleton service with in-memory CRUD, uniqueness checks, and validation reuse. |
 | [`src/main/java/contactapp/Validation.java`](src/main/java/contactapp/Validation.java)         | Centralized validation helpers (not blank, length, numeric checks). |
 | [`src/test/java/contactapp/ContactTest.java`](src/test/java/contactapp/ContactTest.java)       | Unit tests for the `Contact` class (valid + invalid scenarios).     |
 | [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/)            | Assignment write-up and checklist from the instructor (now under `docs/`). |
@@ -75,6 +75,8 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 | update    | O(1)    | O(n)  | O(1)  |
 | delete    | O(1)    | O(n)  | O(1)  |
 - This strategy meets the course requirements while documenting the upgrade path (DAO, repository pattern, etc.).
+
+# [Contact.java](src/main/java/contactapp/Contact.java) / [ContactTest.java](src/test/java/contactapp/ContactTest.java)
 
 ## Validation & Error Handling
 
@@ -131,41 +133,92 @@ graph TD
 
 ## Testing Strategy
 
-### ContactTest (domain layer)
-- **Approach & TDD** – Every rule began as a failing test. Because constructors delegate to setters, the validation pipeline shown earlier is exercised for both creation and updates.
-- **Parameterized coverage** – `@ParameterizedTest + @CsvSource` enumerate invalid IDs, names, phones, and addresses so the suite captures every edge case without duplicating boilerplate. Assertions use `assertThatThrownBy(...).hasMessage(...)` to lock in the label-driven messages.
-    ```java
-    @ParameterizedTest
-    @CsvSource({
-        "'', 'contactId must not be null or blank'",
-        "' ', 'contactId must not be null or blank'",
-        "'12345678901', 'contactId length must be between 1 and 10'"
-    })
-    void testInvalidContactId(String id, String expectedMessage) {
-        assertThatThrownBy(() -> new Contact(id, "first", "last", "1234567890", "123 Main St"))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage(expectedMessage);
-    }
-    ```
-- **Happy path** – `testSuccessfulCreation` and `testValidSetters` leverage AssertJ’s `hasFieldOrPropertyWithValue` to ensure valid data hydrates and updates correctly.
+### Approach & TDD
+- Each validator rule started as a failing test, then the implementation was written until the suite passed.
+- `ContactTest` serves as the living specification covering both the success path and every invalid scenario.
 
-### ContactServiceTest (service layer)
-- **Singleton + storage** – Verifies `ContactService.getInstance()` is a singleton and that the backing `HashMap<String, Contact>` mutates only when operations succeed.
-- **Boolean API** – `addContact` returns `true` on initial insert and `false` on duplicates; `deleteContact`/`updateContact` return `true` only when the `contactId` exists. Setter validation still throws on bad input so domain rules remain centralized.
-    ```java
-    @Test
-    void addRejectsDuplicateIds() {
-        ContactService service = ContactService.getInstance();
-        Contact contact = new Contact("id-1","first","last","1234567890","10 Main St");
-        assertThat(service.addContact(contact)).isTrue();
-        assertThat(service.addContact(contact)).isFalse();
-    }
-    ```
-- **Why** – Booleans keep milestone tests straightforward while documenting how callers would detect success/failure without needing custom exceptions.
+### Parameterized Coverage
+- `@ParameterizedTest` + `@CsvSource` enumerate the invalid IDs, names, phones, and addresses so we don’t duplicate boilerplate tests.
+```java
+@ParameterizedTest
+@CsvSource({
+    "'', 'contactId must not be null or blank'",
+    "' ', 'contactId must not be null or blank'",
+    "'12345678901', 'contactId length must be between 1 and 10'"
+})
+void testInvalidContactId(String id, String expectedMessage) {
+    assertThatThrownBy(() -> new Contact(id, "first", "last", "1234567890", "123 Main St"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(expectedMessage);
+}
+```
 
 ### Assertion Patterns
 - AssertJ’s `hasFieldOrPropertyWithValue` validates the happy path in one fluent statement.
 - `assertThatThrownBy().isInstanceOf(...).hasMessage(...)` proves exactly which validation rule triggered.
+
+
+## [ContactService.java](src/main/java/contactapp/ContactService.java) / [ContactServiceTest.java](src/test/java/contactapp/ContactServiceTest.java)
+
+### Service Snapshot
+- **Singleton access** – `getInstance()` exposes one shared service so every caller sees the same `ConcurrentHashMap` backing store.
+- **Atomic uniqueness guard** – `addContact` rejects null inputs up front and relies on `ConcurrentHashMap#putIfAbsent` so duplicate IDs never overwrite state.
+- **Shared validation** – `deleteContact` uses `Validation.validateNotBlank` for IDs and `updateContact` delegates to the `Contact` setters, guaranteeing the constructor’s length/null/phone rules apply to updates too.
+
+## Validation & Error Handling
+
+### Validation Pipeline
+```mermaid
+graph TD
+    A[Service call] --> B["validateNotBlank(contactId)"]
+    B --> C{Operation}
+    C -->|add| D["contact != null?"]
+    D -->|false| X[IllegalArgumentException]
+    D -->|true| E[putIfAbsent]
+    E -->|duplicate| F[return false]
+    E -->|new id| G[store contact]
+    C -->|delete| H["remove(contactId)"]
+    C -->|update| I[fetch existing]
+    I -->|missing| F
+    I -->|found| J[Contact setters reuse Validation]
+    J --> K[updated contact]
+```
+- All entry points validate the `contactId` before touching the map so we never store blank keys.
+- Setter delegation ensures errors surface with the same messages as the constructor (e.g., “phone must be exactly 10 digits”).
+
+### Error Message Philosophy
+- Null service inputs raise `IllegalArgumentException` with explicit labels (e.g., “contact must not be null”).
+- ID validation errors come from the shared `Validation` helper so delete/update use the exact strings already asserted in `ContactTest`.
+- Field-level issues rely on the `Contact` setters, so callers receive consistent messaging whether the data was supplied in the constructor or during an update.
+
+### Propagation Flow
+```mermaid
+graph TD
+    A[Client] --> B[ContactService]
+    B --> C{Operation result}
+    C -->|success| D[State updated]
+    C -->|false| E[Not found / duplicate]
+    C -->|exception| F[Validation message]
+```
+- Successful operations mutate the in-memory map; duplicate IDs or missing contacts simply return `false` so clients can branch without exceptions.
+- Validation failures bubble up as unchecked exceptions, which keeps the fail-fast stance consistent with the domain model.
+
+## Testing Strategy
+
+### Approach & TDD
+- The service initially shipped as a stub; once CRUD code landed, targeted JUnit tests captured the scenarios before refactoring anything else.
+- `@BeforeEach` clears the singleton’s backing map so tests remain isolated even though the service is shared.
+
+### Scenario Coverage
+- `testAddContact` proves the happy path and that the map contains the stored entry.
+- `testAddDuplicateContactFails` confirms the boolean contract for duplicates and that the original object remains untouched.
+- `testDeleteContact` exercises removal plus assertion that the key disappears.
+- `testUpdateContact` verifies every mutable field changes via setter delegation.
+- `testUpdateMissingContactReturnsFalse` covers the “not found” branch so callers can rely on the boolean result.
+
+### Assertion Patterns
+- AssertJ collections helpers (`containsEntry`, `doesNotContainEntry`) keep the CRUD expectations concise.
+- Field assertions after update reuse `hasFieldOrPropertyWithValue` so the tests read like a change log.
 
 ### Testing Pyramid
 ```mermaid
@@ -175,11 +228,13 @@ graph TD
     C --> D[Integration tests]
     D --> E[Mutation tests]
 ```
-- Today the emphasis is on the base of the pyramid; upper layers (service/integration) will sit on top once persistence is added.
+- Contact tests anchor the base of the pyramid, and the new service tests plug into the second tier to prove behavior around the shared store.
 
 ### Mutation Testing & Quality Gates
-- PITest now runs inside the regular GitHub-hosted matrix (Ubuntu + Windows, Java 17/21) using `MAVEN_OPTS="--enable-native-access=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true"`. A red mutation run means the unit tests failed to catch a deliberate fault.
-- A separate self-hosted lane remains available as a fallback when extra capacity or debugging is required; see the optional lane below.
+- PITest runs inside `mvn verify`, so the new service tests contribute directly to the enforced mutation score.
+- The GitHub Actions matrix uses the same suite, ensuring duplicate/add/delete/update scenarios stay green across OS/JDK combinations.
+- GitHub Actions still executes `{ubuntu-latest, windows-latest} × {Java 17, Java 21}` with `MAVEN_OPTS="--enable-native-access=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true"`, so mutation coverage is enforced everywhere.
+- The optional self-hosted lane remains available for long mutation sessions or extra capacity; see the dedicated section below.
 
 ## Static Analysis & Quality Gates
 
@@ -214,7 +269,7 @@ Dependency-Check also pings the Sonatype OSS Index service. When requests are an
 If you skip these steps, the OSS Index analyzer simply logs warnings while the rest of Dependency-Check continues to rely on the NVD feed.
 
 ## Backlog
-- Full backlog lives in [`docs/backlog.md`](docs/backlog.md) so the README stays concise. It includes future reporting ideas (charts, dashboards) and domain enhancements (e.g., richer JavaDoc/toString/equals/hashCode on `Contact`).
+- Full backlog lives in [`docs/backlog.md`](docs/backlog.md) so the README stays concise, and includes future ideas for reporting, observability, and domain enhancements.
 
 ## CI/CD Pipeline
 
@@ -308,10 +363,10 @@ graph TD
   ```
 Leave `./run.sh` running so the `mutation-test` job can execute on your machine. When you're done, press Ctrl+C to stop the runner.
 
-> **Workflow toggle:** the `mutation-test` job only runs when the repository variable `RUN_SELF_HOSTED` is set to `true`.
-> - Default (variable unset/false): the job is skipped so GitHub-hosted runners finish cleanly even if your machine is offline.
-> - When you want to run mutation tests: start the runner and set `Settings → Secrets and variables → Actions → Variables → RUN_SELF_HOSTED = true`, then re-run the workflow.
-> - Turn the variable back to `false` (or delete it) when you shut down the runner, so future workflows don’t wait for a machine that isn’t listening.
+**Workflow toggle** – the `mutation-test` job only runs when the repository variable `RUN_SELF_HOSTED` is set to `true`.
+- Default (variable unset/false): the job is skipped so GitHub-hosted runners finish cleanly even if your machine is offline.
+- When you want to run mutation tests: start the runner and set `Settings → Secrets and variables → Actions → Variables → RUN_SELF_HOSTED = true`, then re-run the workflow.
+- Turn the variable back to `false` (or delete it) when you shut down the runner, so future workflows don’t wait for a machine that isn’t listening.
 
 ## How to Use This Repository
 If you're working through CS320 (or just exploring the project), the recommended flow is:

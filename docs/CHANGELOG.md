@@ -33,6 +33,22 @@ All notable changes to this project will be documented here. Follow the
 - Restructured the README’s testing section so `ContactTest` and
   `ContactServiceTest` each have their own bullet list explaining scope and
   assertions.
+- Created dedicated README sections for `ContactService` validation/testing with
+  TODO placeholders so the service mirrors the structure already documented for
+  `Contact`.
+- Clarified README headings/TOC so each section explicitly references the source
+  file (`Contact.java`, `ContactTest.java`, `ContactService.java`,
+  `ContactServiceTest.java`).
+- Validation section now explicitly links to `Validation.java` so readers know
+  which helper backs the Contact rules.
+- `ContactService` validation headings now link to the source file so both
+  sections mirror each other.
+- Added README links in each subheading so readers can jump directly to the
+  relevant file (`Contact.java`, `ContactTest.java`, `ContactService.java`,
+  `ContactServiceTest.java`) from the design/testing sections.
+- Added explicit placeholders/doc comments in `ContactService.java` and
+  `ContactServiceTest.java` so the service layer mirrors the structure of the
+  `Contact`/`ContactTest` pair while we flesh out CRUD behavior.
 
 ### Security
 - Bumped `org.pitest:pitest-maven` to `1.21.1` and `org.pitest:pitest-junit5-plugin`
