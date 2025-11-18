@@ -174,8 +174,9 @@ void testInvalidContactId(String id, String expectedMessage) {
 - `ValidationTest.validateLengthAcceptsBoundaryValues` proves 1/10-char names and 30-char addresses remain valid.
 - `ValidationTest.validateLengthRejectsBlankStrings` and `ValidationTest.validateLengthRejectsNull` ensure blanks/nulls fail before length math is evaluated.
 - `ValidationTest.validateNumeric10RejectsBlankStrings` and `ValidationTest.validateNumeric10RejectsNull` ensure the phone validator raises the expected messages before regex/length checks.
-  <br>
-
+  
+<br>
+  
 ## [ContactService.java](src/main/java/contactapp/ContactService.java) / [ContactServiceTest.java](src/test/java/contactapp/ContactServiceTest.java)
 
 ### Service Snapshot
@@ -245,7 +246,8 @@ graph TD
 - `testDeleteContactBlankIdThrows` shows ID validation runs even on deletes, surfacing the standard “contactId must not be null or blank” message.
 - `testUpdateContact` verifies every mutable field changes via setter delegation.
 - `testUpdateMissingContactReturnsFalse` covers the “not found” branch so callers can rely on the boolean result.
-  <br>
+
+<br>
 
 ## [Task.java](src/main/java/taskapp/Task.java) / [TaskTest.java](src/test/java/taskapp/TaskTest.java)
 
@@ -284,6 +286,7 @@ graph TD
 
 ### Scenario Coverage
 - _Placeholder: TODO
+  
   <br>
 
 ## [TaskService.java](src/main/java/taskapp/TaskService.java) / [TaskServiceTest.java](src/test/java/taskapp/TaskServiceTest.java)
@@ -328,6 +331,7 @@ graph TD
 
 ### Scenario Coverage
 - _PlaceHolder:TODO
+  
   <br>
 
 ## Static Analysis & Quality Gates
