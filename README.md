@@ -235,7 +235,9 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 - The badge at the top of this README pulls from the default `master` branch; adjust the URL if you maintain long-lived release branches.
 
 ## QA Summary
-Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. Use this section to embed a screenshot once the workflow run finishes; until then, open any workflow’s “Summary” tab and look for the “QA Metrics” table for the latest numbers.
+Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. Open any workflow’s “Summary” tab and look for the “QA Metrics” table for the latest numbers.
+
+<img width="901" height="696" alt="Screenshot 2025-11-17 at 10 16 00 PM" src="https://github.com/user-attachments/assets/67c780e2-c3b7-4011-b18c-1b713a14b573" />
 
 ### CI/CD Flow Diagram
 ```mermaid
