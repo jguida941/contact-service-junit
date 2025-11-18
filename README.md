@@ -212,6 +212,7 @@ graph TD
 ### Scenario Coverage
 - `testAddContact` proves the happy path and that the map contains the stored entry.
 - `testAddDuplicateContactFails` confirms the boolean contract for duplicates and that the original object remains untouched.
+- `testAddContactNullThrows` hits the defensive null guard so callers see a clear `IllegalArgumentException` instead of an NPE.
 - `testDeleteContact` exercises removal plus assertion that the key disappears.
 - `testUpdateContact` verifies every mutable field changes via setter delegation.
 - `testUpdateMissingContactReturnsFalse` covers the “not found” branch so callers can rely on the boolean result.
