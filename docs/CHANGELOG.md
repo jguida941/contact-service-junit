@@ -24,6 +24,8 @@ All notable changes to this project will be documented here. Follow the
 - Added Codecov integration (GitHub Action upload + README instructions/badge).
 - Clarified README sections describing the `HashMap<String, Contact>` storage
   managed by `ContactService`.
+- Added a README note explaining why the service methods return `boolean`
+  (simple success/failure signaling for this milestone).
 
 ### Security
 - Bumped `org.pitest:pitest-maven` to `1.21.1` and `org.pitest:pitest-junit5-plugin`
