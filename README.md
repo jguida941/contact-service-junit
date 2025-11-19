@@ -90,8 +90,6 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 ## Validation & Error Handling
 
 ### Validation Pipeline
-<div style="background:#fff7c2;padding:16px;border:1px solid #f0c36d;border-radius:12px;margin:16px 0;">
-
 ```mermaid
 graph TD
     A[input]
@@ -109,8 +107,6 @@ graph TD
     D --> E --> F
     E --> X
 ```
-
-</div>
 - IDs and names take the first two steps, addresses stop after `validateLength` (1-30 chars), and phones add the numeric guard so they remain digits-only at ten characters.
 - Because the constructor routes through the setters, the exact same pipeline applies whether the object is being created or updated.
 
@@ -133,8 +129,6 @@ throw new IllegalArgumentException("firstName length must be between 1 and 10");
 - We throw `IllegalArgumentException` (unchecked) because invalid input is a caller bug and should crash fast.
 
 ### Propagation Flow
-<div style="background:#fff7c2;padding:16px;border:1px solid #f0c36d;border-radius:12px;margin:16px 0;">
-
 ```mermaid
 graph TD
     A[Client request] --> B[ContactService]
@@ -144,8 +138,6 @@ graph TD
     E --> F[Client handles/fails fast]
     D --> G[State assignment]
 ```
-
-</div>
 - Fail-fast means invalid state never reaches persistence/logs, and callers/tests can react immediately.
 
 ## Testing Strategy
@@ -197,8 +189,6 @@ void testInvalidContactId(String id, String expectedMessage) {
 ## Validation & Error Handling
 
 ### Validation Pipeline
-<div style="background:#fff7c2;padding:16px;border:1px solid #f0c36d;border-radius:12px;margin:16px 0;">
-
 ```mermaid
 graph TD
     A[Service call] --> B["validateNotBlank(contactId)"]
@@ -214,8 +204,6 @@ graph TD
     I -->|found| J[Contact setters reuse Validation]
     J --> K[updated contact]
 ```
-
-</div>
 - All entry points validate the `contactId` before touching the map so we never store blank keys.
 - Setter delegation ensures errors surface with the same messages as the constructor (e.g., “phone must be exactly 10 digits”).
 
@@ -225,8 +213,6 @@ graph TD
 - Field-level issues rely on the `Contact` setters, so callers receive consistent messaging whether the data was supplied in the constructor or during an update.
 
 ### Propagation Flow
-<div style="background:#fff7c2;padding:16px;border:1px solid #f0c36d;border-radius:12px;margin:16px 0;">
-
 ```mermaid
 graph TD
     A[Client] --> B[ContactService]
@@ -235,8 +221,6 @@ graph TD
     C -->|false| E[Not found / duplicate]
     C -->|exception| F[Validation message]
 ```
-
-</div>
 - Successful operations mutate the in-memory map; duplicate IDs or missing contacts simply return `false` so clients can branch without exceptions.
 - Validation failures bubble up as unchecked exceptions, which keeps the fail-fast stance consistent with the domain model.
 
@@ -274,10 +258,7 @@ graph TD
 ## Validation & Error Handling
 
 ### Validation Pipeline
-<div style="background:#fff7c2;padding:16px;border:1px solid #f0c36d;border-radius:12px;margin:16px 0;">
-
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'edgeLabelBackground': '#fff7c2', 'lineColor': '#333333'}}}%%
 graph TD
     A[task input] --> B[TODO validateNotBlank]
     B --> C[TODO length guard]
@@ -285,22 +266,15 @@ graph TD
     D --> E[TODO assign]
     D --> F[TODO exception]
 ```
-
-</div>
 - _Placeholder: describe how task IDs, names, and descriptions flow through validation helpers._
 
 ### Error Message Philosophy
 - _Placeholder: capture the exact wording strategy for task validation errors (e.g., label + reason)._
 
 ### Propagation Flow
-<div style="background:#fff7c2;padding:16px;border:1px solid #f0c36d;border-radius:12px;margin:16px 0;">
-
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'edgeLabelBackground': '#fff7c2', 'lineColor': '#333333'}}}%%
 
 ```
-
-</div>
 - _Placeholder: explain how task validation failures bubble up to callers/tests._
 
 ## Testing Strategy
@@ -324,8 +298,6 @@ graph TD
 ## Validation & Error Handling
 
 ### Validation Pipeline
-<div style="background:#fff7c2;padding:16px;border:1px solid #f0c36d;border-radius:12px;margin:16px 0;">
-
 ```mermaid
 graph TD
     A[TaskService call] --> B[TODO validate taskId]
@@ -334,16 +306,12 @@ graph TD
     C -->|delete| E[TODO remove]
     C -->|update| F[TODO apply setters]
 ```
-
-</div>
 - _Placeholder: describe how the service coordinates Validation helpers and task setters._
 
 ### Error Message Philosophy
 - _Placeholder: call out how service-level errors mirror the domain (e.g., null contact, missing task ID)._
 
 ### Propagation Flow
-<div style="background:#fff7c2;padding:16px;border:1px solid #f0c36d;border-radius:12px;margin:16px 0;">
-
 ```mermaid
 graph TD
     A[Client] --> B[TaskService]
@@ -352,8 +320,6 @@ graph TD
     C -->|false| E[Duplicate/missing]
     C -->|exception| F[Validation message]
 ```
-
-</div>
 - _Placeholder: specify boolean vs exception paths just like the contact service section._
 
 ## Testing Strategy
@@ -389,18 +355,13 @@ Each layer runs automatically in CI, so local `mvn verify` mirrors the hosted pi
 - The optional self-hosted lane remains available for long mutation sessions or extra capacity; see the dedicated section below.
 
 ## Testing Pyramid
-<div style="background:#fff7c2;padding:16px;border:1px solid #f0c36d;border-radius:12px;margin:16px 0;">
-
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#111111', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'edgeLabelBackground': '#fff7c2', 'lineColor': '#333333'}}}%%
 graph TD
     A[Static analysis] --> B[Unit tests]
     B --> C[Service tests]
     C --> D[Integration tests]
     D --> E[Mutation tests]
 ```
-
-</div>
 
 ## Checkstyle Rule Set
 | Check Group | Focus |
@@ -504,8 +465,6 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 
 
 ## CI/CD Flow Diagram
-<div style="background:#fff7c2;padding:16px;border:1px solid #f0c36d;border-radius:12px;margin:16px 0;">
-
 ```mermaid
 graph TD
     A[Push or PR]
@@ -522,8 +481,6 @@ graph TD
     D --> E --> B
     D --> F --> G --> H
 ```
-
-</div>
 
 ## QA Summary
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. The table now includes colored icons, ASCII bars, and severity breakdowns so drift stands out immediately. Open any workflow’s “Summary” tab and look for the “QA Metrics” section for the latest numbers.
