@@ -33,15 +33,6 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 2. Run `mvn verify` from the project root to compile everything, execute the JUnit suite, and run Checkstyle/SpotBugs/JaCoCo quality gates.
 3. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
 
-### Command Cheat Sheet
-| Command | Purpose |
-|---------|---------|
-| `mvn verify` | Full build: compile, unit tests, Checkstyle, SpotBugs, JaCoCo, PITest, Dependency-Check. |
-| `mvn -Ddependency.check.skip=true -Dpit.skip=true verify` | Fast local build when Dependency-Check feed is slow/unavailable. |
-| `mvn spotbugs:check` | Run only SpotBugs and fail on findings. |
-| `mvn -DossIndexServerId=ossindex verify` | Opt-in authenticated OSS Index for Dependency-Check (see Sonatype section). |
-| `cd ui/qa-dashboard && npm ci && npm run build` | Build the React QA dashboard locally (already built in CI). |
-
 ## Folder Highlights
 | Path                                                                                                                 | Description                                                                                     |
 |----------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
@@ -489,6 +480,15 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 | `container-test` | Always (needs `build-test`) | Re-runs `mvn verify` inside `maven:3.9.9-eclipse-temurin-17` to prove a clean container build; retries with Dependency-Check/PITest skipped on failure. | Uses same MAVEN_OPTS for PIT attach. |
 | `mutation-test` | Only when repo var `RUN_SELF_HOSTED == 'true'` and a `self-hosted` runner is online | Runs `mvn verify` on the self-hosted runner with PITest enabled; retries with Dependency-Check/PITest skipped on failure. | Optional lane; skipped otherwise. |
 | `release-artifacts` | Release event (`published`) | Packages the JAR and uploads it as an artifact; generates release notes. | Not run on normal pushes/PRs. |
+
+### Local Command Cheat Sheet
+| Command | Purpose |
+|---------|---------|
+| `mvn verify` | Full build: compile, unit tests, Checkstyle, SpotBugs, JaCoCo, PITest, Dependency-Check. |
+| `mvn -Ddependency.check.skip=true -Dpit.skip=true verify` | Fast local build when Dependency-Check feed is slow/unavailable. |
+| `mvn spotbugs:check` | Run only SpotBugs and fail on findings. |
+| `mvn -DossIndexServerId=ossindex verify` | Opt-in authenticated OSS Index for Dependency-Check (see Sonatype section). |
+| `cd ui/qa-dashboard && npm ci && npm run build` | Build the React QA dashboard locally (already built in CI). |
 
 ### Matrix Verification
 - `.github/workflows/java-ci.yml` runs `mvn -B verify` across `{ubuntu-latest, windows-latest} × {Java 17, Java 21}` to surface OS and JDK differences early.

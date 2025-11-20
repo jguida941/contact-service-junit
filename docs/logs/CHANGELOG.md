@@ -39,6 +39,7 @@ All notable changes to this project will be documented here. Follow the
   AssertJ + parameterized tests, singleton reset helpers, and CI enforcement via JaCoCo/PITest).
 
 ### Changed
+- Relocated the README command cheat sheet under the CI/CD section for better flow while keeping all commands visible.
 - ADR-0007 (Task Entity/Service) and ADR-0009 (Test Strategy) are now marked Accepted in the ADR index and corresponding files.
 - Java CI workflow now installs Python 3.12 for every matrix leg so the QA
   summary script runs reliably on Windows and Ubuntu runners.
