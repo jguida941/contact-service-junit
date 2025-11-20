@@ -115,7 +115,7 @@ All notable changes to this project will be documented here. Follow the
 - Completed the README sections for `Task.java`/`TaskTest.java` and `TaskService.java`/`TaskServiceTest.java`, describing validation flow, error philosophy, and scenario coverage instead of TODO placeholders.
 - README now matches the implementation details: `ContactService.updateContact` references `Contact.update(...)`, `validateNumeric10` lists the `requiredLength` parameter, and SpotBugs/JDK matrix text reflects the actual `{17, 21}` CI coverage.
 - README badges now use a uniform Shields.io flat-square style (GitHub Actions, Codecov, JaCoCo, PITest, SpotBugs, OWASP DC, License) with consistent colors (brightgreen for CI/coverage/mutation, blue for static analysis/license).
-- Added `TaskServiceTest.testClearAllTasksRemovesEntries` so PIT can kill the mutant that skips the internal `Map.clear()` call.
+- Added `TaskServiceTest.testClearAllTasksRemovesEntries` (with a note explaining it) so PIT kills the last surviving mutant that removed the internal `Map.clear()` call.
 - `ContactService#updateContact` and `TaskService#updateTask` now validate/trim
   the incoming ids (matching the delete paths) so lookups succeed even if
   callers include whitespace, and both services now throw `IllegalArgumentException`
