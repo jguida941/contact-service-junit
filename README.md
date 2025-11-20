@@ -560,9 +560,6 @@ graph TD
 ## QA Summary
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. The table now includes colored icons, ASCII bars, and severity breakdowns so drift stands out immediately. Open any workflow’s “Summary” tab and look for the “QA Metrics” section for the latest numbers.
 
-- Codecov coverage sunburst (hoverable coverage tree): [open interactive](https://codecov.io/gh/jguida941/contact-service-junit/graphs/sunburst?token=WUWITZ797X)
-
-
 ## GitHub Actions QA Metrics Table
 
 <img width="1271" height="970" alt="Screenshot 2025-11-20 at 4 41 19 AM" src="https://github.com/user-attachments/assets/69495c27-8e44-4383-8a41-192543384526" />
@@ -584,6 +581,26 @@ You’ll see the same KPIs, inline progress bars, and quick links over to the Ja
 
 <img width="1029" height="769" alt="Screenshot 2025-11-19 at 10 07 25 PM" src="https://github.com/user-attachments/assets/d1fc1a3e-844d-4a7a-9e84-d78abcb248f3" />
 
+<br>
+
+## Coverage Sunburst
+
+<table>
+  <tr>
+    <td width="300">
+      <img
+        src="https://codecov.io/gh/jguida941/contact-service-junit/graphs/sunburst.svg?token=WUWITZ797X"
+        alt="Codecov coverage sunburst"
+      />
+    </td>
+    <td>
+      The sunburst shows which packages and classes are covered by tests.<br/>
+      <a href="https://codecov.io/gh/jguida941/contact-service-junit/graphs/sunburst.svg?token=WUWITZ797X">
+        Open the full-screen interactive sunburst on Codecov »
+      </a>
+    </td>
+  </tr>
+</table>
 
 <br>
 
