@@ -1,7 +1,7 @@
 # CS320 Milestone 1 - Contact Service
-[![Java CI](https://img.shields.io/github/actions/workflow/status/jguida941/cs320-contact-service-junit/java-ci.yml?branch=master&label=Java%20CI&style=flat-square&color=brightgreen)](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/java-ci.yml)
-[![CodeQL](https://img.shields.io/github/actions/workflow/status/jguida941/cs320-contact-service-junit/codeql.yml?branch=master&label=CodeQL&style=flat-square&color=brightgreen)](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/codeql.yml)
-[![Codecov](https://img.shields.io/codecov/c/github/jguida941/cs320-contact-service-junit/master?label=Codecov&style=flat-square&color=brightgreen)](https://codecov.io/gh/jguida941/cs320-contact-service-junit)
+[![Java CI](https://img.shields.io/github/actions/workflow/status/jguida941/cs320-contact-service-junit/java-ci.yml?branch=master&label=Java%20CI&style=flat-square&color=green)](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/java-ci.yml)
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/jguida941/cs320-contact-service-junit/codeql.yml?branch=master&label=CodeQL&style=flat-square&color=green)](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/codeql.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/jguida941/cs320-contact-service-junit/master?label=Codecov&style=flat-square&color=green)](https://codecov.io/gh/jguida941/cs320-contact-service-junit)
 [![JaCoCo](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/cs320-contact-service-junit/master/badges/jacoco.json&style=flat-square)](#qa-summary)
 [![PITest](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/cs320-contact-service-junit/master/badges/mutation.json&style=flat-square)](#qa-summary)
 [![SpotBugs](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/cs320-contact-service-junit/master/badges/spotbugs.json&style=flat-square)](#static-analysis--quality-gates)
