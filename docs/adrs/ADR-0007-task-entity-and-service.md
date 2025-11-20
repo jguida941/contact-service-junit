@@ -1,6 +1,6 @@
 # ADR-0007: Task Entity and Service
 
-Status: Draft
+Status: Accepted
 Date: 2025-11-19
 Owners: Justin Guida
 Related: docs/architecture/2025-11-19-task-entity-and-service.md, docs/requirements/task-requirements/requirements.md, PR #123

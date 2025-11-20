@@ -8,6 +8,6 @@
 | [ADR-0004](ADR-0004-ci-gates-and-thresholds.md)   | CI Gates and Quality Thresholds | Accepted |
 | [ADR-0005](ADR-0005-spotbugs-runtime-support.md)  | SpotBugs Runtime Support        | Accepted |
 | [ADR-0006](ADR-0006-docs-structure.md)            | Documentation Structure         | Accepted |
-| [ADR-0007](ADR-0007-task-entity-and-service.md)   | Task Entity and Service         | Draft    |
+| [ADR-0007](ADR-0007-task-entity-and-service.md)   | Task Entity and Service         | Accepted |
 | [ADR-0008](ADR-0008-ci-metrics-summary-script.md) | CI Metrics Summary Script       | Accepted |
-| [ADR-0009](ADR-0009-test-strategy.md)             | Test Strategy and Tooling       | Draft    |
+| [ADR-0009](ADR-0009-test-strategy.md)             | Test Strategy and Tooling       | Accepted |

@@ -5,6 +5,8 @@ All notable changes to this project will be documented here. Follow the
 
 ## [Unreleased]
 ### Added
+- README command cheat sheet plus a CI “Jobs at a Glance” table so common tasks and pipeline behavior are easy to follow without losing detail.
+- Clarified README validation diagrams (trimmed text fields, phone digits-only) and documented the container verify job alongside the optional self-hosted mutation lane.
 - Documented Sonatype OSS Index setup in `README.md` so dependency scans can be
   fully authenticated when desired.
 - Introduced `scripts/ci_metrics_summary.py` and a GitHub Actions summary step
@@ -37,6 +39,7 @@ All notable changes to this project will be documented here. Follow the
   AssertJ + parameterized tests, singleton reset helpers, and CI enforcement via JaCoCo/PITest).
 
 ### Changed
+- ADR-0007 (Task Entity/Service) and ADR-0009 (Test Strategy) are now marked Accepted in the ADR index and corresponding files.
 - Java CI workflow now installs Python 3.12 for every matrix leg so the QA
   summary script runs reliably on Windows and Ubuntu runners.
 - CodeQL workflow now pins Temurin JDK 17, caches Maven deps, enforces

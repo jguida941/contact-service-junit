@@ -33,6 +33,15 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 2. Run `mvn verify` from the project root to compile everything, execute the JUnit suite, and run Checkstyle/SpotBugs/JaCoCo quality gates.
 3. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
 
+### Command Cheat Sheet
+| Command | Purpose |
+|---------|---------|
+| `mvn verify` | Full build: compile, unit tests, Checkstyle, SpotBugs, JaCoCo, PITest, Dependency-Check. |
+| `mvn -Ddependency.check.skip=true -Dpit.skip=true verify` | Fast local build when Dependency-Check feed is slow/unavailable. |
+| `mvn spotbugs:check` | Run only SpotBugs and fail on findings. |
+| `mvn -DossIndexServerId=ossindex verify` | Opt-in authenticated OSS Index for Dependency-Check (see Sonatype section). |
+| `cd ui/qa-dashboard && npm ci && npm run build` | Build the React QA dashboard locally (already built in CI). |
+
 ## Folder Highlights
 | Path                                                                                                                 | Description                                                                                     |
 |----------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
@@ -44,9 +53,10 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 | [`src/test/java/contactapp/ContactTest.java`](src/test/java/contactapp/ContactTest.java)                             | Unit tests for the `Contact` class (valid + invalid scenarios).                                 |
 | [`src/test/java/contactapp/TaskTest.java`](src/test/java/contactapp/TaskTest.java)                                   | Unit tests for the `Task` class (trimming, invalid inputs, and atomic update validation).       |
 | [`src/test/java/contactapp/TaskServiceTest.java`](src/test/java/contactapp/TaskServiceTest.java)                     | Unit tests for `TaskService` (singleton behavior and CRUD).                                     |
+| [`src/test/java/contactapp/ValidationTest.java`](src/test/java/contactapp/ValidationTest.java)                       | Boundary/blank/null coverage for the shared validation helpers.                                 |
 | [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/)                                 | Assignment write-up and checklist (now under `docs/`).                                          |
 | [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md) | Task entity/service design plan with Definition of Done and phased approach.                    |
-| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index with links to ADR-0001…ADR-0007.                             |
+| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index with links to ADR-0001…ADR-0009.                             |
 | [`docs/ci-cd/`](docs/ci-cd/)                                                                                         | CI/CD design notes (pipeline plan + badge automation).                                          |
 | [`docs/design-notes/`](docs/design-notes/)                                                                           | Informal design notes hub; individual write-ups live under `docs/design-notes/notes/`.          |
 | [`index.md`](index.md)                                                                                               | Quick reference guide for the repo layout.                                                      |
@@ -99,7 +109,7 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 ### Service Snapshot
 - `Contact` acts as the immutable ID holder with mutable first/last name, phone, and address fields.
 - Constructor delegates to setters so validation stays centralized and consistent for both creation and updates.
-- Validation trims IDs/names/addresses before storing them, guaranteeing normalized state once objects are created.
+- Validation trims IDs/names/addresses before storing them; phone numbers are stored as provided and must already be 10 digits (whitespace fails the digit check instead of being silently removed).
 
 ## Validation & Error Handling
 
@@ -108,20 +118,23 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 graph TD
     A[input]
     B[validateNotBlank]
-    C[validateLength]
-    D{phone field?}
-    E[validateNumeric10]
-    F[field assignment]
+    C{Field type}
+    D[validateLength on trimmed text]
+    E[trim & assign id/name/address]
+    F[validateNumeric10 (digits + length)]
+    G[assign phone as provided]
     X[IllegalArgumentException]
 
-    A --> B --> C --> D
+    A --> B --> C
     B --> X
-    C --> X
-    D --> F
-    D --> E --> F
-    E --> X
+    C -->|id/name/address| D
+    C -->|phone| F
+    D -->|pass| E
+    D -->|fail| X
+    F -->|pass| G
+    F -->|fail| X
 ```
-- IDs and names take the first two steps, addresses stop after `validateLength` (1-30 chars), and phones add the numeric guard so they remain digits-only at ten characters; inputs are trimmed before length checks and before storing.
+- Text fields (`contactId`, `firstName`, `lastName`, `address`) measure trimmed length, then store the trimmed value; phone numbers must already be ten digits with no spaces, so whitespace fails the digit check instead of getting trimmed implicitly.
 - Because the constructor routes through the setters, the exact same pipeline applies whether the object is being created or updated.
 
 ### Error Message Philosophy
@@ -208,21 +221,20 @@ void testInvalidContactId(String id, String expectedMessage) {
 ### Validation Pipeline
 ```mermaid
 graph TD
-    A[Service call] --> B["validateNotBlank(contactId)"]
-    B --> C{Operation}
-    C -->|add| D["contact != null?"]
-    D -->|false| X[IllegalArgumentException]
-    D -->|true| E[putIfAbsent]
-    E -->|duplicate| F[return false]
-    E -->|new id| G[store contact]
-    C -->|delete| H["remove(contactId)"]
-    C -->|update| I[fetch existing]
-    I -->|missing| F
-    I -->|found| J[Contact update reuses Validation]
-    J --> K[updated contact]
+    A[Service call] --> B{Operation}
+    B -->|add| C["contact != null?"]
+    C -->|no| X[IllegalArgumentException]
+    C -->|yes| D["contactId already validated by Contact"]
+    D --> E["putIfAbsent(contactId, contact)"]
+    B -->|delete| F["validateNotBlank(contactId)"]
+    B -->|update| F
+    F --> G["trim id, fetch from map"]
+    G -->|missing| H[return false]
+    G -->|found| I["Contact.update(...) reuses Validation"]
+    I --> J[updated contact]
 ```
-- All entry points validate the `contactId` before touching the map so we never store blank keys.
-- IDs are trimmed before any map access (add/delete/update) so callers with surrounding whitespace behave consistently.
+- Delete/update paths validate and trim IDs before map access; add relies on the Contact constructor’s validation and stores the already-normalized `contactId`.
+- IDs are trimmed before delete/update map access so callers with surrounding whitespace behave consistently.
 - Setter delegation ensures errors surface with the same messages as the constructor (e.g., “phone must be exactly 10 digits”).
 
 ### Error Message Philosophy
@@ -338,18 +350,18 @@ graph TD
 ### Validation Pipeline
 ```mermaid
 graph TD
-    A[TaskService call] --> B["validateNotBlank(taskId)"]
-    B --> C["trim taskId"]
-    C --> D{Operation}
-    D -->|add| E["task != null?"]
-    E -->|false| X[IllegalArgumentException]
-    E -->|true| F["putIfAbsent(trimmedId, task)"]
-    D -->|delete| G["remove(trimmedId)"]
-    D -->|update| H["lookup(trimmedId)"]
-    H -->|missing| Y[return false]
-    H -->|found| I["Task.update(newName, description)"]
+    A[TaskService call] --> B{Operation}
+    B -->|add| C["task != null?"]
+    C -->|no| X[IllegalArgumentException]
+    C -->|yes| D["taskId already validated by Task"]
+    D --> E["putIfAbsent(taskId, task)"]
+    B -->|delete| F["validateNotBlank(taskId)"]
+    B -->|update| F
+    F --> G["trim id, fetch from map"]
+    G -->|missing| Y[return false]
+    G -->|found| H["Task.update(newName, description)"]
 ```
-- Service boundaries use the same Validation helper so error messages stay identical to the entity layer.
+- Delete/update paths validate and trim IDs before map access; add relies on the Task constructor’s validation and stores the normalized `taskId`.
 - Updates delegate to `Task.update(...)`, keeping atomicity centralized; `putIfAbsent` returns `false` on duplicate IDs just like the Contact service.
 
 ### Error Message Philosophy
@@ -470,8 +482,17 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 
 ## CI/CD Pipeline
 
+### Jobs at a Glance
+| Job | Trigger | What it does | Notes |
+|-----|---------|--------------|-------|
+| `build-test` | Push/PR to main/master, release, manual dispatch | Matrix `{ubuntu, windows} × {JDK 17, 21}` running `mvn verify` (tests + Checkstyle + SpotBugs + JaCoCo + PITest + Dependency-Check), builds QA dashboard, posts QA summary, uploads reports, Codecov upload. | Retries `mvn verify` with Dependency-Check/PITest skipped if the first attempt fails due to feed/timeouts. |
+| `container-test` | Always (needs `build-test`) | Re-runs `mvn verify` inside `maven:3.9.9-eclipse-temurin-17` to prove a clean container build; retries with Dependency-Check/PITest skipped on failure. | Uses same MAVEN_OPTS for PIT attach. |
+| `mutation-test` | Only when repo var `RUN_SELF_HOSTED == 'true'` and a `self-hosted` runner is online | Runs `mvn verify` on the self-hosted runner with PITest enabled; retries with Dependency-Check/PITest skipped on failure. | Optional lane; skipped otherwise. |
+| `release-artifacts` | Release event (`published`) | Packages the JAR and uploads it as an artifact; generates release notes. | Not run on normal pushes/PRs. |
+
 ### Matrix Verification
 - `.github/workflows/java-ci.yml` runs `mvn -B verify` across `{ubuntu-latest, windows-latest} × {Java 17, Java 21}` to surface OS and JDK differences early.
+- `container-test` reruns the same `mvn verify` flow inside `maven:3.9.9-eclipse-temurin-17` to prove the build works in a clean, reproducible environment; if quality gates fail, it retries with Dependency-Check and PITest skipped.
 
 ### Quality Gate Behavior
 - Each matrix job executes the full suite (tests, JaCoCo, Checkstyle, SpotBugs, Dependency-Check, PITest).
@@ -516,19 +537,23 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 ## CI/CD Flow Diagram
 ```mermaid
 graph TD
-    A[Push or PR]
-    B[Matrix build]
-    C[Quality gates]
-    I[Post QA summary + Codecov upload]
-    D{Dep Check or PITest fail?}
-    E[Retry with skips]
-    F[Artifacts + release]
-    G[Self-hosted mutation job]
-    H[Release notes / publish]
+    A[Push / PR / Release]
+    B[Matrix verify (Ubuntu/Windows, JDK 17 & 21)]
+    C{Dep Check or PITest fail?}
+    D[Retry with skips (DC/PIT)]
+    E[QA summary + artifacts + Codecov]
+    F[Container verify (Temurin 17 + Maven 3.9.9)]
+    G{RUN_SELF_HOSTED == true?}
+    H[Self-hosted mutation lane]
+    I[Release artifacts (release event only)]
 
-    A --> B --> C --> I --> D
-    D --> E --> B
-    D --> F --> G --> H
+    A --> B --> E
+    B --> C
+    C -->|yes| D --> B
+    C -->|no| E
+    B --> F --> G
+    G -->|yes| H --> I
+    G -->|no| I
 ```
 
 ## QA Summary
