@@ -492,17 +492,30 @@ graph TD
 ## QA Summary
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. The table now includes colored icons, ASCII bars, and severity breakdowns so drift stands out immediately. Open any workflow’s “Summary” tab and look for the “QA Metrics” section for the latest numbers.
 
-Need richer visuals? Download the `quality-reports-<os>-jdk<ver>` artifact from the workflow run, unzip it, and from the artifact root run:
+
+## GitHub Actions QA Metrics Table
+<img width="1116" height="853" alt="Screenshot 2025-11-18 at 3 37 18 AM" src="https://github.com/user-attachments/assets/9ae307a2-9c6e-4514-9311-4f8c9c468a90" />
+
+
+## QA Console React Dashboard
+
+Need richer visuals?<br>
+Download the `quality-reports-<os>-jdk<ver>` artifact from the workflow run, unzip it, and from the artifact root run:
 
 ```bash
 cd ~/Downloads/quality-reports-<os>-jdk<ver>
 python serve_quality_dashboard.py --path site
 ```
 
-(If the artifact retains the `target/site` structure, change `--path site` to `--path target/site`.) Modern browsers block ES modules when loaded directly from `file://` URLs, so the helper launches a tiny HTTP server, opens `http://localhost:<port>/qa-dashboard/index.html`, and serves the React dashboard with the correct `metrics.json`. You’ll see the same KPIs, inline progress bars, and quick links over to the JaCoCo, SpotBugs, Dependency-Check, and PITest HTML reports, all sourced from the exact results of that build.
+(If the artifact retains the `target/site` structure, change `--path site` to `--path target/site`.) <br>
+Modern browsers block ES modules when loaded directly from `file://` URLs <br>
+So the helper launches a tiny HTTP server, opens `http://localhost:<port>/qa-dashboard/index.html`, and serves the React dashboard with the correct `metrics.json`. <br> 
+You’ll see the same KPIs, inline progress bars, and quick links over to the JaCoCo, SpotBugs, Dependency-Check, and PITest HTML reports, all sourced from the exact results of that build.
 
-<img width="1116" height="853" alt="Screenshot 2025-11-18 at 3 37 18 AM" src="https://github.com/user-attachments/assets/9ae307a2-9c6e-4514-9311-4f8c9c468a90" />
+<img width="1029" height="769" alt="Screenshot 2025-11-19 at 10 07 25 PM" src="https://github.com/user-attachments/assets/d1fc1a3e-844d-4a7a-9e84-d78abcb248f3" />
 
+
+<br>
 
 ## Self-Hosted Mutation Runner Setup
 - Register a runner per GitHub's instructions (Settings -> Actions -> Runners -> New self-hosted runner). Choose macOS/Linux + architecture.
@@ -512,7 +525,7 @@ python serve_quality_dashboard.py --path site
   - Select your OS (macOS for Mac, Linux for Linux) and architecture (x64 for Intel, arm64 for Apple Silicon)
   - Follow GitHub's provided commands to download and configure the runner.
 
-  For macOS:
+  **For macOS**:
   ```bash
   # Create runner directory
   mkdir actions-runner && cd actions-runner
@@ -540,9 +553,10 @@ python serve_quality_dashboard.py --path site
   # Start the runner
   ./run.sh
   ```
-Leave `./run.sh` running so the `mutation-test` job can execute on your machine. When you're done, press Ctrl+C to stop the runner.
+Leave `./run.sh` running so the `mutation-test` job can execute on your machine.<br>
+When you're done, press Ctrl+C to stop the runner.
 
-**Workflow toggle** – the `mutation-test` job only runs when the repository variable `RUN_SELF_HOSTED` is set to `true`.
+**Workflow toggle** - the `mutation-test` job only runs when the repository variable `RUN_SELF_HOSTED` is set to `true`.
 - Default (variable unset/false): the job is skipped so GitHub-hosted runners finish cleanly even if your machine is offline.
 - When you want to run mutation tests: start the runner and set `Settings → Secrets and variables → Actions → Variables → RUN_SELF_HOSTED = true`, then re-run the workflow.
 - Turn the variable back to `false` (or delete it) when you shut down the runner, so future workflows don’t wait for a machine that isn’t listening.
