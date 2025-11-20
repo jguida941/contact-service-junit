@@ -35,3 +35,5 @@ bin/
 .owasp-cache/
 # Local interview notes
 interview.md
+# Local AI scratch/config
+.claude/
