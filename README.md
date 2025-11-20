@@ -537,13 +537,13 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 ## CI/CD Flow Diagram
 ```mermaid
 graph TD
-    A[Push / PR / Release]
-    B[Matrix verify Ubuntu/Windows JDK17/21]
-    C{Dep Check or PITest fail?}
+    A[Push or PR or Release]
+    B[Matrix verify Ubuntu+Windows JDK17+21]
+    C{DepCheck or PITest fail?}
     D[Retry with skips]
-    E[QA summary + artifacts + Codecov]
+    E[QA summary & artifacts & Codecov]
     F[Container verify Temurin17 Maven3.9.9]
-    G{RUN_SELF_HOSTED == true?}
+    G{RUN_SELF_HOSTED set?}
     H[Self-hosted mutation lane]
     I[Release artifacts]
 
