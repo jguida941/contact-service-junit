@@ -14,7 +14,7 @@ Implements Task (id, name, description) and TaskService with a singleton store a
 - Stakeholders need a persistent plan (architecture doc) and a tracked decision (ADR) to coordinate work and reviews.
 
 ## Decision
-- Adopt the architecture described in `architecture/2025-11-19-task-entity-and-service.md`, using a dedicated `Task` entity with constructor-enforced validation and atomic update helper.
+- Adopt the architecture described in `docs/architecture/2025-11-19-task-entity-and-service.md`, using a dedicated `Task` entity with constructor-enforced validation and atomic update helper.
 - Manage tasks via a singleton `TaskService` backed by `ConcurrentHashMap<String, Task>` with add/delete/update operations mirroring `ContactService`.
 - Centralize validation through the shared `Validation` utility without creating task-specific helper classes until requirements demand it.
 - Enforce Definition of Done gates (tests, coverage, mutation, static analysis, security scans, documentation) before merging Task changes.

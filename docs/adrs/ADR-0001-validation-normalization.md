@@ -13,7 +13,7 @@ Related: src/main/java/contactapp/Contact.java, src/main/java/contactapp/Validat
 ## Decision
 - Centralize all field validation inside `contactapp.Validation`, exposing `validateNotBlank`, `validateLength`, and `validateNumeric10`.
 - Trim incoming strings before storage so persisted state matches what validation evaluates (`Contact` now trims IDs, names, and addresses before assigning).
-- Throw `IllegalArgumentException` with consistent `"<field> must ..."` messaging so tests can assert exact text and callers get actionable feedback.
+- Throw `IllegalArgumentException` with consistent messages such as `"<field> must not be null or blank"` or `"<field> length must be between X and Y"` so tests can assert exact text and callers get actionable feedback.
 - Reuse the same helpers everywhere (constructors, setters, and service entry points) to guarantee one enforcement pipeline.
 
 ## Consequences
