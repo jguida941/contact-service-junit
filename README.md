@@ -1,6 +1,6 @@
 # CS320 Milestone 1 - Contact Service
 [![Java CI](https://img.shields.io/github/actions/workflow/status/jguida941/cs320-contact-service-junit/java-ci.yml?branch=master&label=Java%20CI&style=for-the-badge&logo=githubactions&logoColor=white&color=16A34A)](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/java-ci.yml)
-[![CodeQL](https://img.shields.io/github/actions/workflow/status/jguida941/cs320-contact-service-junit/codeql.yml?branch=master&label=CodeQL&style=for-the-badge&logo=github&logoColor=white&color=2563EB)](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/codeql.yml)
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/jguida941/cs320-contact-service-junit/codeql.yml?branch=master&label=CodeQL&style=for-the-badge&logo=github&logoColor=white&color=16A34A)](https://github.com/jguida941/cs320-contact-service-junit/actions/workflows/codeql.yml)
 [![Codecov](https://img.shields.io/codecov/c/github/jguida941/cs320-contact-service-junit/master?label=Codecov&style=for-the-badge&logo=codecov&logoColor=white&color=CA8A04)](https://codecov.io/gh/jguida941/cs320-contact-service-junit)
 [![JaCoCo](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/cs320-contact-service-junit/master/badges/jacoco.json&style=for-the-badge)](#qa-summary)
 [![PITest](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/cs320-contact-service-junit/master/badges/mutation.json&style=for-the-badge)](#qa-summary)

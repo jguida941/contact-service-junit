@@ -30,6 +30,7 @@ All notable changes to this project will be documented here. Follow the
   at-a-glance metadata.
 - Updated README badges to the bolder “for-the-badge” style with GitHub/Codecov logos so the status bar matches the secure snapshot look-and-feel; static-analysis badges now use the same passing green.
 - Checked off every item in `docs/requirements/task-requirements/requirements_checklist.md` now that the Task entity/service and tests are implemented.
+- Finalized `docs/architecture/2025-11-19-task-entity-and-service.md` (status Implemented, summary, DoD results, deviations) so the Task design record reflects the delivered code.
 - Published ADR-0009 describing the permanent unit-test strategy (layered test classes,
   AssertJ + parameterized tests, singleton reset helpers, and CI enforcement via JaCoCo/PITest).
 
