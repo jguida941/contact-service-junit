@@ -25,6 +25,8 @@ All notable changes to this project will be documented here. Follow the
 - Added personal design notes under `docs/design-notes/notes/` (CI gates, metrics script,
   Contact entity/service behaviors, SpotBugs plan, docs structure, and test strategy) to
   capture the reasoning behind each piece of the implementation.
+- Added Shields.io badges for JaCoCo line coverage and PITest mutation score at the top of
+  the README, plus a license badge for quick-at-a-glance metadata.
 
 ### Changed
 - Java CI workflow now installs Python 3.12 for every matrix leg so the QA
@@ -117,6 +119,8 @@ All notable changes to this project will be documented here. Follow the
 - Extended `scripts/ci_metrics_summary.py` so Dependency-Check uses the shared
   `target/` constant, PITest "detected" counts flow into summaries, and the QA
   report now includes a dependency severity breakdown row plus ADR tracking.
+- Enhanced `scripts/ci_metrics_summary.py` to optionally write badge JSON for JaCoCo and
+  PITest when `UPDATE_BADGES=true`, and documented the manual refresh process.
 
 ### Security
 - Bumped `org.pitest:pitest-maven` to `1.21.1` and `org.pitest:pitest-junit5-plugin`
