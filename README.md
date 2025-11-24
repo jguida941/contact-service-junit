@@ -410,19 +410,25 @@ graph TD
 #### Validation Pipeline
 ```mermaid
 graph TD
-    A[Constructor / update input] --> B[validateNotBlank appointmentId]
-    B -->|pass| C[trim id]
-    B -->|fail| X[IllegalArgumentException]
-    C --> D[validateLength appointmentId 1-10]
-    D -->|ok| E[validateDateNotPast]
-    D -->|fail| X
-    E -->|ok| F[defensive copy of date stored]
-    E -->|fail| X
-    F --> G[validateLength description 1-50]
-    G -->|ok| H[trimmed description stored]
-    G -->|fail| X
+    C1[Constructor inputs] --> C2[validateNotBlank appointmentId]
+    C2 -->|pass| C3[trim id]
+    C2 -->|fail| X[IllegalArgumentException]
+    C3 --> C4[validateLength appointmentId 1-10]
+    C4 -->|ok| C5[validateDateNotPast]
+    C4 -->|fail| X
+    C5 -->|ok| C6[defensive copy of date stored]
+    C5 -->|fail| X
+    C6 --> C7[validateLength description 1-50]
+    C7 -->|ok| C8[trimmed description stored]
+    C7 -->|fail| X
+
+    U1[update(newDate, newDescription)] --> U2[validateDateNotPast]
+    U2 -->|fail| X
+    U2 --> U3[validateLength description 1-50]
+    U3 -->|fail| X
+    U3 --> U4[copy date + trim/store description]
 ```
-- IDs are checked not-blank, trimmed, then length-validated so stored and validated values match.
+- Constructor validates/trim/length-checks IDs, then date, then description; update skips ID checks and only validates date + description before mutating.
 - Dates are validated via `Validation.validateDateNotPast` and copied on set/get to prevent external mutation.
 - String fields reuse `Validation.validateLength`, so constructor/setters/update share the same messages.
 
@@ -453,14 +459,18 @@ graph TD
 ```mermaid
 graph TD
     A[Service call] --> B{Operation}
-    B -->|add| C["appointment != null?"]
+    B -->|addAppointment| C["appointment != null?"]
     C -->|no| X[IllegalArgumentException]
-    C -->|yes| D["validateNotBlank(id), putIfAbsent"]
-    B -->|delete| E["validateNotBlank + trim(appointmentId)"]
-    B -->|update| E
-    E --> F["computeIfPresent(trimmedId, update)"]
-    F -->|missing| G[return false]
-    F -->|found| H["Appointment.update(...) reuses Validation"]
+    C -->|yes| D["validateNotBlank(appointmentId)"]
+    D --> E["putIfAbsent(id, appointment)"]
+
+    B -->|deleteAppointment| F["validateNotBlank + trim(appointmentId)"]
+    F --> G["remove(trimmedId)"]
+
+    B -->|updateAppointment| H["validateNotBlank + trim(appointmentId)"]
+    H --> I["computeIfPresent(trimmedId, appointment.update(date, desc))"]
+    I -->|missing| J[return false]
+    I -->|found| K["Appointment.update(...) reuses Validation"]
 ```
 - Add path validates the (already trimmed) ID and uses `putIfAbsent`; delete/update trim + validate IDs before map access; validation failures bubble as `IllegalArgumentException`; duplicates/missing entries return `false`.
 
