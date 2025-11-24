@@ -398,7 +398,7 @@ graph TD
 
   <br>
 
-# [Appointment.java](src/main/java/contactapp/Appointment.java) / [AppointmentTest.java](src/test/java/contactapp/AppointmentTest.java)
+## [Appointment.java](src/main/java/contactapp/Appointment.java) / [AppointmentTest.java](src/test/java/contactapp/AppointmentTest.java)
 
 ### Service Snapshot
 - Appointment IDs are required, trimmed, and immutable after construction (length 1-10).
