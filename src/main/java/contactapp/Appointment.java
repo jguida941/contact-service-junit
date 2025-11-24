@@ -115,8 +115,4 @@ public final class Appointment {
         }
     }
 
-    /**
-     * Validation helper for defensive copies.
-     */
-    // no additional methods needed
 }

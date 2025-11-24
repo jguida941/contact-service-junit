@@ -410,24 +410,26 @@ graph TD
 
 #### Validation Pipeline
 ```mermaid
-graph TD
-    C1[Constructor inputs] --> C2[validateNotBlank appointmentId]
-    C2 -->|pass| C3[trim id]
-    C2 -->|fail| X[IllegalArgumentException]
-    C3 --> C4[validateLength appointmentId 1-10]
-    C4 -->|ok| C5[validateDateNotPast]
-    C4 -->|fail| X
-    C5 -->|ok| C6[defensive copy of date stored]
-    C5 -->|fail| X
-    C6 --> C7[validateLength description 1-50]
-    C7 -->|ok| C8[trimmed description stored]
-    C7 -->|fail| X
+flowchart TD
+    X[IllegalArgumentException];
 
-    U1[update(newDate, newDescription)] --> U2[validateDateNotPast]
-    U2 -->|fail| X
-    U2 --> U3[validateLength description 1-50]
-    U3 -->|fail| X
-    U3 --> U4[copy date + trim/store description]
+    C1[Constructor inputs] --> C2[validateNotBlank appointmentId];
+    C2 -->|pass| C3[trim id];
+    C2 -->|fail| X;
+    C3 --> C4[validateLength appointmentId 1-10];
+    C4 -->|ok| C5[validateDateNotPast];
+    C4 -->|fail| X;
+    C5 -->|ok| C6[defensive copy of date stored];
+    C5 -->|fail| X;
+    C6 --> C7[validateLength description 1-50];
+    C7 -->|ok| C8[trimmed description stored];
+    C7 -->|fail| X;
+
+    U1[update(newDate, newDescription)] --> U2[validateDateNotPast];
+    U2 -->|fail| X;
+    U2 --> U3[validateLength description 1-50];
+    U3 -->|fail| X;
+    U3 --> U4[copy date + trim/store description];
 ```
 - Constructor validates/trim/length-checks IDs, then date, then description; update skips ID checks and only validates date + description before mutating.
 - Dates are validated via `Validation.validateDateNotPast` and copied on set/get to prevent external mutation.
