@@ -13,7 +13,7 @@ import java.util.Date;
  * String inputs are trimmed; dates are defensively copied on set/get to prevent
  * external mutation.
  */
-public class Appointment {
+public final class Appointment {
     private static final int MIN_LENGTH = 1;
     private static final int ID_MAX_LENGTH = 10;
     private static final int DESCRIPTION_MAX_LENGTH = 50;
@@ -101,21 +101,21 @@ public class Appointment {
      * Creates a defensive copy of this Appointment.
      */
     Appointment copy() {
-        return new Appointment(this);
+        validateCopySource(this);
+        return new Appointment(this.appointmentId, new Date(this.appointmentDate.getTime()), this.description);
     }
 
-    /**
-     * Internal copy constructor that bypasses validation but still enforces non-null fields.
-     */
-    private Appointment(final Appointment source) {
+    private static void validateCopySource(final Appointment source) {
         if (source == null
                 || source.appointmentId == null
                 || source.appointmentDate == null
                 || source.description == null) {
             throw new IllegalArgumentException("appointment copy source must not be null");
         }
-        this.appointmentId = source.appointmentId;
-        this.appointmentDate = new Date(source.appointmentDate.getTime());
-        this.description = source.description;
     }
+
+    /**
+     * Validation helper for defensive copies.
+     */
+    // no additional methods needed
 }

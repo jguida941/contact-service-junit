@@ -8,7 +8,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.stream.Stream;
@@ -168,19 +167,6 @@ public class AppointmentTest {
         assertThatThrownBy(appointment::copy)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("appointment copy source must not be null");
-    }
-
-    /**
-     * Ensures the private copy constructor enforces non-null source.
-     */
-    @Test
-    void testPrivateCopyConstructorRejectsNullSource() throws Exception {
-        var ctor = Appointment.class.getDeclaredConstructor(Appointment.class);
-        ctor.setAccessible(true);
-
-        assertThatThrownBy(() -> ctor.newInstance((Object) null))
-                .isInstanceOf(InvocationTargetException.class)
-                .hasCauseInstanceOf(IllegalArgumentException.class);
     }
 
     /**
