@@ -15,7 +15,7 @@
         <junit.jupiter.version>5.10.3</junit.jupiter.version>
         <surefire.version>3.5.4</surefire.version>
         <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
-        <spotbugs.maven.plugin.version>4.9.8.1</spotbugs.maven.plugin.version>
+        <spotbugs.maven.plugin.version>4.9.8.2</spotbugs.maven.plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
         <dependency.check.version>12.1.9</dependency.check.version>
         <dependency.check.skip>false</dependency.check.skip>
