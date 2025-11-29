@@ -169,8 +169,8 @@ public final class Contact {
      * Ensures the source contact has valid internal state before copying.
      */
     private static void validateCopySource(final Contact source) {
-        if (source == null
-                || source.contactId == null
+        // Note: source cannot be null here because copy() passes 'this'
+        if (source.contactId == null
                 || source.firstName == null
                 || source.lastName == null
                 || source.phone == null

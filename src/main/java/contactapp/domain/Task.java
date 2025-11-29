@@ -141,8 +141,8 @@ public final class Task {
      * Ensures the source task has valid internal state before copying.
      */
     private static void validateCopySource(final Task source) {
-        if (source == null
-                || source.taskId == null
+        // Note: source cannot be null here because copy() passes 'this'
+        if (source.taskId == null
                 || source.name == null
                 || source.description == null) {
             throw new IllegalArgumentException("task copy source must not be null");

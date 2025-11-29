@@ -145,8 +145,8 @@ public final class Appointment {
      * Ensures the source appointment has valid internal state before copying.
      */
     private static void validateCopySource(final Appointment source) {
-        if (source == null
-                || source.appointmentId == null
+        // Note: source cannot be null here because copy() passes 'this'
+        if (source.appointmentId == null
                 || source.appointmentDate == null
                 || source.description == null) {
             throw new IllegalArgumentException("appointment copy source must not be null");
