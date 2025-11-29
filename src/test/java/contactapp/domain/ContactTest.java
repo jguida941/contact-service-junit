@@ -217,19 +217,28 @@ public class ContactTest {
      * Ensures the copy guard rejects corrupted state (null internal fields).
      *
      * <p>Added to kill PITest mutant: "removed call to validateCopySource" in Contact.copy().
-     * This test uses reflection to corrupt internal state and verify copy() throws.
+     * This test uses reflection to corrupt each internal field and verify copy() throws.
+     * Parameterized to achieve full branch coverage of the validateCopySource null checks.
      */
-    @Test
-    void testCopyRejectsNullInternalState() throws Exception {
+    @ParameterizedTest(name = "copy rejects null {0}")
+    @MethodSource("nullFieldProvider")
+    void testCopyRejectsNullInternalState(String fieldName) throws Exception {
         Contact contact = new Contact("901", "Alice", "Smith", "1234567890", "123 Main Street");
 
         // Use reflection to corrupt internal state (simulate memory corruption or serialization bugs)
-        Field firstNameField = Contact.class.getDeclaredField("firstName");
-        firstNameField.setAccessible(true);
-        firstNameField.set(contact, null);
+        Field field = Contact.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(contact, null);
 
         assertThatThrownBy(contact::copy)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("contact copy source must not be null");
+    }
+
+    /**
+     * Provides field names for the null internal state test.
+     */
+    static Stream<String> nullFieldProvider() {
+        return Stream.of("contactId", "firstName", "lastName", "phone", "address");
     }
 }

@@ -194,19 +194,28 @@ public class TaskTest {
      * Ensures the copy guard rejects corrupted state (null internal fields).
      *
      * <p>Added to kill PITest mutant: "removed call to validateCopySource" in Task.copy().
-     * This test uses reflection to corrupt internal state and verify copy() throws.
+     * This test uses reflection to corrupt each internal field and verify copy() throws.
+     * Parameterized to achieve full branch coverage of the validateCopySource null checks.
      */
-    @Test
-    void testCopyRejectsNullInternalState() throws Exception {
+    @ParameterizedTest(name = "copy rejects null {0}")
+    @MethodSource("nullFieldProvider")
+    void testCopyRejectsNullInternalState(String fieldName) throws Exception {
         Task task = new Task("901", "Valid Name", "Valid Description");
 
         // Use reflection to corrupt internal state (simulate memory corruption or serialization bugs)
-        Field nameField = Task.class.getDeclaredField("name");
-        nameField.setAccessible(true);
-        nameField.set(task, null);
+        Field field = Task.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(task, null);
 
         assertThatThrownBy(task::copy)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("task copy source must not be null");
+    }
+
+    /**
+     * Provides field names for the null internal state test.
+     */
+    static Stream<String> nullFieldProvider() {
+        return Stream.of("taskId", "name", "description");
     }
 }
