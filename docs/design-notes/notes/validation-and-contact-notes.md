@@ -16,7 +16,8 @@ File: docs/design-notes/notes/validation-and-contact-notes.md
 
 ## What the design is
 - All checks live in `contactapp.Validation`.
-- Methods like `validateNotBlank`, `validateLength`, `validateNumeric10`, plus `validateDateNotPast` for domains (Appointment) that constrain dates.
+- Methods like `validateNotBlank`, `validateLength`, `validateDigits`, plus `validateDateNotPast` for domains (Appointment) that constrain dates.
+- `validateDateNotPast` uses `Clock.systemUTC()` by default, so "now" is evaluated in UTC. Callers in significantly different timezones should construct dates with UTC awareness. A `Clock` parameter overload enables tests to use `Clock.fixed()` for deterministic boundary testing.
 - They throw `IllegalArgumentException` with standard message text.
 
 ## How Contact uses it
@@ -24,7 +25,7 @@ File: docs/design-notes/notes/validation-and-contact-notes.md
 - We always trim values before validation and before saving them into `Contact`.  
   `Validation.validateLength` calls `value.trim()` first, and the setters store the trimmed value.  
   This removes leading and trailing spaces so the stored data is clean and tests can assert the final trimmed value.
-- Phone numbers skip trimming because `validateNumeric10` enforces digits only.  
+- Phone numbers skip trimming because `validateDigits` enforces digits only.  
   Any whitespace or punctuation fails immediately, which keeps the stored value identical to the input digits.
 - `Contact.update(...)` takes all four changeable fields at once.  
   It validates every new value using the same helper methods first and only updates the fields if all values are valid.  

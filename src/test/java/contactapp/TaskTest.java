@@ -1,5 +1,6 @@
 package contactapp;
 
+import java.lang.reflect.Field;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -185,5 +186,27 @@ public class TaskTest {
         assertThat(task)
                 .hasFieldOrPropertyWithValue("name", "Draft plan")
                 .hasFieldOrPropertyWithValue("description", "Outline initial work");
+    }
+
+    /**
+     * Ensures the copy guard rejects corrupted state (null internal fields).
+     *
+     * Added to kill PITest mutant: "removed call to validateCopySource" in Task.copy().
+     * Without this test, removing the validateCopySource call would survive mutation
+     * since normal code paths never produce null internal fields.
+     * This test uses reflection to corrupt internal state and verify copy() throws.
+     */
+    @Test
+    void testCopyRejectsNullInternalState() throws Exception {
+        Task task = new Task("901", "Valid Name", "Valid Description");
+
+        // Use reflection to corrupt internal state (simulate memory corruption or serialization bugs)
+        Field nameField = Task.class.getDeclaredField("name");
+        nameField.setAccessible(true);
+        nameField.set(task, null);
+
+        assertThatThrownBy(task::copy)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("task copy source must not be null");
     }
 }

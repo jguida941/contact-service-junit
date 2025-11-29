@@ -72,10 +72,11 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 
 ## Design Decisions & Highlights
 - **Immutable identifiers** - `contactId` is set once in the constructor and never mutates, which keeps map keys stable and mirrors real-world record identifiers.
-- **Centralized validation** - Every constructor/setter call funnels through `Validation.validateNotBlank`, `validateLength`, `validateNumeric10`, and (for appointments) `validateDateNotPast`, so IDs, names, phones, addresses, and dates all share one enforcement pipeline.
+- **Centralized validation** - Every constructor/setter call funnels through `Validation.validateNotBlank`, `validateLength`, `validateDigits`, and (for appointments) `validateDateNotPast`, so IDs, names, phones, addresses, and dates all share one enforcement pipeline.
 - **Fail-fast IllegalArgumentException** - Invalid input is a caller bug, so we throw standard JDK exceptions with precise messages and assert on them in tests.
 - **ConcurrentHashMap storage strategy** - Milestone 1 uses in-memory `ConcurrentHashMap` stores (inside the singleton `ContactService`, `TaskService`, and `AppointmentService`) for predictable average O(1) CRUD plus thread-safe access, while still treating each service class as the seam for future persistence layers.
-- **Boolean service API** - Every service’s `add/delete/update` methods return `boolean` so callers know immediately whether the operation succeeded (`true`) or why it failed (`false` for duplicate IDs, missing IDs, etc.). That keeps the milestone interfaces lightweight while still letting JUnit assertions check the outcome without extra exception types.
+- **Defensive copies** - Each entity provides a `copy()` method, and `getDatabase()` returns defensive copies so external callers cannot mutate internal state; safe to surface over APIs.
+- **Boolean service API** - Every service's `add/delete/update` methods return `boolean` so callers know immediately whether the operation succeeded (`true`) or why it failed (`false` for duplicate IDs, missing IDs, etc.). That keeps the milestone interfaces lightweight while still letting JUnit assertions check the outcome without extra exception types.
 - **Security posture** - Input validation in the domain + service layers acts as the first defense layer; nothing reaches the in-memory store unless it passes the guards.
 - **Testing depth** - Parameterized JUnit 5 tests, AssertJ assertions, JaCoCo coverage, and PITest mutation scores combine to prove the validation logic rather than just executing it.
 
@@ -88,8 +89,8 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 ### Validation Layer (`Validation.java`)
 - `validateNotBlank(input, label)` - rejects null, empty, and whitespace-only fields with label-specific messages.
 - `validateLength(input, label, min, max)` - enforces 1-10 char IDs/names and 1-30 char addresses (bounds are parameters, so future changes touch one file).
-- `validateNumeric10(input, label, requiredLength)` - requires digits-only phone numbers with exact length (10 in this project).
-- `validateDateNotPast(date, label)` - rejects null dates and any timestamp earlier than `new Date()`, powering the Appointment rules.
+- `validateDigits(input, label, requiredLength)` - requires digits-only phone numbers with exact length (10 in this project).
+- `validateDateNotPast(date, label)` - rejects null dates and any timestamp strictly before now (dates equal to "now" are accepted to avoid millisecond-boundary flakiness), powering the Appointment rules. **Note:** The default uses `Clock.systemUTC()`, so "now" is evaluated in UTC; callers in significantly different timezones should construct dates with UTC awareness. An overload accepting a `Clock` parameter enables deterministic testing of boundary conditions.
 - These helpers double as both correctness logic and security filtering.
 
 ### Service Layer (`ContactService`)
@@ -114,6 +115,7 @@ Everything is packaged under `contactapp`; production classes live in `src/main/
 - `Contact` acts as the immutable ID holder with mutable first/last name, phone, and address fields.
 - Constructor delegates to setters so validation stays centralized and consistent for both creation and updates.
 - Validation trims IDs/names/addresses before storing them; phone numbers are stored as provided and must already be 10 digits (whitespace fails the digit check instead of being silently removed).
+- `copy()` creates a defensive copy by validating the source state and reusing the public constructor, keeping defensive copies aligned with validation rules.
 
 ## Validation & Error Handling
 
@@ -125,7 +127,7 @@ graph TD
     C{Field type}
     D[validateLength on trimmed text]
     E[trim & assign id/name/address]
-    F[validateNumeric10: digits-only + length]
+    F[validateDigits: digits-only + length]
     G[assign phone as provided]
     X[IllegalArgumentException]
 
@@ -203,14 +205,17 @@ void testInvalidContactId(String id, String expectedMessage) {
 - `testValidSetters` ensures setters update fields when inputs pass validation.
 - `testConstructorTrimsStoredValues` confirms IDs, names, and addresses are normalized via `trim()`.
 - `testFailedCreation` (`@ParameterizedTest`) enumerates every invalid ID/name/phone/address combination and asserts the corresponding message.
-- `testFailedSetFirstName` (`@ParameterizedTest`) exercises the setter’s invalid inputs (blank/long/null).
+- `testFailedSetFirstName` (`@ParameterizedTest`) exercises the setter's invalid inputs (blank/long/null).
 - `testUpdateRejectsInvalidValuesAtomically` (`@MethodSource`) proves invalid updates throw and leave the existing Contact state unchanged.
+- `testCopyRejectsNullInternalState` (added for PITest) uses reflection to corrupt internal state, proving the `validateCopySource()` guard triggers; kills the "removed call to validateCopySource" mutant.
 - `ValidationTest.validateLengthAcceptsBoundaryValues` proves 1/10-char names and 30-char addresses remain valid.
 - `ValidationTest.validateLengthRejectsBlankStrings` and `ValidationTest.validateLengthRejectsNull` ensure blanks/nulls fail before length math is evaluated.
 - `ValidationTest.validateLengthRejectsTooLong` hits the max-length branch to keep upper-bound validation covered.
 - `ValidationTest.validateLengthRejectsTooShort` covers the min-length branch so both ends of the range are exercised.
-- `ValidationTest.validateNumeric10RejectsBlankStrings` and `ValidationTest.validateNumeric10RejectsNull` ensure the phone validator raises the expected messages before regex/length checks.
+- `ValidationTest.validateDigitsRejectsBlankStrings` and `ValidationTest.validateDigitsRejectsNull` ensure the phone validator raises the expected messages before regex/length checks.
 - `ValidationTest.validateDateNotPastAcceptsFutureDate`, `validateDateNotPastRejectsNull`, and `validateDateNotPastRejectsPastDate` assert the appointment date guard enforces the non-null/not-in-the-past contract before any Appointment state mutates.
+- `ValidationTest.validateDateNotPastAcceptsDateExactlyEqualToNow` (added for PITest) uses `Clock.fixed()` to deterministically test the exact boundary where `date.getTime() == clock.millis()`, killing the boundary mutant (`<` vs `<=`).
+- `ValidationTest.privateConstructorIsNotAccessible` (added for line coverage) exercises the private constructor via reflection to cover the utility class pattern.
 
 <br>
 
@@ -219,8 +224,9 @@ void testInvalidContactId(String id, String expectedMessage) {
 ### Service Snapshot
 - **Singleton access** - `getInstance()` exposes one shared service so every caller sees the same `ConcurrentHashMap` backing store.
 - **Atomic uniqueness guard** - `addContact` rejects null inputs up front and calls `ConcurrentHashMap.putIfAbsent(...)` directly so duplicate IDs never overwrite state even under concurrent access.
-- **Shared validation** - `deleteContact` uses `Validation.validateNotBlank` for IDs and `updateContact` delegates to `Contact.update(...)`, guaranteeing the constructor’s length/null/phone rules apply to updates too.
-- **Defensive views** - `getDatabase()` returns an unmodifiable snapshot (tests now use `clearAllContacts()` to reset state) so callers can’t mutate the internal map accidentally.
+- **Thread-safe updates** - `updateContact` uses `ConcurrentHashMap.computeIfPresent(...)` for atomic lookup + update, then delegates to `Contact.update(...)` guaranteeing the constructor's length/null/phone rules apply.
+- **Shared validation** - `deleteContact` uses `Validation.validateNotBlank` for IDs; all paths reuse the same `Validation` helpers.
+- **Defensive views** - `getDatabase()` returns an unmodifiable snapshot of defensive copies (via `Contact.copy()`) so callers can't mutate internal state; tests use `clearAllContacts()` (package-private) to reset between runs.
 
 ## Validation & Error Handling
 
@@ -233,11 +239,14 @@ graph TD
     C -->|yes| D["contactId already validated by Contact"]
     D --> E["putIfAbsent(contactId, contact)"]
     B -->|delete| F["validateNotBlank(contactId)"]
-    B -->|update| F
-    F --> G["trim id, fetch from map"]
+    F --> G["trim id, remove from map"]
     G -->|missing| H[return false]
-    G -->|found| I["Contact.update(...) reuses Validation"]
-    I --> J[updated contact]
+    G -->|found| J[entry removed]
+    B -->|update| K["validateNotBlank(contactId)"]
+    K --> L["trim id, computeIfPresent"]
+    L -->|missing| H
+    L -->|found| M["Contact.update(...) reuses Validation"]
+    M --> N[updated contact]
 ```
 - Delete/update paths validate and trim IDs before map access; add relies on the Contact constructor’s validation and stores the already-normalized `contactId`.
 - IDs are trimmed before delete/update map access so callers with surrounding whitespace behave consistently.
@@ -266,7 +275,7 @@ graph TD
 - `@BeforeEach` clears the singleton’s backing map so tests remain isolated even though the service is shared.
 
 ### Assertion Patterns
-- AssertJ collections helpers (`containsEntry`, `doesNotContainEntry`) keep the CRUD expectations concise.
+- AssertJ collections helpers (`containsKey`, `doesNotContainKey`) verify map entries; field values are checked separately since `getDatabase()` returns defensive copies.
 - Field assertions after update reuse `hasFieldOrPropertyWithValue` so the tests read like a change log.
 - Boolean outcomes are asserted explicitly (`isTrue()/isFalse()`) so duplicate and missing-ID branches stay verified.
 
@@ -274,14 +283,15 @@ graph TD
 ### Scenario Coverage
 - `testGetInstance` ensures the singleton accessor always returns a concrete service before any CRUD logic runs.
 - `testGetInstanceReturnsSameReference` proves repeated invocations return the same singleton instance.
-- `testAddContact` proves the happy path and that the map contains the stored entry.
-- `testAddDuplicateContactFails` confirms the boolean contract for duplicates and that the original object remains untouched.
+- `testAddContact` proves the happy path and that the map contains the stored entry with correct field values.
+- `testAddDuplicateContactFails` confirms the boolean contract for duplicates and that the original data remains untouched.
 - `testAddContactNullThrows` hits the defensive null guard so callers see a clear `IllegalArgumentException` instead of an NPE.
 - `testDeleteContact` exercises removal plus assertion that the key disappears.
 - `testDeleteMissingContactReturnsFalse` covers the branch where no contact exists for the given id.
-- `testDeleteContactBlankIdThrows` shows ID validation runs even on deletes, surfacing the standard “contactId must not be null or blank” message.
+- `testDeleteContactBlankIdThrows` shows ID validation runs even on deletes, surfacing the standard "contactId must not be null or blank" message.
 - `testUpdateContact` verifies every mutable field changes via setter delegation.
-- `testUpdateMissingContactReturnsFalse` covers the “not found” branch so callers can rely on the boolean result.
+- `testUpdateMissingContactReturnsFalse` covers the "not found" branch so callers can rely on the boolean result.
+- `testGetDatabaseReturnsDefensiveCopies` proves callers cannot mutate internal state through the returned snapshot.
 
 <br>
 
@@ -291,6 +301,7 @@ graph TD
 - Task IDs are required, trimmed, and immutable after construction (length 1-10).
 - Name (≤20 chars) and description (≤50 chars) share one helper so constructor, setters, and `update(...)` all enforce identical rules.
 - `Task#update` validates both values first, then swaps them in one shot; invalid inputs leave the object untouched.
+- `copy()` creates a defensive copy by validating the source state and reusing the public constructor, keeping defensive copies aligned with validation rules.
 - Tests mirror Contact coverage: constructor trimming, happy-path setters/update, and every invalid-path exception message.
 
 ## Validation & Error Handling
@@ -340,6 +351,7 @@ graph TD
 - Setters accept valid updates and reject invalid ones with the same helper-generated messages.
 - `update(...)` replaces both mutable fields atomically and never mutates on invalid input.
 - `testUpdateRejectsInvalidValuesAtomically` (`@MethodSource`) enumerates invalid name/description pairs (blank/empty/null/over-length) and asserts the Task remains unchanged when validation fails.
+- `testCopyRejectsNullInternalState` (added for PITest) uses reflection to corrupt internal state, proving the `validateCopySource()` guard triggers; kills the "removed call to validateCopySource" mutant.
 - `TaskServiceTest` mirrors the entity atomicity: invalid updates (blank name) throw and leave the stored task unchanged.
 
   <br>
@@ -347,10 +359,10 @@ graph TD
 ## [TaskService.java](src/main/java/contactapp/TaskService.java) / [TaskServiceTest.java](src/test/java/contactapp/TaskServiceTest.java)
 
 ### Service Snapshot
-- Singleton `TaskService` owns a `ConcurrentHashMap<String, Task>` plus a `clearAllTasks()` helper for tests.
+- Singleton `TaskService` owns a `ConcurrentHashMap<String, Task>` plus a `clearAllTasks()` helper (package-private) for tests.
 - `addTask` rejects null tasks and uses `putIfAbsent` so uniqueness checks and inserts are atomic.
-- `deleteTask` and `updateTask` validate + trim ids before touching the map, mirroring the Task entity’s trimming behavior.
-- `getDatabase()` returns `Map.copyOf(database)` so callers get a read-only snapshot.
+- `deleteTask` validates + trims ids before removal; `updateTask` uses `ConcurrentHashMap.computeIfPresent(...)` for thread-safe atomic lookup + update.
+- `getDatabase()` returns an unmodifiable snapshot of defensive copies (via `Task.copy()`) so callers can't mutate internal state.
 
 ## Validation & Error Handling
 
@@ -363,10 +375,13 @@ graph TD
     C -->|yes| D["taskId already validated by Task"]
     D --> E["putIfAbsent(taskId, task)"]
     B -->|delete| F["validateNotBlank(taskId)"]
-    B -->|update| F
-    F --> G["trim id, fetch from map"]
+    F --> G["trim id, remove from map"]
     G -->|missing| Y[return false]
-    G -->|found| H["Task.update(newName, description)"]
+    G -->|found| J[entry removed]
+    B -->|update| K["validateNotBlank(taskId)"]
+    K --> L["trim id, computeIfPresent"]
+    L -->|missing| Y
+    L -->|found| H["Task.update(newName, description)"]
 ```
 - Delete/update paths validate and trim IDs before map access; add relies on the Task constructor’s validation and stores the normalized `taskId`.
 - Updates delegate to `Task.update(...)`, keeping atomicity centralized; `putIfAbsent` returns `false` on duplicate IDs just like the Contact service.
@@ -393,13 +408,15 @@ graph TD
 - Invalid update inputs throw and leave the stored task unchanged, mirroring the Task entity’s atomicity guarantees.
 
 ### Assertion Patterns
-- AssertJ checks (`containsEntry`, `doesNotContainKey`, `isTrue/isFalse`) keep map expectations concise.
+- AssertJ checks (`containsKey`, `doesNotContainKey`, `isTrue/isFalse`) verify map entries; field values are checked separately since `getDatabase()` returns defensive copies.
 - `assertThatThrownBy` verifies the null-task guard and blank-id validation messages.
 
+### Scenario Coverage
 - Singleton identity tests (instance returns same reference) match what is enforced for the contact service.
-- Happy-path add/delete/update plus duplicate and missing branches confirm boolean results and map state.
+- Happy-path add/delete/update plus duplicate and missing branches confirm boolean results and field data.
 - Tests prove trimmed IDs succeed on update and blank IDs throw before accessing the map.
 - Invalid update inputs (e.g., blank name) throw and leave the stored task unchanged, proving atomicity at the service layer.
+- `testGetDatabaseReturnsDefensiveCopies` proves callers cannot mutate internal state through the returned snapshot.
 
   <br>
 
@@ -457,7 +474,7 @@ flowchart TD
 - **Singleton access** - `getInstance()` exposes one shared service backed by a `ConcurrentHashMap<String, Appointment>`.
 - **Atomic uniqueness guard** - `addAppointment` rejects null inputs, validates IDs (already trimmed by the `Appointment` constructor), and uses `putIfAbsent` so duplicate IDs never overwrite existing entries.
 - **Shared validation** - `deleteAppointment` trims/validates IDs; `updateAppointment` trims IDs and delegates field rules to `Appointment.update(...)` via `computeIfPresent` to avoid a get-then-mutate race.
-- **Defensive views** - `getDatabase()` returns an unmodifiable snapshot of defensive copies (via `Appointment.copy()`, which validates the source and reuses the public constructor); `clearAllAppointments()` resets state between tests.
+- **Defensive views** - `getDatabase()` returns an unmodifiable snapshot of defensive copies (via `Appointment.copy()`, which validates the source and reuses the public constructor); `clearAllAppointments()` (package-private) resets state between tests.
 
 ### Validation & Error Handling
 

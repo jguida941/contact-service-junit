@@ -1,5 +1,6 @@
 package contactapp;
 
+import java.lang.reflect.Field;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -204,5 +205,27 @@ public class ContactTest {
                 .hasFieldOrPropertyWithValue("lastName", "lastName")
                 .hasFieldOrPropertyWithValue("phone", "1234567890")
                 .hasFieldOrPropertyWithValue("address", "7622 Main Street");
+    }
+
+    /**
+     * Ensures the copy guard rejects corrupted state (null internal fields).
+     *
+     * Added to kill PITest mutant: "removed call to validateCopySource" in Contact.copy().
+     * Without this test, removing the validateCopySource call would survive mutation
+     * since normal code paths never produce null internal fields.
+     * This test uses reflection to corrupt internal state and verify copy() throws.
+     */
+    @Test
+    void testCopyRejectsNullInternalState() throws Exception {
+        Contact contact = new Contact("901", "Alice", "Smith", "1234567890", "123 Main Street");
+
+        // Use reflection to corrupt internal state (simulate memory corruption or serialization bugs)
+        Field firstNameField = Contact.class.getDeclaredField("firstName");
+        firstNameField.setAccessible(true);
+        firstNameField.set(contact, null);
+
+        assertThatThrownBy(contact::copy)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("contact copy source must not be null");
     }
 }

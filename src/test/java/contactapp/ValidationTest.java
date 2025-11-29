@@ -1,10 +1,14 @@
 package contactapp;
 
+import java.lang.reflect.Constructor;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Date;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -82,9 +86,9 @@ class ValidationTest {
      * Phone numbers must fail fast when blank.
      */
     @Test
-    void validateNumeric10RejectsBlankStrings() {
+    void validateDigitsRejectsBlankStrings() {
         assertThatThrownBy(() ->
-                Validation.validateNumeric10("          ", "phone", PHONE_LENGTH))
+                Validation.validateDigits("          ", "phone", PHONE_LENGTH))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("phone must not be null or blank");
     }
@@ -93,9 +97,9 @@ class ValidationTest {
      * Null phones must trigger the same blank check as blanks.
      */
     @Test
-    void validateNumeric10RejectsNull() {
+    void validateDigitsRejectsNull() {
         assertThatThrownBy(() ->
-                Validation.validateNumeric10(null, "phone", PHONE_LENGTH))
+                Validation.validateDigits(null, "phone", PHONE_LENGTH))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("phone must not be null or blank");
     }
@@ -131,5 +135,49 @@ class ValidationTest {
                 Validation.validateDateNotPast(past, "appointmentDate"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("appointmentDate must not be in the past");
+    }
+
+    /**
+     * A date exactly equal to "now" must be accepted (not rejected as "in the past").
+     *
+     * Added to kill PITest mutant: boundary condition < vs <= in validateDateNotPast().
+     * Uses Clock.fixed() to deterministically test the exact boundary where
+     * date.getTime() == clock.millis(). With < operator this passes; with <= it would fail.
+     *
+     * See: https://stackoverflow.com/questions/2001671/override-java-system-currenttimemillis-for-testing-time-sensitive-code
+     */
+    @Test
+    void validateDateNotPastAcceptsDateExactlyEqualToNow() {
+        // Fix the clock at a specific instant
+        final Instant fixedInstant = Instant.parse("2025-01-15T10:00:00Z");
+        final Clock fixedClock = Clock.fixed(fixedInstant, ZoneOffset.UTC);
+
+        // Create a date with the exact same timestamp as the fixed clock
+        final Date exactlyNow = new Date(fixedInstant.toEpochMilli());
+
+        // With < operator: exactlyNow < fixedClock.millis() is false, so no exception
+        // With <= operator (mutant): exactlyNow <= fixedClock.millis() is true, so exception
+        assertThatNoException().isThrownBy(() ->
+                Validation.validateDateNotPast(exactlyNow, "appointmentDate", fixedClock));
+    }
+
+    /**
+     * Verifies the private constructor exists and is not accessible.
+     *
+     * Added for line coverage: private constructor in utility class Validation.
+     * While not functionally necessary, this test ensures PITest doesn't flag
+     * the private constructor as uncovered and documents that the class is
+     * intentionally designed as a utility class (non-instantiable).
+     */
+    @Test
+    void privateConstructorIsNotAccessible() throws Exception {
+        Constructor<Validation> constructor = Validation.class.getDeclaredConstructor();
+        assertThat(constructor.canAccess(null)).isFalse();
+
+        // Verify the constructor can be invoked via reflection (for coverage)
+        // but produces a useless instance (utility class pattern)
+        constructor.setAccessible(true);
+        Validation instance = constructor.newInstance();
+        assertThat(instance).isNotNull();
     }
 }

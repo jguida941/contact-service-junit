@@ -16,8 +16,9 @@ import java.util.stream.Collectors;
 public final class AppointmentService {
     /**
      * Singleton instance, created lazily on first access.
+     * Not volatile because getInstance() is synchronized.
      */
-    private static volatile AppointmentService instance;
+    private static AppointmentService instance;
 
     /**
      * In-memory store keyed by appointmentId.
@@ -103,9 +104,12 @@ public final class AppointmentService {
     }
 
     /**
-     * Clears all stored appointments (useful for tests).
+     * Clears all stored appointments.
+     *
+     * <p>Package-private to limit usage to test code within the same package.
+     * This prevents accidental calls from production code outside the package.
      */
-    public void clearAllAppointments() {
+    void clearAllAppointments() {
         database.clear();
     }
 

@@ -22,7 +22,7 @@ Related: [Appointment.java](../../src/main/java/contactapp/Appointment.java), [A
 - `addAppointment` rejects null, validates IDs (already trimmed by the entity), and uses `putIfAbsent` to enforce unique IDs.
 - `updateAppointment` uses `computeIfPresent` to combine lookup/update without a race window.
 - `deleteAppointment`/`updateAppointment` trim/validate IDs; updates delegate to `Appointment.update(...)`.
-- `getDatabase()` returns an unmodifiable map of defensive copies (via `Appointment.copy()`, which validates the source and reuses the public constructor so defensive copies stay consistent); `clearAllAppointments()` resets state for tests.
+- `getDatabase()` returns an unmodifiable map of defensive copies (via `Appointment.copy()`, which validates the source and reuses the public constructor so defensive copies stay consistent); `clearAllAppointments()` (package-private) resets state for tests, preventing accidental production use while allowing test access from the same package.
 
 ## Tests hit
 - `AppointmentTest`: trimmed creation with defensive date copy, setter/update happy paths, invalid constructor/setter/update cases (null/blank/over-length strings, null/past dates), atomic rejection on invalid updates, defensive getter copy.

@@ -5,6 +5,28 @@ All notable changes to this project will be documented here. Follow the
 
 ## [Unreleased]
 ### Added
+- **Code review hardening**: Addressed recommendations from comprehensive code review.
+  - Documented UTC timezone behavior in `Validation.validateDateNotPast()` Javadoc so callers understand that "now" is evaluated in UTC.
+  - Made `clearAllContacts()`, `clearAllTasks()`, and `clearAllAppointments()` package-private to prevent accidental production usage while still allowing test access (tests are in the same package).
+  - Added phone internationalization idea to `docs/logs/backlog.md` for Phase 2+.
+- **Phase 0 complete**: Defensive copies and date validation fix implemented.
+  - Added `copy()` methods to `Task` and `Contact` classes (matching `Appointment` pattern).
+  - Updated `TaskService.getDatabase()` and `ContactService.getDatabase()` to return defensive copies, preventing external mutation of internal state.
+  - Fixed `Validation.validateDateNotPast()` to accept equality (date equal to "now" is valid), avoiding millisecond-boundary flakiness.
+  - Added `testGetDatabaseReturnsDefensiveCopies` tests to `TaskServiceTest` and `ContactServiceTest`.
+  - Updated existing tests to verify data by field values instead of object identity.
+- **Mutation coverage improved to 100%**: Added tests to kill all surviving mutants.
+  - Added `testCopyRejectsNullInternalState` to `TaskTest` and `ContactTest` to kill mutants where `validateCopySource()` calls could be removed.
+  - Added `validateDateNotPastAcceptsDateExactlyEqualToNow` to `ValidationTest` using `Clock.fixed()` to deterministically test the boundary mutant (`<` vs `<=`).
+  - Added `privateConstructorIsNotAccessible` to `ValidationTest` for line coverage of the utility class private constructor.
+  - All 148 tests pass, 100% mutation score, 100% line coverage.
+- **Code review fixes**: Addressed issues identified during pre-Phase-1 code review.
+  - Refactored `ContactService.updateContact()` and `TaskService.updateTask()` to use `computeIfPresent()` for thread-safe atomic lookup and update.
+  - Added `final` modifier to `Contact` class (matching `Task` and `Appointment`).
+  - Normalized singleton `volatile` usage: removed from `AppointmentService` since `getInstance()` is `synchronized`.
+  - Renamed `validateNumeric10` to `validateDigits` for clarity (method accepts `requiredLength` parameter).
+  - Added `Clock` parameter overload to `validateDateNotPast()` for testable time injection.
+- Added validation layer improvement ideas to `docs/logs/backlog.md` for Phase 2+ (TimeProvider, domain wrappers, pattern/range helpers, ValidationException, Bean Validation bridge).
 - Consolidated application requirements/roadmap/checklist into `docs/REQUIREMENTS.md` (phases 0–10) and `docs/ROADMAP.md` (overview).
 - Phase 0 (Pre-API Fixes) captured in `docs/REQUIREMENTS.md`: defensive copies for Task/ContactService, date validation boundary, copy() methods for Task/Contact.
 - Published ADR-0014 through ADR-0019 covering backend stack, database, API style, frontend stack, auth model, and deployment/packaging; updated ADR index accordingly.
@@ -87,9 +109,9 @@ All notable changes to this project will be documented here. Follow the
 - Expanded Checkstyle configuration (imports, indentation, line length, braces, etc.)
   and wired `spotbugs-maven-plugin` (auto-skipped on JDK 23+) so bug patterns fail
   `mvn verify`.
-- `ContactService#getDatabase()` now returns an unmodifiable `Map.copyOf(...)`
-  snapshot and a new `clearAllContacts()` helper was added for tests, eliminating
-  SpotBugs exposure warnings for the service internals.
+- `ContactService#getDatabase()` now returns an unmodifiable snapshot of defensive
+  copies (via `Contact.copy()`) and a new `clearAllContacts()` helper was added for
+  tests, eliminating SpotBugs exposure warnings for the service internals.
 - `ContactService#updateContact` now routes through the atomic
   `Contact#update(...)` helper so updates either fully apply or leave the contact
   unchanged while reusing the constructor’s validation messages.
@@ -107,8 +129,8 @@ All notable changes to this project will be documented here. Follow the
   tracks upcoming reporting enhancements.
 - Added Codecov integration (GitHub Action upload + README instructions/badge).
 - Clarified README sections describing the `ConcurrentHashMap<String, Contact>`
-  storage, the `Map.copyOf(...)` snapshot, and the atomic update helper managed
-  by `ContactService`.
+  storage, the defensive-copy snapshot pattern, and the atomic update helper
+  managed by `ContactService`.
 - Corrected README documentation to state that SpotBugs currently runs on supported
   JDKs (17/21) instead of implying it auto-skips on newer runtimes.
 - Enhanced `scripts/ci_metrics_summary.py` to show colored icons/bars, severity
@@ -146,7 +168,7 @@ All notable changes to this project will be documented here. Follow the
   `ContactServiceTest.java` so the service layer mirrors the structure of the
   `Contact`/`ContactTest` pair while we flesh out CRUD behavior.
 - Completed the README sections for `Task.java`/`TaskTest.java` and `TaskService.java`/`TaskServiceTest.java`, describing validation flow, error philosophy, and scenario coverage instead of TODO placeholders.
-- README now matches the implementation details: `ContactService.updateContact` references `Contact.update(...)`, `validateNumeric10` lists the `requiredLength` parameter, and SpotBugs/JDK matrix text reflects the actual `{17, 21}` CI coverage.
+- README now matches the implementation details: `ContactService.updateContact` references `Contact.update(...)`, `validateDigits` lists the `requiredLength` parameter, and SpotBugs/JDK matrix text reflects the actual `{17, 21}` CI coverage.
 - Documented the new `ValidationTest.validateLengthRejectsTooLong` scenario in README to reflect full length-check coverage.
 - README badges now use a uniform Shields.io flat-square style (GitHub Actions, Codecov, JaCoCo, PITest, SpotBugs, OWASP DC, License) with consistent colors (brightgreen for CI/coverage/mutation, blue for static analysis/license).
 - Added `TaskServiceTest.testClearAllTasksRemovesEntries` (with a note explaining it) so PIT kills the last surviving mutant that removed the internal `Map.clear()` call.

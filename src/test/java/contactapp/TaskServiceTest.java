@@ -46,7 +46,10 @@ public class TaskServiceTest {
         boolean added = service.addTask(task);
 
         assertThat(added).isTrue();
-        assertThat(service.getDatabase()).containsEntry("100", task);
+        assertThat(service.getDatabase()).containsKey("100");
+        Task stored = service.getDatabase().get("100");
+        assertThat(stored.getName()).isEqualTo("Write docs");
+        assertThat(stored.getDescription()).isEqualTo("Document Task service");
     }
 
     /**
@@ -60,7 +63,10 @@ public class TaskServiceTest {
 
         assertThat(service.addTask(original)).isTrue();
         assertThat(service.addTask(duplicate)).isFalse();
-        assertThat(service.getDatabase()).containsEntry("100", original);
+        // Verify original data is still stored
+        Task stored = service.getDatabase().get("100");
+        assertThat(stored.getName()).isEqualTo("Write docs");
+        assertThat(stored.getDescription()).isEqualTo("Document Task service");
     }
 
     /**
@@ -198,5 +204,25 @@ public class TaskServiceTest {
         Task stored = service.getDatabase().get("300");
         assertThat(stored.getName()).isEqualTo("Write docs");
         assertThat(stored.getDescription()).isEqualTo("Original description");
+    }
+
+    /**
+     * Ensures getDatabase returns defensive copies so external mutation cannot alter service state.
+     */
+    @Test
+    void testGetDatabaseReturnsDefensiveCopies() {
+        TaskService service = TaskService.getInstance();
+        Task task = new Task("400", "Original Name", "Original Description");
+        service.addTask(task);
+
+        // Get a snapshot and mutate it
+        Task snapshot = service.getDatabase().get("400");
+        snapshot.setName("Mutated Name");
+        snapshot.setDescription("Mutated Description");
+
+        // Fetch a fresh snapshot and verify the service state is unchanged
+        Task freshSnapshot = service.getDatabase().get("400");
+        assertThat(freshSnapshot.getName()).isEqualTo("Original Name");
+        assertThat(freshSnapshot.getDescription()).isEqualTo("Original Description");
     }
 }

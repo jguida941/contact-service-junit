@@ -3,6 +3,7 @@ package contactapp;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Service responsible for managing {@link Contact} instances.
@@ -111,6 +112,7 @@ public final class ContactService {
      * Additional implementation notes:
      *  - The contactId is validated and trimmed before lookup, keeping behavior
      *    consistent with {@link #deleteContact(String)}.
+     *  - Uses {@link ConcurrentHashMap#computeIfPresent} for thread-safe atomic lookup and update.
      *  - If any value is invalid, {@link Contact#update(String, String, String, String)} throws before
      *    the contact is changed, so callers never see a half-updated record (atomic update behavior).
      *
@@ -125,35 +127,39 @@ public final class ContactService {
             final String address) {
         Validation.validateNotBlank(contactId, "contactId");
         final String normalizedId = contactId.trim();
-        final Contact contact = database.get(normalizedId);
-        if (contact == null) {
-            return false;
-        }
 
-        // Delegate to Contact so validation happens once and the change is atomic
-        contact.update(firstName, lastName, phone, address);
-        return true;
+        // computeIfPresent is atomic: lookup + update happen as one operation
+        return database.computeIfPresent(normalizedId, (key, contact) -> {
+            contact.update(firstName, lastName, phone, address);
+            return contact;
+        }) != null;
     }
 
     /**
      * Returns a read-only snapshot of the contact store (contacts keyed by contactId).
      *
      * Tests use this to confirm add, delete, and update methods mutate state as expected.
-     * The snapshot is created with {@link Map#copyOf(Map)} so callers cannot modify the
-     * internal {@link ConcurrentHashMap} backing the service.
+     * Returns defensive copies of each Contact to prevent external mutation of internal
+     * state. Modifications to the returned contacts do not affect the contacts stored
+     * in the service.
      *
      * In production code we would usually expose behaviors rather than the raw map,
      * but exposing the snapshot keeps the test suite simple for this milestone.
      */
     public Map<String, Contact> getDatabase() {
-        return Map.copyOf(database);
+        return database.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().copy()));
     }
 
     /**
      * Removes every contact from the in-memory store.
-     * Tests call this to start with a clean slate.
+     *
+     * <p>Package-private to limit usage to test code within the same package.
+     * This prevents accidental calls from production code outside the package.
      */
-    public void clearAllContacts() {
-        database.clear(); // reset the shared map
+    void clearAllContacts() {
+        database.clear();
     }
 }

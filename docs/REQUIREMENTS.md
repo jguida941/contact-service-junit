@@ -28,12 +28,13 @@
 
 ## Current State
 
+- **Phase 0 complete**: Defensive copies and date validation fix implemented.
 - Java 17 Maven project with domain classes (`Contact`, `Task`, `Appointment`) and in-memory singleton services; no HTTP/API layer or runtime entrypoint.
-- Strong unit test coverage plus quality gates (Checkstyle, SpotBugs, JaCoCo, PITest, Dependency-Check).
+- Latest CI: 148 tests passing, 100% mutation score, 100% line coverage, SpotBugs clean.
 - Data is volatile (ConcurrentHashMap only); no database, migrations, or persistence abstraction.
 - `ui/qa-dashboard` is a sample Vite/React metrics console, not a product UI.
 - No authentication, authorization, centralized error handling, logging, or observability.
-- `getDatabase()` snapshots for Contact/Task expose mutable entities; must fix before API work.
+- `getDatabase()` methods now return defensive copies; safe to surface over APIs.
 
 ---
 
@@ -71,17 +72,17 @@
 0 → 1 → 2 → 2.5 → 3 → 4 → 5 → 5.5 → 6 → 7 → (CI: 8 → 9 → 10)
 ```
 
-### Phase 0: Pre-API Fixes (required before Phase 1)
-- Fix mutable state leakage in `TaskService.getDatabase()` and `ContactService.getDatabase()`:
-  - Currently `Map.copyOf()` makes the map unmodifiable but the contained Task/Contact objects are still mutable.
-  - External callers can mutate domain objects without validation, breaking invariants.
-  - Solution: Return defensive copies (like `AppointmentService` already does with `copy()`) OR make entities immutable after construction.
-- Fix date validation edge case in `Validation.validateDateNotPast()`:
-  - Currently uses `date.before(new Date())` which is millisecond-sensitive and can cause flaky tests/API behavior.
-  - Solution: Accept equality (future-or-now is valid) to avoid boundary flake, or inject a clock for testability.
-- Add `copy()` methods to Task and Contact classes (matching Appointment pattern).
-- Update tests to verify defensive copy behavior.
-- Ensure all existing tests pass after fixes.
+### Phase 0: Pre-API Fixes ✅ (Completed)
+Fixes implemented:
+- Mutable state leakage in `TaskService.getDatabase()` and `ContactService.getDatabase()`:
+  - Previously `Map.copyOf()` made the map unmodifiable but contained Task/Contact objects were still mutable.
+  - Now returns defensive copies via `copy()` methods (matching `AppointmentService` pattern).
+- Date validation edge case in `Validation.validateDateNotPast()`:
+  - Previously used `date.before(new Date())` which was millisecond-sensitive.
+  - Now accepts equality (date equal to "now" is valid) to avoid boundary flakiness.
+- Added `copy()` methods to Task and Contact classes.
+- Added tests verifying defensive copy behavior.
+- All existing tests pass.
 
 ### Phase 1: Backend scaffold
 - Add Spring Boot starter module (`app` or convert current module), keep domain validation intact.
@@ -194,14 +195,14 @@
 
 ## Master Checklist
 
-### Phase 0: Pre-API Fixes
-- [ ] Add `copy()` method to Task class (matching Appointment pattern)
-- [ ] Add `copy()` method to Contact class (matching Appointment pattern)
-- [ ] Update `TaskService.getDatabase()` to return defensive copies
-- [ ] Update `ContactService.getDatabase()` to return defensive copies
-- [ ] Fix `Validation.validateDateNotPast()` to accept equality (future-or-now valid)
-- [ ] Add tests verifying defensive copy behavior
-- [ ] Verify all existing tests still pass
+### Phase 0: Pre-API Fixes ✅
+- [x] Add `copy()` method to Task class (matching Appointment pattern)
+- [x] Add `copy()` method to Contact class (matching Appointment pattern)
+- [x] Update `TaskService.getDatabase()` to return defensive copies
+- [x] Update `ContactService.getDatabase()` to return defensive copies
+- [x] Fix `Validation.validateDateNotPast()` to accept equality (future-or-now valid)
+- [x] Add tests verifying defensive copy behavior
+- [x] Verify all existing tests still pass
 
 ### Phase 1: Backend Scaffold
 - [ ] Spring Boot entrypoint created
@@ -394,5 +395,5 @@ export function useCreateContact() {
 
 When all phases are complete:
 1. All checklist items above are checked
-2. `docs/ci-cd/ci_cd_plan.md` phases 8-10 marked complete
-3. Summary added to `docs/logs/CHANGELOG.md`
+2. Mark `docs/ci-cd/ci_cd_plan.md` phases 8-10 as complete
+3. Add summary to `docs/logs/CHANGELOG.md`

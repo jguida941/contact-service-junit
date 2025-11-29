@@ -15,11 +15,12 @@ Quick links and context for automation/assistant workflows implementing this pla
 
 ## Current State
 
+- **Phase 0 complete**: Defensive copies and date validation fix implemented
 - Code is an **in-memory Java library** with Contact/Task/Appointment entities and services
-- **100% JaCoCo coverage**, **100% PITest mutation score**, SpotBugs clean
+- Latest CI: **148 tests passing**, **100% PITest mutation score**, **100% line coverage**, SpotBugs clean
 - No Spring Boot runtime, no persistence, no HTTP layer yet
 - Domain validation in `Validation.java` is the **source of truth** for all field rules
-- `getDatabase()` snapshots for Contact/Task expose mutable entities; do not surface them over APIs—use DTOs or defensive copies when wiring controllers.
+- `getDatabase()` methods now return defensive copies; safe to surface over APIs
 
 ## Implementation Constraints
 
@@ -53,17 +54,17 @@ Quick links and context for automation/assistant workflows implementing this pla
 
 ## Phase-by-Phase Milestones
 
-See `docs/REQUIREMENTS.md` for the full checklist. Key milestones:
+See `docs/REQUIREMENTS.md` for the full checklist. Definition of done for each phase:
 
-- **Phase 0 done**: Defensive copies in Task/ContactService, date validation fixed, all tests pass
-- **Phase 1 done**: Spring Boot starts, health endpoint works, existing tests pass
-- **Phase 2 done**: CRUD endpoints for all 3 entities, OpenAPI accessible
-- **Phase 2.5 done**: Schemathesis runs in CI against spec
-- **Phase 3 done**: Data persists in Postgres, Flyway migrations work
-- **Phase 4 done**: React UI can CRUD all entities
-- **Phase 5 done**: JWT auth protects endpoints, security headers applied
-- **Phase 5.5 done**: ZAP runs in CI, auth tests assert 401/403
-- **Phase 6 done**: Docker images build, compose works
+- **Phase 0 ✅ (complete)**: Defensive copies in Task/ContactService, date validation fixed, all tests pass
+- **Phase 1**: Spring Boot starts, health endpoint works, existing tests pass
+- **Phase 2**: CRUD endpoints for all 3 entities, OpenAPI accessible
+- **Phase 2.5**: Schemathesis runs in CI against spec
+- **Phase 3**: Data persists in Postgres, Flyway migrations work
+- **Phase 4**: React UI can CRUD all entities
+- **Phase 5**: JWT auth protects endpoints, security headers applied
+- **Phase 5.5**: ZAP runs in CI, auth tests assert 401/403
+- **Phase 6**: Docker images build, compose works
 
 ## Existing Code to Preserve
 
@@ -80,5 +81,5 @@ These tests must continue passing:
 
 After all phases:
 1. All checklist items in `docs/REQUIREMENTS.md` are checked
-2. `docs/ci-cd/ci_cd_plan.md` phases 8-10 marked complete
-3. Summary added to `docs/logs/CHANGELOG.md`
+2. Mark `docs/ci-cd/ci_cd_plan.md` phases 8-10 as complete
+3. Add summary to `docs/logs/CHANGELOG.md`

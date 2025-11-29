@@ -108,4 +108,30 @@ public final class Task {
         Validation.validateLength(value, label, MIN_LENGTH, maxLength);
         return value.trim();
     }
+
+    /**
+     * Creates a defensive copy of this Task.
+     *
+     * Validates the source state, then reuses the public constructor so
+     * defensive copies and validation stay aligned.
+     *
+     * @return a new Task with the same field values
+     * @throws IllegalArgumentException if internal state is corrupted (null fields)
+     */
+    Task copy() {
+        validateCopySource(this);
+        return new Task(this.taskId, this.name, this.description);
+    }
+
+    /**
+     * Ensures the source task has valid internal state before copying.
+     */
+    private static void validateCopySource(final Task source) {
+        if (source == null
+                || source.taskId == null
+                || source.name == null
+                || source.description == null) {
+            throw new IllegalArgumentException("task copy source must not be null");
+        }
+    }
 }

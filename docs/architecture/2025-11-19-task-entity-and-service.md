@@ -18,13 +18,14 @@ Implemented in:
 Key points:
 - Task fields and limits mirror the requirements (id 1–10 chars, name 1–20, description 1–50) and reuse the shared `Validation` helpers.
 - `Task.update(...)` validates both mutable fields first so updates remain atomic and exception-safe.
-- `TaskService` is a lazy singleton backed by `ConcurrentHashMap`, with `add`/`delete`/`update` returning booleans and trimming ids before touching the map.
-- Tests cover constructor trimming, negative validation cases, singleton behavior, duplicate handling, and the `clearAllTasks()` reset hook (needed for PIT).
+- `TaskService` is a lazy singleton backed by `ConcurrentHashMap`, with `add`/`delete`/`update` returning booleans and trimming ids before touching the map; `updateTask` uses `computeIfPresent` for thread-safe atomic lookup + update.
+- `getDatabase()` returns defensive copies (via `Task.copy()`) in an unmodifiable map, preventing external mutation of internal state.
+- Tests cover constructor trimming, negative validation cases, singleton behavior, duplicate handling, defensive copy verification, and the `clearAllTasks()` reset hook (needed for PIT).
 
 ## Definition of Done
 - All unit tests pass via `mvn verify`.
 - Line coverage: current JaCoCo reports 100% on mutated classes.
-- Mutation score: PITest shows all mutants killed on Task/TaskService as of 2025-11-24.
+- Mutation score: PITest shows 100% mutation score (all 116 mutants killed) as of 2025-11-29.
 - Checkstyle and SpotBugs: zero new issues for Task-related files.
 - CodeQL and Dependency Check: no Task-specific findings as of 2025-11-20.
 - Public types/methods include Javadoc on Task and TaskService.
@@ -47,7 +48,7 @@ Key points:
   - `addTask(Task)` enforces unique IDs via `putIfAbsent`.
   - `deleteTask(String taskId)` validates input then removes entry.
   - `updateTask(String taskId, String name, String description)` delegates to the Task instance and returns success boolean.
-  - Provide `getDatabase()` snapshot and `clearAllTasks()` to aid testing and isolation.
+  - Provide `getDatabase()` (defensive copies via `Task.copy()`) and `clearAllTasks()` to aid testing and isolation.
 - Ensure all public methods carry Javadoc consistent with Definition of Done.
 
 ### Phase 3 - Testing & Quality Gates

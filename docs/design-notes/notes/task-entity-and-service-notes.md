@@ -19,9 +19,10 @@ Related: [Task.java](../../src/main/java/contactapp/Task.java), [TaskService.jav
 ## Service summary
 - `TaskService` is a lazy singleton backed by `ConcurrentHashMap<String, Task>`.
 - `addTask` rejects null and uses `putIfAbsent` for uniqueness.
-- `deleteTask`/`updateTask` trim/validate IDs; updates delegate to `Task.update(...)`.
-- `getDatabase()` returns `Map.copyOf(...)`; `clearAllTasks()` resets state for tests.
+- `deleteTask` trims/validates IDs before removal; `updateTask` uses `computeIfPresent` for thread-safe atomic lookup + update, then delegates to `Task.update(...)`.
+- `getDatabase()` returns defensive copies of each Task (via `copy()`) in an unmodifiable map; `clearAllTasks()` (package-private) resets state for tests, preventing accidental production use while allowing test access from the same package.
+- `copy()` validates source state and reuses the public constructor, keeping defensive copies aligned with validation rules.
 
 ## Tests hit
-- `TaskTest`: constructor trimming, setter/update happy paths, invalid constructor/setter/update cases (null/blank/over-length) and atomic update rejection.
-- `TaskServiceTest`: singleton, add/duplicate/null add, delete success/blank/missing, update success/blank/missing/trimmed IDs, clear-all.
+- `TaskTest`: constructor trimming, setter/update happy paths, invalid constructor/setter/update cases (null/blank/over-length), atomic update rejection, and `testCopyRejectsNullInternalState` (uses reflection to trigger validateCopySource exception; added to kill PITest mutant).
+- `TaskServiceTest`: singleton, add/duplicate/null add, delete success/blank/missing, update success/blank/missing/trimmed IDs, clear-all, defensive copy verification.

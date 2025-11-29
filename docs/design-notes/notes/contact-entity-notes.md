@@ -8,6 +8,7 @@ File: docs/design-notes/notes/contact-entity-notes.md
 - `Contact` is the single source of truth for contact data and its rules.
 - Once a `Contact` is created, it should always be in a valid state.
 - All validation for individual fields goes through the `Validation` helpers.
+- `Contact` is marked `final` to prevent subclassing that could bypass validation invariants (matching `Task` and `Appointment`).
 
 ## Fields and constraints
 (Exact limits from `Contact.java`.)
@@ -37,7 +38,7 @@ All of these limits are defined as `static final` constants so there are no magi
 - Service code relies on this: the map key (`contactId`) and the object field always match.
 
 ## Constructor and setters
-- The constructor calls `Validation` helpers (`validateLength`, `validateNumeric10`) to check all fields before storing them.
+- The constructor calls `Validation` helpers (`validateLength`, `validateDigits`) to check all fields before storing them.
 - Each setter also calls the same helpers, so updates reuse the exact same rules as construction.
 - Values are trimmed before being stored, so leading and trailing spaces are removed.
   - **Example:** `new Contact(" 123 ", " Alice ", " Smith ", "1234567890", " 742 Evergreen ")` ends up storing `"123"`, `"Alice"`, `"Smith"`, `"742 Evergreen"`.

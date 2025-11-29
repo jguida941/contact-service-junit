@@ -7,7 +7,7 @@ _Status updated: 2025-11-24_
 - [x] Appointment has a required Date field.
 - [x] Appointment Date is not in the past.
 - [x] Appointment Date is non-null; uses `java.util.Date` and rejects any value where
-  `date.before(new Date())` is true (i.e., only now or future dates are allowed).
+  `date.getTime()` is strictly less than the current time (e.g., `date.getTime() < clock.millis()`), so "now" is allowed and past dates are rejected.
 - [x] Description is a required String, no longer than 50 characters, and
   non-null.
 

@@ -61,10 +61,14 @@ public class ContactServiceTest {
         boolean added = contactService.addContact(contact);
 
         // addContact(...) should return true for a new contactId
-        // the internal map should now contain the entry: "100" -> contact
+        // the internal map should now contain the entry with correct data
         assertThat(added).isTrue();
-        assertThat(contactService.getDatabase())
-                .containsEntry("100", contact);
+        assertThat(contactService.getDatabase()).containsKey("100");
+        Contact stored = contactService.getDatabase().get("100");
+        assertThat(stored.getFirstName()).isEqualTo("Justin");
+        assertThat(stored.getLastName()).isEqualTo("Guida");
+        assertThat(stored.getPhone()).isEqualTo("1234567890");
+        assertThat(stored.getAddress()).isEqualTo("7622 Main Street");
     }
 
     /**
@@ -84,16 +88,14 @@ public class ContactServiceTest {
         boolean added = contactService.addContact(contact);
 
         assertThat(added).isTrue();
-        assertThat(contactService.getDatabase())
-                .containsEntry("100", contact);
+        assertThat(contactService.getDatabase()).containsKey("100");
 
         boolean deleted = contactService.deleteContact("100");
 
         // deleteContact(...) should report success
-        // and the map should no longer contain the entry "100" -> contact
+        // and the map should no longer contain the key "100"
         assertThat(deleted).isTrue();
-        assertThat(contactService.getDatabase())
-                .doesNotContainEntry("100", contact);
+        assertThat(contactService.getDatabase()).doesNotContainKey("100");
     }
 
     /**
@@ -122,8 +124,7 @@ public class ContactServiceTest {
 
         boolean added = contactService.addContact(contact);
         assertThat(added).isTrue();
-        assertThat(contactService.getDatabase())
-                .containsEntry("100", contact);
+        assertThat(contactService.getDatabase()).containsKey("100");
 
         // Update the contact's mutable fields
         boolean updated = contactService.updateContact(
@@ -202,8 +203,10 @@ public class ContactServiceTest {
 
         assertThat(firstAdd).isTrue();
         assertThat(secondAdd).isFalse();                  // duplicate id rejected
-        assertThat(service.getDatabase())
-                .containsEntry("100", contact1);          // original remains
+        // Verify original data is still stored
+        Contact stored = service.getDatabase().get("100");
+        assertThat(stored.getFirstName()).isEqualTo("Justin");
+        assertThat(stored.getLastName()).isEqualTo("Guida");
     }
 
     /**
@@ -245,5 +248,29 @@ public class ContactServiceTest {
         assertThatThrownBy(() -> service.addContact(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("contact must not be null");
+    }
+
+    /**
+     * Ensures getDatabase returns defensive copies so external mutation cannot alter service state.
+     */
+    @Test
+    void testGetDatabaseReturnsDefensiveCopies() {
+        ContactService service = ContactService.getInstance();
+        Contact contact = new Contact("500", "Original", "Name", "1234567890", "Original Address");
+        service.addContact(contact);
+
+        // Get a snapshot and mutate it
+        Contact snapshot = service.getDatabase().get("500");
+        snapshot.setFirstName("Mutated");
+        snapshot.setLastName("Person");
+        snapshot.setPhone("0987654321");
+        snapshot.setAddress("Mutated Address");
+
+        // Fetch a fresh snapshot and verify the service state is unchanged
+        Contact freshSnapshot = service.getDatabase().get("500");
+        assertThat(freshSnapshot.getFirstName()).isEqualTo("Original");
+        assertThat(freshSnapshot.getLastName()).isEqualTo("Name");
+        assertThat(freshSnapshot.getPhone()).isEqualTo("1234567890");
+        assertThat(freshSnapshot.getAddress()).isEqualTo("Original Address");
     }
 }

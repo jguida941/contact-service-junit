@@ -12,7 +12,7 @@ package contactapp;
  * All violations result in {@link IllegalArgumentException} being thrown
  * by the underlying {@link Validation} helper.
  */
-public class Contact {
+public final class Contact {
     private static final int MIN_LENGTH = 1;
     private static final int ID_MAX_LENGTH = 10;
     private static final int NAME_MAX_LENGTH = 10;
@@ -125,7 +125,35 @@ public class Contact {
      * Validates a phone entry (digits only, required length) and returns it unchanged.
      */
     private static String validatePhoneNumber(final String phone) {
-        Validation.validateNumeric10(phone, "phone", PHONE_LENGTH);
+        Validation.validateDigits(phone, "phone", PHONE_LENGTH);
         return phone;
+    }
+
+    /**
+     * Creates a defensive copy of this Contact.
+     *
+     * Validates the source state, then reuses the public constructor so
+     * defensive copies and validation stay aligned.
+     *
+     * @return a new Contact with the same field values
+     * @throws IllegalArgumentException if internal state is corrupted (null fields)
+     */
+    Contact copy() {
+        validateCopySource(this);
+        return new Contact(this.contactId, this.firstName, this.lastName, this.phone, this.address);
+    }
+
+    /**
+     * Ensures the source contact has valid internal state before copying.
+     */
+    private static void validateCopySource(final Contact source) {
+        if (source == null
+                || source.contactId == null
+                || source.firstName == null
+                || source.lastName == null
+                || source.phone == null
+                || source.address == null) {
+            throw new IllegalArgumentException("contact copy source must not be null");
+        }
     }
 }

@@ -3,6 +3,7 @@ package contactapp;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Service responsible for creating, updating, and deleting {@link Task} objects.
@@ -88,7 +89,7 @@ public final class TaskService {
      *
      * Behavior:
      *  - Validates and trims {@code taskId} to match the stored key.
-     *  - Looks up the task with the given {@code taskId}.
+     *  - Uses {@link ConcurrentHashMap#computeIfPresent} for thread-safe atomic lookup and update.
      *  - If no task exists, returns false and makes no changes.
      *  - If the task exists, calls {@link Task#update(String, String)} so
      *    that validation rules are applied at the entity level.
@@ -104,37 +105,40 @@ public final class TaskService {
             final String description) {
         Validation.validateNotBlank(taskId, "taskId");
         final String normalizedId = taskId.trim();
-        final Task task = database.get(normalizedId);
-        if (task == null) {
-            return false;
-        }
-        task.update(newName, description);
-        return true;
+
+        // computeIfPresent is atomic: lookup + update happen as one operation
+        return database.computeIfPresent(normalizedId, (key, task) -> {
+            task.update(newName, description);
+            return task;
+        }) != null;
     }
 
     /**
      * Returns an unmodifiable snapshot of the current task store.
      *
      * Implementation detail:
-     *  - Uses {@link Map#copyOf(Map)} to create a defensive copy of the
-     *    underlying {@code database}. Modifications to the returned map do
-     *    not affect the internal store.
+     *  - Returns defensive copies of each Task to prevent external mutation
+     *    of internal state. Modifications to the returned tasks do not affect
+     *    the tasks stored in the service.
      *
      * Intended use is primarily in tests or read-only diagnostics.
      *
-     * @return unmodifiable copy of the in memory task store
+     * @return unmodifiable map of defensive task copies
      */
     public Map<String, Task> getDatabase() {
-        return Map.copyOf(database);
+        return database.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().copy()));
     }
 
     /**
-     * Removes all tasks from the in memory store.
+     * Removes all tasks from the in-memory store.
      *
-     * This is mainly intended for test code so that each test can start
-     * from a clean state without restarting the JVM.
+     * <p>Package-private to limit usage to test code within the same package.
+     * This prevents accidental calls from production code outside the package.
      */
-    public void clearAllTasks() {
+    void clearAllTasks() {
         database.clear();
     }
 }
