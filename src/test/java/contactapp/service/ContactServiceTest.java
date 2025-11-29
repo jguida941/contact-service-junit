@@ -297,4 +297,106 @@ public class ContactServiceTest {
         ContactService second = ContactService.getInstance();
         assertThat(second).isSameAs(service);
     }
+
+    // ==================== getContactById Tests ====================
+
+    /**
+     * Verifies getContactById returns the contact when it exists.
+     */
+    @Test
+    void testGetContactByIdReturnsContact() {
+        ContactService service = ContactService.getInstance();
+        Contact contact = new Contact("600", "Test", "User", "1234567890", "Test Address");
+        service.addContact(contact);
+
+        var result = service.getContactById("600");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getFirstName()).isEqualTo("Test");
+    }
+
+    /**
+     * Verifies getContactById returns empty when contact doesn't exist.
+     */
+    @Test
+    void testGetContactByIdReturnsEmptyWhenNotFound() {
+        ContactService service = ContactService.getInstance();
+
+        var result = service.getContactById("nonexistent");
+
+        assertThat(result).isEmpty();
+    }
+
+    /**
+     * Verifies getContactById throws when ID is blank.
+     */
+    @Test
+    void testGetContactByIdBlankIdThrows() {
+        ContactService service = ContactService.getInstance();
+
+        assertThatThrownBy(() -> service.getContactById(" "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("contactId must not be null or blank");
+    }
+
+    /**
+     * Verifies getContactById trims the ID before lookup.
+     */
+    @Test
+    void testGetContactByIdTrimsId() {
+        ContactService service = ContactService.getInstance();
+        Contact contact = new Contact("700", "Trimmed", "Test", "1234567890", "Test Address");
+        service.addContact(contact);
+
+        var result = service.getContactById(" 700 ");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getFirstName()).isEqualTo("Trimmed");
+    }
+
+    /**
+     * Verifies getContactById returns a defensive copy.
+     */
+    @Test
+    void testGetContactByIdReturnsDefensiveCopy() {
+        ContactService service = ContactService.getInstance();
+        Contact contact = new Contact("800", "Original", "Name", "1234567890", "Original Addr");
+        service.addContact(contact);
+
+        var result = service.getContactById("800");
+        assertThat(result).isPresent();
+        result.get().setFirstName("Mutated");
+
+        var freshResult = service.getContactById("800");
+        assertThat(freshResult).isPresent();
+        assertThat(freshResult.get().getFirstName()).isEqualTo("Original");
+    }
+
+    // ==================== getAllContacts Tests ====================
+
+    /**
+     * Verifies getAllContacts returns empty list when no contacts exist.
+     */
+    @Test
+    void testGetAllContactsReturnsEmptyList() {
+        ContactService service = ContactService.getInstance();
+
+        var result = service.getAllContacts();
+
+        assertThat(result).isEmpty();
+    }
+
+    /**
+     * Verifies getAllContacts returns all contacts.
+     */
+    @Test
+    void testGetAllContactsReturnsAllContacts() {
+        ContactService service = ContactService.getInstance();
+        service.addContact(new Contact("901", "First", "User", "1111111111", "First Addr"));
+        service.addContact(new Contact("902", "Second", "User", "2222222222", "Second Addr"));
+
+        var result = service.getAllContacts();
+
+        assertThat(result).hasSize(2);
+    }
 }

@@ -24,3 +24,19 @@ Consider these extensions when adding API/persistence/UI while keeping the curre
 
 ## Reporting & Observability
 - Future observability enhancements (distributed tracing backends, log shipping) to be considered post-MVP.
+
+## Controller/Service Encapsulation ✅ IMPLEMENTED
+Service-level lookup methods have been implemented:
+- **Service-level lookup methods**: ✅ Added `getAllContacts()`/`getContactById(String)` to `ContactService`, `getAllTasks()`/`getTaskById(String)` to `TaskService`, `getAllAppointments()`/`getAppointmentById(String)` to `AppointmentService`. Controllers now use these instead of `getDatabase()`.
+- **Consistent ID normalization**: ✅ All lookup methods validate/trim IDs at the service layer.
+- **Path vs body ID validation**: Deferred - not a CS320 requirement. The path ID is canonical; body ID is currently ignored on PUT endpoints.
+
+## Date/Time API Migration (Future)
+- **java.time migration**: Domain layer uses `java.util.Date` per existing design. Future phases could migrate to `java.time.LocalDateTime`/`ZonedDateTime` for immutability and better timezone handling. Would require domain, service, DTO, and test changes.
+
+## Exception Handling Refinement (Future)
+- **Custom validation exception**: `GlobalExceptionHandler` catches all `IllegalArgumentException`. Consider introducing `DomainValidationException` for finer-grained handling, separating domain validation errors from unexpected framework exceptions.
+
+## Dependency Risks (to track)
+- **commons-lang3 3.17.0** flagged by Dependency-Check (CVE-2025-48924). Monitor upstream or upgrade when a fixed release is available.
+- **swagger-ui DOMPurify 3.1.6** (transitive via swagger-ui 5.18.2) flagged with CVE-2025-26791. Evaluate upgrading swagger-ui when a patched version is released or apply suppression if false positive.

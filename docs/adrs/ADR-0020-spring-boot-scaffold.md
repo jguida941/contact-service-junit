@@ -20,7 +20,7 @@ Use Spring Boot 3.4.12 (latest 3.4.x patch) via parent POM to inherit dependency
 Reorganize into layered architecture:
 - `contactapp.domain` - Domain entities (`Contact`, `Task`, `Appointment`, `Validation`)
 - `contactapp.service` - Business logic (`ContactService`, `TaskService`, `AppointmentService`)
-- `contactapp.api` - REST controllers (Phase 2, currently empty)
+- `contactapp.api` - REST controllers and DTOs (Phase 2 complete)
 - `contactapp.persistence` - Repository interfaces (Phase 3, currently empty)
 
 ### Service Bean Wiring
@@ -49,7 +49,7 @@ Reorganize into layered architecture:
 ### Positive
 - Spring Boot provides auto-configuration, embedded Tomcat, and actuator out of the box
 - Profile-based configuration simplifies environment-specific settings
-- Foundation in place for REST controllers (Phase 2) and JPA persistence (Phase 3)
+- REST controllers and DTOs implemented (Phase 2 complete); foundation in place for JPA persistence (Phase 3)
 - Existing tests continue to pass without modification
 - New smoke tests catch Spring wiring issues early
 

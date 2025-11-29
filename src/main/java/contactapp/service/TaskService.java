@@ -3,7 +3,9 @@ package contactapp.service;
 import contactapp.domain.Task;
 import contactapp.domain.Validation;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -166,6 +168,36 @@ public final class TaskService {
                 .collect(Collectors.toUnmodifiableMap(
                         Map.Entry::getKey,
                         entry -> entry.getValue().copy()));
+    }
+
+    /**
+     * Returns all tasks as a list of defensive copies.
+     *
+     * <p>Encapsulates the internal storage structure so controllers don't
+     * need to access getDatabase() directly.
+     *
+     * @return list of task defensive copies
+     */
+    public List<Task> getAllTasks() {
+        return DATABASE.values().stream()
+                .map(Task::copy)
+                .toList();
+    }
+
+    /**
+     * Finds a task by ID.
+     *
+     * <p>The ID is validated and trimmed before lookup so callers can pass
+     * values like " 123 " and still find the task stored as "123".
+     *
+     * @param taskId the task ID to search for
+     * @return Optional containing a defensive copy of the task, or empty if not found
+     * @throws IllegalArgumentException if taskId is null or blank
+     */
+    public Optional<Task> getTaskById(final String taskId) {
+        Validation.validateNotBlank(taskId, "taskId");
+        final Task task = DATABASE.get(taskId.trim());
+        return task == null ? Optional.empty() : Optional.of(task.copy());
     }
 
     /**

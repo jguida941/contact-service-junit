@@ -28,16 +28,24 @@
 
 ## Current State
 
-- **Phase 1 complete**: Spring Boot scaffold implemented.
+- **Phase 2 complete**: REST API + DTOs implemented.
 - Spring Boot 3.4.12 Maven project with layered packages (`domain`, `service`, `api`, `persistence`).
 - Domain classes (`Contact`, `Task`, `Appointment`) with validation rules preserved.
 - Services annotated with `@Service` for Spring DI while retaining `getInstance()` for backward compatibility.
+- REST controllers expose CRUD at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`.
+- DTOs with Bean Validation (`@NotBlank`, `@Size`, `@Pattern`, `@FutureOrPresent`) mapped to domain objects.
+- Global exception handler (`GlobalExceptionHandler`) maps exceptions to JSON error responses (400, 404, 409).
+- OpenAPI/Swagger UI available at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi).
 - Health/info actuator endpoints available; other actuator endpoints locked down.
-- Latest CI: All tests passing, 100% mutation score, 100% line coverage, SpotBugs clean.
+- Latest CI: 261 tests passing, 100% mutation score (159/159), 100% line coverage, SpotBugs clean.
+- Controller tests (71 tests): ContactControllerTest (30), TaskControllerTest (21), AppointmentControllerTest (20).
+- Exception handler tests (4 tests): GlobalExceptionHandlerTest validates direct handler coverage.
+- Service tests include lookup method coverage: getAllContacts/getContactById, getAllTasks/getTaskById, getAllAppointments/getAppointmentById.
 - Data is still volatile (ConcurrentHashMap only); no database, migrations, or persistence abstraction yet (Phase 3).
 - `ui/qa-dashboard` is a sample Vite/React metrics console, not a product UI.
-- No authentication, authorization, REST controllers, centralized error handling, logging, or observability yet.
-- `getDatabase()` methods return defensive copies; safe to surface over APIs.
+- No authentication, authorization, logging, or observability yet.
+- Controllers use service-level lookup methods (`getAllXxx()`, `getXxxById()`) instead of `getDatabase()` for better encapsulation.
+- DTO constraints use static imports from `Validation.MAX_*` constants to stay in sync with domain rules.
 
 ---
 
@@ -95,8 +103,8 @@ Implementation details:
 - Reorganized packages into layered architecture:
   - `contactapp.domain` - Domain entities (Contact, Task, Appointment, Validation)
   - `contactapp.service` - Services with @Service annotations (ContactService, TaskService, AppointmentService)
-  - `contactapp.api` - REST controllers (empty, Phase 2)
-  - `contactapp.persistence` - Repository interfaces (empty, Phase 3)
+  - `contactapp.api` - REST controllers (populated in Phase 2)
+  - `contactapp.persistence` - Repository interfaces (Phase 3)
 - Added `@Service` annotations while preserving `getInstance()` for backward compatibility.
 - Created `application.yml` with profile-based configuration (dev/test/prod).
 - Locked down actuator endpoints to health/info only per OWASP guidelines.
@@ -107,11 +115,31 @@ Implementation details:
 - All tests pass, 100% mutation score maintained.
 - See ADR-0020 for architectural decisions.
 
-### Phase 2: API + DTOs
-- Add REST controllers for contacts, tasks, and appointments with request/response DTOs and Bean Validation.
-- Introduce mapping layer (manual or MapStruct) to decouple transport from domain.
-- Add global exception handler returning consistent error payloads; publish OpenAPI/Swagger UI.
-- Note: Controller examples assume in-memory services; adapt to DB-backed IDs/UUIDs when persistence lands.
+### Phase 2: API + DTOs ✅ (Completed)
+Implementation details:
+- Added REST controllers: `ContactController`, `TaskController`, `AppointmentController` at `/api/v1/{resource}`.
+- Created DTOs with Bean Validation:
+  - `ContactRequest`/`ContactResponse` with `@NotBlank`, `@Size`, `@Pattern` for phone validation.
+  - `TaskRequest`/`TaskResponse` with `@NotBlank`, `@Size` constraints.
+  - `AppointmentRequest`/`AppointmentResponse` with `@FutureOrPresent` for date validation.
+- DTO constraints use static imports from `Validation.MAX_*` constants to stay in sync with domain rules.
+- Added `GlobalExceptionHandler` with `@RestControllerAdvice`:
+  - `IllegalArgumentException` → 400 Bad Request
+  - `MethodArgumentNotValidException` → 400 Bad Request (Bean Validation)
+  - `ResourceNotFoundException` → 404 Not Found
+  - `DuplicateResourceException` → 409 Conflict
+  - `HttpMessageNotReadableException` → 400 Bad Request (malformed JSON)
+- Added springdoc-openapi dependency; Swagger UI at `/swagger-ui.html`, OpenAPI spec at `/v3/api-docs`.
+- Added 71 controller tests (30 Contact + 21 Task + 20 Appointment) covering:
+  - Happy path CRUD operations
+  - Bean Validation boundary tests (exact max, one-over-max)
+  - 404 Not Found scenarios
+  - 409 Conflict (duplicate ID)
+  - Date validation (past date rejection, null date)
+  - Malformed JSON handling
+- All 261 tests pass, 100% mutation score maintained (159/159 killed).
+- Added `GlobalExceptionHandlerTest` (4 tests) for direct exception handler coverage.
+- Added service lookup method tests (13 tests) covering `getAllXxx()` and `getXxxById()` methods.
 
 ### Phase 2.5: API Security Testing Foundation
 - Generate OpenAPI automatically from controllers (`springdoc-openapi`) with `/api/v1` prefix.
@@ -230,12 +258,12 @@ Implementation details:
 - [x] Health/info endpoints exposed
 - [x] Dev/test/prod profiles configured
 
-### Phase 2: API + DTOs
-- [ ] REST controllers for Contact/Task/Appointment (CRUD)
-- [ ] DTOs with Bean Validation mapped to domain objects
-- [ ] Global JSON error handler in place
-- [ ] OpenAPI/Swagger UI published via springdoc-openapi
-- [ ] Controller tests added
+### Phase 2: API + DTOs ✅
+- [x] REST controllers for Contact/Task/Appointment (CRUD)
+- [x] DTOs with Bean Validation mapped to domain objects
+- [x] Global JSON error handler in place
+- [x] OpenAPI/Swagger UI published via springdoc-openapi
+- [x] Controller tests added (71 tests: 30 Contact + 21 Task + 20 Appointment)
 
 ### Phase 2.5: API Security Testing Foundation
 - [ ] OpenAPI spec generated automatically from controllers

@@ -24,6 +24,28 @@ import java.util.Date;
  */
 public final class Validation {
 
+    // ==================== Field Length Constants ====================
+    // NOTE: These bounds follow the CS320 Milestone 1 assignment spec, not real-world limits.
+    // See docs/requirements/contact-requirements/requirements.md for the original constraints.
+
+    /** Maximum length for ID fields (Contact, Task, Appointment). */
+    public static final int MAX_ID_LENGTH = 10;
+
+    /** Maximum length for Contact firstName and lastName fields. */
+    public static final int MAX_NAME_LENGTH = 10;
+
+    /** Maximum length for Contact address field. */
+    public static final int MAX_ADDRESS_LENGTH = 30;
+
+    /** Maximum length for Task name field. */
+    public static final int MAX_TASK_NAME_LENGTH = 20;
+
+    /** Maximum length for description fields (Task, Appointment). */
+    public static final int MAX_DESCRIPTION_LENGTH = 50;
+
+    /** Required length for phone numbers (digits only). */
+    public static final int PHONE_LENGTH = 10;
+
     private Validation() {
         // Utility class, not meant to be instantiated
     }

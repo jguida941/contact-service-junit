@@ -4,7 +4,9 @@ import contactapp.domain.Appointment;
 import contactapp.domain.Validation;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -167,6 +169,36 @@ public final class AppointmentService {
                 .collect(Collectors.toUnmodifiableMap(
                         Map.Entry::getKey,
                         entry -> entry.getValue().copy()));
+    }
+
+    /**
+     * Returns all appointments as a list of defensive copies.
+     *
+     * <p>Encapsulates the internal storage structure so controllers don't
+     * need to access getDatabase() directly.
+     *
+     * @return list of appointment defensive copies
+     */
+    public List<Appointment> getAllAppointments() {
+        return DATABASE.values().stream()
+                .map(Appointment::copy)
+                .toList();
+    }
+
+    /**
+     * Finds an appointment by ID.
+     *
+     * <p>The ID is validated and trimmed before lookup so callers can pass
+     * values like " 123 " and still find the appointment stored as "123".
+     *
+     * @param appointmentId the appointment ID to search for
+     * @return Optional containing a defensive copy of the appointment, or empty if not found
+     * @throws IllegalArgumentException if appointmentId is null or blank
+     */
+    public Optional<Appointment> getAppointmentById(final String appointmentId) {
+        final String normalizedId = normalizeAndValidateId(appointmentId);
+        final Appointment appointment = DATABASE.get(normalizedId);
+        return appointment == null ? Optional.empty() : Optional.of(appointment.copy());
     }
 
     /**

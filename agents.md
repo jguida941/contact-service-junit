@@ -15,14 +15,18 @@ Quick links and context for automation/assistant workflows implementing this pla
 
 ## Current State
 
-- **Phase 1 complete**: Spring Boot scaffold implemented
+- **Phase 2 complete**: REST API + DTOs implemented
 - Spring Boot 3.4.12 with layered packages (`contactapp.domain`, `contactapp.service`, `contactapp.api`, `contactapp.persistence`)
 - Services annotated with `@Service` for Spring DI while retaining `getInstance()` for backward compatibility
+- REST controllers at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`
+- DTOs with Bean Validation mapped to domain objects; constraints use `Validation.MAX_*` constants
+- Global exception handler (`GlobalExceptionHandler`) maps exceptions to JSON responses (400, 404, 409)
+- OpenAPI/Swagger UI at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi)
 - Health/info actuator endpoints available; other actuator endpoints locked down
-- Latest CI: **All tests passing**, **100% PITest mutation score**, **100% line coverage**, SpotBugs clean
-- No REST controllers, no persistence, no HTTP layer yet (Phase 2+)
+- Latest CI: **261 tests passing** (100% mutation score: 159/159), **100% line coverage**, SpotBugs clean
+- No persistence yet (Phase 3+)
 - Domain validation in `Validation.java` is the **source of truth** for all field rules
-- `getDatabase()` methods return defensive copies; safe to surface over APIs
+- Controllers use service-level lookup methods (`getAllXxx()`, `getXxxById()`) for better encapsulation
 
 ## Implementation Constraints
 
@@ -61,7 +65,7 @@ See `docs/REQUIREMENTS.md` for the full checklist. Definition of done for each p
 
 - **Phase 0 ✅ (complete)**: Defensive copies in Task/ContactService, date validation fixed, all tests pass
 - **Phase 1 ✅ (complete)**: Spring Boot starts, health/info endpoints work, services are @Service beans, existing tests pass
-- **Phase 2**: CRUD endpoints for all 3 entities, OpenAPI accessible
+- **Phase 2 ✅ (complete)**: CRUD endpoints for all 3 entities, OpenAPI accessible, 71 controller tests, Bean Validation on DTOs
 - **Phase 2.5**: Schemathesis runs in CI against spec
 - **Phase 3**: Data persists in Postgres, Flyway migrations work
 - **Phase 4**: React UI can CRUD all entities
@@ -80,7 +84,7 @@ These files contain the domain logic — **do not modify validation rules**:
 These tests must continue passing:
 - `src/test/java/contactapp/domain/*Test.java` (domain validation tests)
 - `src/test/java/contactapp/service/*Test.java` (service CRUD tests)
-- `src/test/java/contactapp/*Test.java` (Spring Boot smoke tests)
+- `src/test/java/contactapp/*Test.java` (Spring Boot smoke tests + controller tests)
 
 ## Documentation Checklist (After Each Change)
 

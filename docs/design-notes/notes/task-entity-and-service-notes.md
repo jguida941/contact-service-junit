@@ -24,5 +24,5 @@ Related: [Task.java](../../../src/main/java/contactapp/domain/Task.java), [TaskS
 - `copy()` validates source state and reuses the public constructor, keeping defensive copies aligned with validation rules.
 
 ## Tests hit
-- `TaskTest`: constructor trimming, setter/update happy paths, invalid constructor/setter/update cases (null/blank/over-length), atomic update rejection, and `testCopyRejectsNullInternalState` (uses reflection to trigger validateCopySource exception; added to kill PITest mutant).
+- `TaskTest`: constructor trimming, setter/update happy paths, invalid constructor/setter/update cases (null/blank/over-length), atomic update rejection, and `testCopyRejectsNullInternalState` (parameterized test using reflection to corrupt each field and verify validateCopySource throws).
 - `TaskServiceTest`: singleton, add/duplicate/null add, delete success/blank/missing, update success/blank/missing/trimmed IDs, clear-all, defensive copy verification.

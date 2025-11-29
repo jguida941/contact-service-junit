@@ -33,9 +33,13 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 ## Getting Started
 1. Install Java 17 and Apache Maven (3.9+).
 2. Run `mvn verify` from the project root to compile everything, execute the JUnit suite, and run Checkstyle/SpotBugs/JaCoCo quality gates.
-3. Start the application with `mvn spring-boot:run` to access health/info actuator endpoints at `http://localhost:8080/actuator/health`.
+3. Start the application with `mvn spring-boot:run`:
+   - Health/info actuator endpoints at `http://localhost:8080/actuator/health`
+   - **Swagger UI** at `http://localhost:8080/swagger-ui.html`
+   - **OpenAPI spec** at `http://localhost:8080/v3/api-docs`
+   - REST APIs at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`
 4. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-5. Planning note: Phase 1 (Spring Boot scaffold) is complete with layered packages and actuator endpoints. The roadmap for REST controllers, persistence, UI, and security lives in `docs/REQUIREMENTS.md`. ADR-0014..0020 capture the selected stack and implementation decisions.
+5. Planning note: Phase 1 (Spring Boot scaffold) complete; Phase 2 (REST API + DTOs) complete with 261 tests (100% mutation score). The roadmap for persistence, UI, and security lives in `docs/REQUIREMENTS.md`. ADR-0014..0020+ capture the selected stack and implementation decisions.
 
 ## Folder Highlights
 | Path                                                                                                                 | Description                                                                                     |
@@ -59,12 +63,22 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 | [`src/test/java/contactapp/service/ContactServiceTest.java`](src/test/java/contactapp/service/ContactServiceTest.java) | Unit tests for ContactService (singleton behavior and CRUD).                                  |
 | [`src/test/java/contactapp/service/TaskServiceTest.java`](src/test/java/contactapp/service/TaskServiceTest.java)     | Unit tests for `TaskService` (singleton behavior and CRUD).                                     |
 | [`src/test/java/contactapp/service/AppointmentServiceTest.java`](src/test/java/contactapp/service/AppointmentServiceTest.java) | Unit tests for AppointmentService singleton and CRUD behavior.                            |
+| [`src/main/java/contactapp/api/ContactController.java`](src/main/java/contactapp/api/ContactController.java)         | REST controller for Contact CRUD operations at `/api/v1/contacts`.                              |
+| [`src/main/java/contactapp/api/TaskController.java`](src/main/java/contactapp/api/TaskController.java)               | REST controller for Task CRUD operations at `/api/v1/tasks`.                                    |
+| [`src/main/java/contactapp/api/AppointmentController.java`](src/main/java/contactapp/api/AppointmentController.java) | REST controller for Appointment CRUD operations at `/api/v1/appointments`.                      |
+| [`src/main/java/contactapp/api/GlobalExceptionHandler.java`](src/main/java/contactapp/api/GlobalExceptionHandler.java) | Maps exceptions to HTTP responses (400, 404, 409).                                            |
+| [`src/main/java/contactapp/api/dto/`](src/main/java/contactapp/api/dto/)                                             | Request/Response DTOs with Bean Validation (`ContactRequest`, `TaskRequest`, etc.).             |
+| [`src/main/java/contactapp/api/exception/`](src/main/java/contactapp/api/exception/)                                 | Custom exceptions (`ResourceNotFoundException`, `DuplicateResourceException`).                  |
+| [`src/test/java/contactapp/ContactControllerTest.java`](src/test/java/contactapp/ContactControllerTest.java)         | MockMvc integration tests for Contact API (30 tests).                                           |
+| [`src/test/java/contactapp/TaskControllerTest.java`](src/test/java/contactapp/TaskControllerTest.java)               | MockMvc integration tests for Task API (21 tests).                                              |
+| [`src/test/java/contactapp/AppointmentControllerTest.java`](src/test/java/contactapp/AppointmentControllerTest.java) | MockMvc integration tests for Appointment API (20 tests).                                       |
+| [`src/test/java/contactapp/GlobalExceptionHandlerTest.java`](src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods (4 tests).                                      |
 | [`docs/requirements/contact-requirements/`](docs/requirements/contact-requirements/)                                 | Contact assignment requirements and checklist.                                                  |
 | [`docs/requirements/appointment-requirements/`](docs/requirements/appointment-requirements/)                         | Appointment assignment requirements and checklist.                                              |
 | [`docs/requirements/task-requirements/`](docs/requirements/task-requirements/)                                       | Task assignment requirements and checklist (same format as Contact).                            |
 | [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md) | Task entity/service design plan with Definition of Done and phased approach.                    |
 | [`docs/architecture/2025-11-24-appointment-entity-and-service.md`](docs/architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record.                                               |
-| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index (ADR-0001…ADR-0020).                                         |
+| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index (ADR-0001…ADR-0021).                                         |
 | [`docs/ci-cd/`](docs/ci-cd/)                                                                                         | CI/CD design notes (pipeline plan + badge automation).                                          |
 | [`docs/design-notes/`](docs/design-notes/)                                                                           | Informal design notes hub; individual write-ups live under `docs/design-notes/notes/`.          |
 | [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)                                                                       | **Master document**: scope, architecture, phased plan, checklist, and code examples.            |
@@ -214,7 +228,7 @@ void testInvalidContactId(String id, String expectedMessage) {
 - `testFailedCreation` (`@ParameterizedTest`) enumerates every invalid ID/name/phone/address combination and asserts the corresponding message.
 - `testFailedSetFirstName` (`@ParameterizedTest`) exercises the setter's invalid inputs (blank/long/null).
 - `testUpdateRejectsInvalidValuesAtomically` (`@MethodSource`) proves invalid updates throw and leave the existing Contact state unchanged.
-- `testCopyRejectsNullInternalState` (added for PITest) uses reflection to corrupt internal state, proving the `validateCopySource()` guard triggers; kills the "removed call to validateCopySource" mutant.
+- `testCopyRejectsNullInternalState` (`@ParameterizedTest`) uses reflection to corrupt each internal field (contactId, firstName, lastName, phone, address), proving the `validateCopySource()` guard triggers for all null branches.
 - `ValidationTest.validateLengthAcceptsBoundaryValues` proves 1/10-char names and 30-char addresses remain valid.
 - `ValidationTest.validateLengthRejectsBlankStrings` and `ValidationTest.validateLengthRejectsNull` ensure blanks/nulls fail before length math is evaluated.
 - `ValidationTest.validateLengthRejectsTooLong` hits the max-length branch to keep upper-bound validation covered.
@@ -239,6 +253,7 @@ void testInvalidContactId(String id, String expectedMessage) {
 - **Atomic uniqueness guard** - `addContact` rejects null inputs up front and calls `ConcurrentHashMap.putIfAbsent(...)` directly so duplicate IDs never overwrite state even under concurrent access.
 - **Thread-safe updates** - `updateContact` uses `ConcurrentHashMap.computeIfPresent(...)` for atomic lookup + update, then delegates to `Contact.update(...)` guaranteeing the constructor's length/null/phone rules apply.
 - **Shared validation** - `deleteContact` uses `Validation.validateNotBlank` for IDs; all paths reuse the same `Validation` helpers.
+- **Service-level lookup methods** - `getAllContacts()` returns a list of defensive copies; `getContactById(id)` validates/trims the ID and returns `Optional<Contact>`. Controllers use these instead of `getDatabase()` for better encapsulation.
 - **Defensive views** - `getDatabase()` returns an unmodifiable snapshot of defensive copies (via `Contact.copy()`) so callers can't mutate internal state; tests use `clearAllContacts()` (package-private) to reset between runs.
 
 ## Validation & Error Handling
@@ -366,7 +381,7 @@ graph TD
 - Setters accept valid updates and reject invalid ones with the same helper-generated messages.
 - `update(...)` replaces both mutable fields atomically and never mutates on invalid input.
 - `testUpdateRejectsInvalidValuesAtomically` (`@MethodSource`) enumerates invalid name/description pairs (blank/empty/null/over-length) and asserts the Task remains unchanged when validation fails.
-- `testCopyRejectsNullInternalState` (added for PITest) uses reflection to corrupt internal state, proving the `validateCopySource()` guard triggers; kills the "removed call to validateCopySource" mutant.
+- `testCopyRejectsNullInternalState` (`@ParameterizedTest`) uses reflection to corrupt each internal field (taskId, name, description), proving the `validateCopySource()` guard triggers for all null branches.
 - `TaskServiceTest` mirrors the entity atomicity: invalid updates (blank name) throw and leave the stored task unchanged.
 
   <br>
@@ -377,6 +392,7 @@ graph TD
 - Uses a static `ConcurrentHashMap<String, Task>` so Spring DI and `getInstance()` share the same data; `clearAllTasks()` (package-private) resets state for tests.
 - `addTask` rejects null tasks and uses `putIfAbsent` so uniqueness checks and inserts are atomic.
 - `deleteTask` validates + trims ids before removal; `updateTask` uses `ConcurrentHashMap.computeIfPresent(...)` for thread-safe atomic lookup + update.
+- **Service-level lookup methods** - `getAllTasks()` returns a list of defensive copies; `getTaskById(id)` validates/trims the ID and returns `Optional<Task>`. Controllers use these instead of `getDatabase()`.
 - `getDatabase()` returns an unmodifiable snapshot of defensive copies (via `Task.copy()`) so callers can't mutate internal state.
 
 ## Validation & Error Handling
@@ -489,6 +505,7 @@ flowchart TD
 - **Shared static store** - The backing `ConcurrentHashMap<String, Appointment>` is static, so both Spring DI and `getInstance()` share the same data.
 - **Atomic uniqueness guard** - `addAppointment` rejects null inputs, validates IDs (already trimmed by the `Appointment` constructor), and uses `putIfAbsent` so duplicate IDs never overwrite existing entries.
 - **Shared validation** - `deleteAppointment` trims/validates IDs; `updateAppointment` trims IDs and delegates field rules to `Appointment.update(...)` via `computeIfPresent` to avoid a get-then-mutate race.
+- **Service-level lookup methods** - `getAllAppointments()` returns a list of defensive copies; `getAppointmentById(id)` validates/trims the ID and returns `Optional<Appointment>`. Controllers use these instead of `getDatabase()`.
 - **Defensive views** - `getDatabase()` returns an unmodifiable snapshot of defensive copies (via `Appointment.copy()`, which validates the source and reuses the public constructor); `clearAllAppointments()` (package-private) resets state between tests.
 
 ### Validation & Error Handling
@@ -528,8 +545,67 @@ graph TD
 - `testGetDatabaseReturnsDefensiveCopies` proves callers cannot mutate internal state through snapshots.
 - `testUpdateAppointmentBlankIdThrows` and `testUpdateMissingAppointmentReturnsFalse` cover validation/missing update branches.
 - `testClearAllAppointmentsRemovesEntries` proves the reset hook empties the backing store.
-- `testCopyRejectsNullInternalState` exercises the copy guard against corrupted internal fields.
+- `testCopyRejectsNullInternalState` (`@ParameterizedTest`) uses reflection to corrupt each internal field (appointmentId, appointmentDate, description), proving the `validateCopySource()` guard triggers for all null branches.
 - `testGetInstanceColdStart` uses reflection to reset the static instance, then verifies `getInstance()` creates a new instance when none exists—ensuring full branch coverage of the lazy initialization pattern.
+
+<br>
+
+## REST API Layer (Phase 2)
+
+### API Snapshot
+- **Three REST controllers** expose CRUD endpoints under `/api/v1/{contacts,tasks,appointments}`.
+- **Service-level lookup methods** - Controllers use `getAllXxx()` and `getXxxById(id)` service methods for better encapsulation instead of accessing `getDatabase()` directly.
+- **DTOs with Bean Validation** (`ContactRequest`, `TaskRequest`, `AppointmentRequest`) validate input at the HTTP boundary before reaching domain logic.
+- **Global exception handling** via `@RestControllerAdvice` maps exceptions to consistent JSON error responses.
+- **OpenAPI/Swagger UI** available at `/swagger-ui.html` and `/v3/api-docs` (powered by springdoc-openapi).
+
+### Endpoint Summary
+| Resource     | Create (POST)           | Read (GET)                     | Update (PUT)            | Delete (DELETE)         |
+|--------------|-------------------------|--------------------------------|-------------------------|-------------------------|
+| Contacts     | `/api/v1/contacts`      | `/api/v1/contacts`, `/api/v1/contacts/{id}` | `/api/v1/contacts/{id}` | `/api/v1/contacts/{id}` |
+| Tasks        | `/api/v1/tasks`         | `/api/v1/tasks`, `/api/v1/tasks/{id}`       | `/api/v1/tasks/{id}`    | `/api/v1/tasks/{id}`    |
+| Appointments | `/api/v1/appointments`  | `/api/v1/appointments`, `/api/v1/appointments/{id}` | `/api/v1/appointments/{id}` | `/api/v1/appointments/{id}` |
+
+### HTTP Status Codes
+| Status | Meaning                       | When Used                                    |
+|--------|-------------------------------|----------------------------------------------|
+| 200    | OK                            | GET by ID, PUT update success                |
+| 201    | Created                       | POST create success                          |
+| 204    | No Content                    | DELETE success                               |
+| 400    | Bad Request                   | Validation failure, malformed JSON           |
+| 404    | Not Found                     | Resource with given ID does not exist        |
+| 409    | Conflict                      | Duplicate ID on create                       |
+
+### Validation Strategy (Two Layers)
+```mermaid
+flowchart TD
+    A[HTTP Request] --> B[Bean Validation on DTO]
+    B -->|fail| C[400 Bad Request]
+    B -->|pass| D[Domain Constructor/Update]
+    D -->|fail| C
+    D -->|pass| E[Service Layer]
+    E --> F[200/201/204 Response]
+```
+- **Bean Validation** (`@NotBlank`, `@Size`, `@Pattern`, `@FutureOrPresent`) catches invalid input early with user-friendly error messages.
+- **Domain validation** (`Validation.validateLength`, `validateDigits`, `validateDateNotPast`) acts as a backup layer—same rules, same constants.
+- DTO constraints use static imports from `Validation.MAX_*` constants to stay in sync with domain rules.
+
+### Controller Tests (MockMvc)
+- **ContactControllerTest** (30 tests): Happy path CRUD, validation errors, boundary tests, 404/409 scenarios.
+- **TaskControllerTest** (21 tests): Same patterns adapted for Task entity.
+- **AppointmentControllerTest** (20 tests): Date validation, past-date rejection, ISO 8601 format handling.
+- **GlobalExceptionHandlerTest** (4 tests): Direct unit tests for exception handler methods (`handleIllegalArgument`, `handleNotFound`, `handleDuplicate`).
+
+### Test Isolation Pattern
+Controller tests use reflection to access package-private `clearAll*()` methods on the autowired service:
+```java
+@BeforeEach
+void setUp() throws Exception {
+    final Method clearMethod = ContactService.class.getDeclaredMethod("clearAllContacts");
+    clearMethod.setAccessible(true);
+    clearMethod.invoke(contactService);  // Use autowired service, not getInstance()
+}
+```
 
 <br>
 
@@ -547,7 +623,13 @@ contactapp/
 ├── Application.java              # Spring Boot entrypoint
 ├── domain/                       # Domain entities (Contact, Task, Appointment, Validation)
 ├── service/                      # @Service beans (ContactService, TaskService, AppointmentService)
-├── api/                          # REST controllers (Phase 2 - empty)
+├── api/                          # REST controllers + DTOs + error handling
+│   ├── ContactController.java    # Contact CRUD endpoints
+│   ├── TaskController.java       # Task CRUD endpoints
+│   ├── AppointmentController.java # Appointment CRUD endpoints
+│   ├── GlobalExceptionHandler.java # @RestControllerAdvice error mapping
+│   ├── dto/                      # Request/Response DTOs with Bean Validation
+│   └── exception/                # ResourceNotFoundException, DuplicateResourceException
 └── persistence/                  # Repository interfaces (Phase 3 - empty)
 ```
 

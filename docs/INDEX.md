@@ -57,6 +57,27 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/test/java/contactapp/service/TaskServiceTest.java`](../src/test/java/contactapp/service/TaskServiceTest.java) | JUnit tests for TaskService singleton behavior and CRUD flows. |
 | [`../src/test/java/contactapp/service/AppointmentServiceTest.java`](../src/test/java/contactapp/service/AppointmentServiceTest.java) | JUnit tests for AppointmentService singleton and CRUD flows. |
 
+### API Layer (`contactapp.api`)
+| Path | Description |
+|------|-------------|
+| [`../src/main/java/contactapp/api/ContactController.java`](../src/main/java/contactapp/api/ContactController.java) | REST controller for Contact CRUD at `/api/v1/contacts`. |
+| [`../src/main/java/contactapp/api/TaskController.java`](../src/main/java/contactapp/api/TaskController.java) | REST controller for Task CRUD at `/api/v1/tasks`. |
+| [`../src/main/java/contactapp/api/AppointmentController.java`](../src/main/java/contactapp/api/AppointmentController.java) | REST controller for Appointment CRUD at `/api/v1/appointments`. |
+| [`../src/main/java/contactapp/api/GlobalExceptionHandler.java`](../src/main/java/contactapp/api/GlobalExceptionHandler.java) | @RestControllerAdvice mapping exceptions to HTTP responses. |
+| [`../src/main/java/contactapp/api/dto/ContactRequest.java`](../src/main/java/contactapp/api/dto/ContactRequest.java) | Contact request DTO with Bean Validation. |
+| [`../src/main/java/contactapp/api/dto/ContactResponse.java`](../src/main/java/contactapp/api/dto/ContactResponse.java) | Contact response DTO. |
+| [`../src/main/java/contactapp/api/dto/TaskRequest.java`](../src/main/java/contactapp/api/dto/TaskRequest.java) | Task request DTO with Bean Validation. |
+| [`../src/main/java/contactapp/api/dto/TaskResponse.java`](../src/main/java/contactapp/api/dto/TaskResponse.java) | Task response DTO. |
+| [`../src/main/java/contactapp/api/dto/AppointmentRequest.java`](../src/main/java/contactapp/api/dto/AppointmentRequest.java) | Appointment request DTO with Bean Validation and @FutureOrPresent. |
+| [`../src/main/java/contactapp/api/dto/AppointmentResponse.java`](../src/main/java/contactapp/api/dto/AppointmentResponse.java) | Appointment response DTO. |
+| [`../src/main/java/contactapp/api/dto/ErrorResponse.java`](../src/main/java/contactapp/api/dto/ErrorResponse.java) | Standard error response DTO. |
+| [`../src/main/java/contactapp/api/exception/ResourceNotFoundException.java`](../src/main/java/contactapp/api/exception/ResourceNotFoundException.java) | Exception for 404 Not Found responses. |
+| [`../src/main/java/contactapp/api/exception/DuplicateResourceException.java`](../src/main/java/contactapp/api/exception/DuplicateResourceException.java) | Exception for 409 Conflict responses. |
+| [`../src/test/java/contactapp/ContactControllerTest.java`](../src/test/java/contactapp/ContactControllerTest.java) | MockMvc integration tests for Contact API (30 tests). |
+| [`../src/test/java/contactapp/TaskControllerTest.java`](../src/test/java/contactapp/TaskControllerTest.java) | MockMvc integration tests for Task API (21 tests). |
+| [`../src/test/java/contactapp/AppointmentControllerTest.java`](../src/test/java/contactapp/AppointmentControllerTest.java) | MockMvc integration tests for Appointment API (20 tests). |
+| [`../src/test/java/contactapp/GlobalExceptionHandlerTest.java`](../src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods (4 tests). |
+
 ### Build & Configuration
 | Path | Description |
 |------|-------------|

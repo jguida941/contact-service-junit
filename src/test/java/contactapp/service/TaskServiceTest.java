@@ -255,4 +255,88 @@ public class TaskServiceTest {
         TaskService second = TaskService.getInstance();
         assertThat(second).isSameAs(service);
     }
+
+    // ==================== getTaskById Tests ====================
+
+    /**
+     * Verifies getTaskById returns the task when it exists.
+     */
+    @Test
+    void testGetTaskByIdReturnsTask() {
+        TaskService service = TaskService.getInstance();
+        Task task = new Task("500", "Test Task", "Test Description");
+        service.addTask(task);
+
+        var result = service.getTaskById("500");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getName()).isEqualTo("Test Task");
+    }
+
+    /**
+     * Verifies getTaskById returns empty when task doesn't exist.
+     */
+    @Test
+    void testGetTaskByIdReturnsEmptyWhenNotFound() {
+        TaskService service = TaskService.getInstance();
+
+        var result = service.getTaskById("nonexistent");
+
+        assertThat(result).isEmpty();
+    }
+
+    /**
+     * Verifies getTaskById throws when ID is blank.
+     */
+    @Test
+    void testGetTaskByIdBlankIdThrows() {
+        TaskService service = TaskService.getInstance();
+
+        assertThatThrownBy(() -> service.getTaskById(" "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("taskId must not be null or blank");
+    }
+
+    /**
+     * Verifies getTaskById trims the ID before lookup.
+     */
+    @Test
+    void testGetTaskByIdTrimsId() {
+        TaskService service = TaskService.getInstance();
+        Task task = new Task("600", "Trimmed Task", "Test Description");
+        service.addTask(task);
+
+        var result = service.getTaskById(" 600 ");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getName()).isEqualTo("Trimmed Task");
+    }
+
+    // ==================== getAllTasks Tests ====================
+
+    /**
+     * Verifies getAllTasks returns empty list when no tasks exist.
+     */
+    @Test
+    void testGetAllTasksReturnsEmptyList() {
+        TaskService service = TaskService.getInstance();
+
+        var result = service.getAllTasks();
+
+        assertThat(result).isEmpty();
+    }
+
+    /**
+     * Verifies getAllTasks returns all tasks.
+     */
+    @Test
+    void testGetAllTasksReturnsAllTasks() {
+        TaskService service = TaskService.getInstance();
+        service.addTask(new Task("701", "First Task", "First Description"));
+        service.addTask(new Task("702", "Second Task", "Second Description"));
+
+        var result = service.getAllTasks();
+
+        assertThat(result).hasSize(2);
+    }
 }

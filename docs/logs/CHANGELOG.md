@@ -5,6 +5,53 @@ All notable changes to this project will be documented here. Follow the
 
 ## [Unreleased]
 ### Added
+- **Phase 2 complete**: REST API + DTOs implemented.
+  - Added REST controllers: `ContactController`, `TaskController`, `AppointmentController` at `/api/v1/{resource}`.
+  - Created request/response DTOs with Bean Validation (`ContactRequest`, `TaskRequest`, `AppointmentRequest`, etc.).
+  - DTO constraints use static imports from `Validation.MAX_*` constants to stay in sync with domain rules.
+  - Added `GlobalExceptionHandler` with `@RestControllerAdvice` mapping exceptions to HTTP responses (400, 404, 409).
+  - Added custom exceptions: `ResourceNotFoundException`, `DuplicateResourceException`.
+  - Added springdoc-openapi dependency; Swagger UI at `/swagger-ui.html`, OpenAPI spec at `/v3/api-docs`.
+  - Added 71 controller tests (30 Contact + 21 Task + 20 Appointment) covering:
+    - Happy path CRUD operations
+    - Bean Validation boundary tests (exact max, one-over-max)
+    - 404 Not Found scenarios
+    - 409 Conflict (duplicate ID)
+    - Date validation (past date rejection for appointments)
+    - Malformed JSON handling
+  - Created ADR-0021 documenting the REST API implementation decisions.
+- **Service encapsulation**: Controllers now use service-level lookup methods instead of `getDatabase()`.
+  - Added `getAllContacts()`, `getContactById(String)` to `ContactService`.
+  - Added `getAllTasks()`, `getTaskById(String)` to `TaskService`.
+  - Added `getAllAppointments()`, `getAppointmentById(String)` to `AppointmentService`.
+  - All lookup methods return defensive copies and validate/trim IDs before lookup.
+  - Controllers use `service.getAllXxx()` and `service.getXxxById(id)` for better encapsulation.
+- **Exception handler tests**: Added `GlobalExceptionHandlerTest` with 4 unit tests for direct handler coverage.
+  - Tests `handleIllegalArgument`, `handleNotFound`, `handleDuplicate` methods directly.
+  - Ensures 100% mutation coverage for `GlobalExceptionHandler`.
+- **Service lookup method tests**: Added 13 new tests for the service-level lookup methods.
+  - `ContactServiceTest`: 7 tests for `getContactById()` and `getAllContacts()`.
+  - `TaskServiceTest`: 6 tests for `getTaskById()` and `getAllTasks()`.
+  - Total: 261 tests passing with 100% mutation score (159/159 killed).
+- **Static analysis fixes**: Addressed CodeRabbit review findings.
+  - Fixed ADR-0020 inconsistency where line 52 still referenced Phase 2 as future work.
+  - Added `Objects.requireNonNull()` null checks to all Response DTO factory methods (`ContactResponse.from()`, `TaskResponse.from()`, `AppointmentResponse.from()`).
+  - Updated parameterized validation tests to actually use the `expectedMessageContains` parameter for assertion (was unused).
+  - Changed controller test `setUp()` methods to use autowired service instance instead of `getInstance()` for consistency with Spring DI.
+  - Added CS320 spec comment to `Validation.java` constants explaining why limits follow assignment requirements.
+  - Added deferred suggestions (service encapsulation, java.time migration, custom exceptions) to `backlog.md`.
+- **DTO validation message improvements**: Replaced hardcoded values with Bean Validation placeholders.
+  - All `@Size` annotations now use `{min}` and `{max}` placeholders instead of hardcoded numbers.
+  - Updated `ContactRequest`, `TaskRequest`, `AppointmentRequest` to use dynamic message interpolation.
+  - This ensures validation messages stay accurate if field constraints change.
+- **AppointmentRequest date format fix**: Aligned Javadoc with actual `@JsonFormat` pattern.
+  - Updated `@JsonFormat` pattern to `yyyy-MM-dd'T'HH:mm:ss.SSSXXX` (ISO 8601 with millis and offset).
+  - Javadoc now correctly documents the accepted format.
+- **AppointmentControllerTest robustness**: Replaced brittle date string handling with DateTimeFormatter.
+  - Uses `DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").withZone(ZoneOffset.UTC)` for consistent date formatting.
+  - Eliminates fragile `substring(0, 19)` approach.
+- **ContactServiceTest clarity**: Added explicit `isPresent()` assertions before `get()` on Optionals.
+  - Makes test intent clearer and produces better failure messages.
 - **Phase 1 complete**: Spring Boot scaffold implemented.
   - Added Spring Boot 3.4.12 parent POM with starter-web, actuator, and validation dependencies.
   - Created `Application.java` Spring Boot entrypoint with `@SpringBootApplication`.

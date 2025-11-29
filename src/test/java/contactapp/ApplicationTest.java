@@ -16,7 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  *
  * <p>If this test fails, the application will not start in production.
  */
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ApplicationTest {
 
     /**

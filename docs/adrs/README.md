@@ -22,3 +22,4 @@
 | [ADR-0018](ADR-0018-authentication-and-authorization-model.md)      | Authentication and Authorization Model          | Accepted |
 | [ADR-0019](ADR-0019-deployment-and-packaging.md)                    | Deployment and Packaging                        | Accepted |
 | [ADR-0020](ADR-0020-spring-boot-scaffold.md)                        | Spring Boot Scaffold                            | Accepted |
+| [ADR-0021](ADR-0021-rest-api-implementation.md)                     | REST API Implementation                         | Accepted |

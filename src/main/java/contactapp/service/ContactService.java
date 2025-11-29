@@ -3,7 +3,9 @@ package contactapp.service;
 import contactapp.domain.Contact;
 import contactapp.domain.Validation;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -175,6 +177,36 @@ public final class ContactService {
                 .collect(Collectors.toUnmodifiableMap(
                         Map.Entry::getKey,
                         entry -> entry.getValue().copy()));
+    }
+
+    /**
+     * Returns all contacts as a list of defensive copies.
+     *
+     * <p>Encapsulates the internal storage structure so controllers don't
+     * need to access getDatabase() directly.
+     *
+     * @return list of contact defensive copies
+     */
+    public List<Contact> getAllContacts() {
+        return DATABASE.values().stream()
+                .map(Contact::copy)
+                .toList();
+    }
+
+    /**
+     * Finds a contact by ID.
+     *
+     * <p>The ID is validated and trimmed before lookup so callers can pass
+     * values like " 123 " and still find the contact stored as "123".
+     *
+     * @param contactId the contact ID to search for
+     * @return Optional containing a defensive copy of the contact, or empty if not found
+     * @throws IllegalArgumentException if contactId is null or blank
+     */
+    public Optional<Contact> getContactById(final String contactId) {
+        Validation.validateNotBlank(contactId, "contactId");
+        final Contact contact = DATABASE.get(contactId.trim());
+        return contact == null ? Optional.empty() : Optional.of(contact.copy());
     }
 
     /**

@@ -74,6 +74,17 @@
         </dependency>
 
         <!--
+            SpringDoc OpenAPI: Auto-generates OpenAPI 3.0 specification from
+            Spring MVC controllers. Provides Swagger UI at /swagger-ui.html
+            and OpenAPI JSON at /v3/api-docs. Required for Phase 2 API docs.
+        -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.7.0</version>
+        </dependency>
+
+        <!--
             SpotBugs annotations for static analysis.
             Scope is provided since these are compile-time only.
         -->
