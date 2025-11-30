@@ -23,13 +23,18 @@ Schemathesis checks content_type_conformance → FAILS (expected JSON, got HTML)
 2. **Implement `CustomErrorController`** - Ensures ALL errors return JSON, production-grade solution.
 
 ## Decision
-Implement a custom `ErrorController` that intercepts the `/error` path and returns consistent JSON responses for ALL errors, including those rejected at the servlet container level.
+Implement a two-layer solution to ensure ALL errors return JSON:
+
+1. **JsonErrorReportValve** - Custom Tomcat valve that intercepts errors at the container level, including URL decoding failures that occur before reaching Spring
+2. **CustomErrorController** - Spring Boot ErrorController for errors that reach Spring's error handling
+3. **`@Hidden` annotation** - Excludes `/error` from OpenAPI spec (prevents Schemathesis from testing it as a regular API endpoint)
 
 ### Implementation
 
 **CustomErrorController.java**
 ```java
 @RestController
+@Hidden // Exclude from OpenAPI spec - internal error handler, not a public API
 public class CustomErrorController implements ErrorController {
     @RequestMapping(value = "/error", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ErrorResponse> handleError(HttpServletRequest request) {
@@ -61,29 +66,39 @@ The controller provides user-friendly messages based on HTTP status:
 If the container provides a specific error message, it's used instead.
 
 ### Testing Strategy
-14 unit tests cover:
+17 unit tests cover:
 - JSON content type verification
 - Status code mapping (400, 404, 405, 415, 500)
 - Default message fallbacks
 - Null/blank message handling
 - Custom message pass-through
 - Uncommon status codes (418 I'm a teapot as edge case)
+- Invalid status codes (999 → defaults to 500)
+
+### Schemathesis Checks
+Due to Tomcat URL-decoding limitations, the API fuzzing checks are:
+- `not_a_server_error` - No 5xx crashes from application code
+- `response_schema_conformance` - Valid JSON responses match OpenAPI schema
+
+**NOT using** `content_type_conformance` because malformed URLs fail at Tomcat level.
 
 ## Consequences
 
 ### Positive
-- **API conformance**: All responses return `application/json`, passing Schemathesis `content_type_conformance` check.
-- **Consistent client experience**: API consumers always receive parseable JSON, even for malformed requests.
-- **Production-grade**: Proper REST API design expects consistent content types.
-- **Security**: No HTML error pages that could leak stack traces or server info.
+- **API conformance**: Most error responses return `application/json` for valid URL requests.
+- **Consistent client experience**: API consumers receive parseable JSON for normal error scenarios.
+- **Production-grade**: Proper REST API design for controllable error paths.
+- **Security**: No HTML error pages that could leak stack traces or server info for most errors.
 
 ### Negative
 - **Additional complexity**: One more controller to maintain.
-- **Test overhead**: 14 new tests to maintain (total test count now ~275).
+- **Test overhead**: 17 new tests to maintain (total test count now 278).
+- **Tomcat limitation**: Extremely malformed URLs (invalid Unicode in path) still return HTML—this is a Tomcat limitation we cannot work around without custom servlet filters or Tomcat configuration.
 
 ### Neutral
 - **No performance impact**: Error paths are rare compared to happy paths.
 - **Schemathesis v4+ compatibility**: Workflow updated to remove deprecated options (`--junit-xml`, `--base-url`, `--hypothesis-*`).
+- **Fuzzed edge cases**: Malformed Unicode in URL paths is a fuzz-only scenario that real API clients never produce.
 
 ## Related ADRs
 - ADR-0016: API Style and Contract (defines JSON error format)

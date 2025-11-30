@@ -20,13 +20,13 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for {@link CustomErrorController}.
  *
- * <p>Tests the error controller that ensures ALL errors return JSON responses,
+ * <p>Tests the error controller that ensures most errors return JSON responses,
  * including those rejected at the servlet container level before reaching
  * Spring MVC's exception handling.
  *
- * <p>This controller is critical for API fuzzing compliance - Schemathesis's
- * {@code content_type_conformance} check requires all responses to match the
- * OpenAPI spec's documented content type ({@code application/json}).
+ * <p>This controller (combined with JsonErrorReportValve) ensures API consumers
+ * receive parseable JSON for normal error scenarios. Note: Extremely malformed
+ * URLs that fail at Tomcat's connector level may still return HTML; see ADR-0022.
  */
 class CustomErrorControllerTest {
 

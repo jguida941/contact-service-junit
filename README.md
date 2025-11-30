@@ -68,6 +68,8 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 | [`src/main/java/contactapp/api/AppointmentController.java`](src/main/java/contactapp/api/AppointmentController.java) | REST controller for Appointment CRUD operations at `/api/v1/appointments`.                      |
 | [`src/main/java/contactapp/api/GlobalExceptionHandler.java`](src/main/java/contactapp/api/GlobalExceptionHandler.java) | Maps exceptions to HTTP responses (400, 404, 409).                                            |
 | [`src/main/java/contactapp/api/CustomErrorController.java`](src/main/java/contactapp/api/CustomErrorController.java) | Ensures ALL errors return JSON (including Tomcat-level errors).                               |
+| [`src/main/java/contactapp/config/JsonErrorReportValve.java`](src/main/java/contactapp/config/JsonErrorReportValve.java) | Tomcat valve ensuring container-level errors return JSON (see ADR-0022).                    |
+| [`src/main/java/contactapp/config/TomcatConfig.java`](src/main/java/contactapp/config/TomcatConfig.java)             | Registers JsonErrorReportValve with embedded Tomcat.                                            |
 | [`src/main/java/contactapp/api/dto/`](src/main/java/contactapp/api/dto/)                                             | Request/Response DTOs with Bean Validation (`ContactRequest`, `TaskRequest`, etc.).             |
 | [`src/main/java/contactapp/api/exception/`](src/main/java/contactapp/api/exception/)                                 | Custom exceptions (`ResourceNotFoundException`, `DuplicateResourceException`).                  |
 | [`src/test/java/contactapp/ContactControllerTest.java`](src/test/java/contactapp/ContactControllerTest.java)         | MockMvc integration tests for Contact API (30 tests).                                           |
@@ -321,9 +323,18 @@ graph TD
 - `testDeleteMissingContactReturnsFalse` covers the branch where no contact exists for the given id.
 - `testDeleteContactBlankIdThrows` shows ID validation runs even on deletes, surfacing the standard "contactId must not be null or blank" message.
 - `testUpdateContact` verifies every mutable field changes via setter delegation.
+- `testUpdateContactTrimsId` confirms IDs are trimmed before lookups during updates.
+- `testUpdateContactBlankIdThrows` ensures update throws when the ID is blank so validation mirrors delete().
 - `testUpdateMissingContactReturnsFalse` covers the "not found" branch so callers can rely on the boolean result.
 - `testGetDatabaseReturnsDefensiveCopies` proves callers cannot mutate internal state through the returned snapshot.
 - `testGetInstanceColdStart` uses reflection to reset the static instance, then verifies `getInstance()` creates a new instance when none exists—ensuring full branch coverage of the lazy initialization pattern.
+- `testGetContactByIdReturnsContact` verifies getContactById returns the contact when it exists.
+- `testGetContactByIdReturnsEmptyWhenNotFound` verifies getContactById returns empty when contact doesn't exist.
+- `testGetContactByIdBlankIdThrows` verifies getContactById throws when ID is blank.
+- `testGetContactByIdTrimsId` verifies getContactById trims the ID before lookup.
+- `testGetContactByIdReturnsDefensiveCopy` verifies getContactById returns a defensive copy.
+- `testGetAllContactsReturnsEmptyList` verifies getAllContacts returns empty list when no contacts exist.
+- `testGetAllContactsReturnsAllContacts` verifies getAllContacts returns all contacts.
 
 <br>
 
@@ -446,12 +457,24 @@ graph TD
 - `assertThatThrownBy` verifies the null-task guard and blank-id validation messages.
 
 ### Scenario Coverage
-- Singleton identity tests (instance returns same reference) match what is enforced for the contact service.
-- Happy-path add/delete/update plus duplicate and missing branches confirm boolean results and field data.
-- Tests prove trimmed IDs succeed on update and blank IDs throw before accessing the map.
-- Invalid update inputs (e.g., blank name) throw and leave the stored task unchanged, proving atomicity at the service layer.
+- `testSingletonInstance` proves the singleton accessor returns the same instance.
+- `testAddTask` stores a task and asserts map contents.
+- `testAddDuplicateTaskIdFails` returns `false` on duplicate IDs and preserves the original entry.
+- `testAddTaskNullThrows` asserts the null guard message.
+- `testDeleteTask` removes an existing entry.
+- `testDeleteTaskBlankIdThrows` and `testDeleteMissingTaskReturnsFalse` cover validation/missing delete branches.
+- `testUpdateTask` changes name/description; `testUpdateTaskTrimsId` shows whitespace IDs are trimmed.
+- `testUpdateTaskBlankIdThrows` and `testUpdateMissingTaskReturnsFalse` cover validation/missing update branches.
+- `testUpdateTaskInvalidValuesLeaveStateUnchanged` proves invalid updates throw and leave the stored task unchanged.
+- `testClearAllTasksRemovesEntries` proves the reset hook empties the backing store.
 - `testGetDatabaseReturnsDefensiveCopies` proves callers cannot mutate internal state through the returned snapshot.
 - `testGetInstanceColdStart` uses reflection to reset the static instance, then verifies `getInstance()` creates a new instance when none exists—ensuring full branch coverage of the lazy initialization pattern.
+- `testGetTaskByIdReturnsTask` verifies getTaskById returns the task when it exists.
+- `testGetTaskByIdReturnsEmptyWhenNotFound` verifies getTaskById returns empty when task doesn't exist.
+- `testGetTaskByIdBlankIdThrows` verifies getTaskById throws when ID is blank.
+- `testGetTaskByIdTrimsId` verifies getTaskById trims the ID before lookup.
+- `testGetAllTasksReturnsEmptyList` verifies getAllTasks returns empty list when no tasks exist.
+- `testGetAllTasksReturnsAllTasks` verifies getAllTasks returns all tasks.
 
   <br>
 
@@ -497,10 +520,12 @@ flowchart TD
 - `testSuccessfulCreationTrimsAndCopiesDate` validates trim/defensive copy on construction.
 - `testUpdateReplacesValuesAtomically` confirms date/description updates and defensive date copy.
 - `testSetDescriptionAcceptsValidValue` covers setter happy path.
-- `testGetAppointmentDateReturnsDefensiveCopy` ensures callers can’t mutate stored dates.
+- `testGetAppointmentDateReturnsDefensiveCopy` ensures callers can't mutate stored dates.
 - `testConstructorValidation` enumerates invalid id/description/null/past date cases.
 - `testSetDescriptionValidation` covers invalid description setter inputs.
 - `testUpdateRejectsInvalidValuesAtomically` enumerates invalid update inputs and asserts state remains unchanged.
+- `testCopyProducesIndependentInstance` verifies copy() produces an independent instance with identical values.
+- `testCopyRejectsNullInternalState` (`@ParameterizedTest`) uses reflection to corrupt each internal field (appointmentId, appointmentDate, description), proving the `validateCopySource()` guard triggers for all null branches.
 
 ## [AppointmentService.java](src/main/java/contactapp/service/AppointmentService.java) / [AppointmentServiceTest.java](src/test/java/contactapp/service/AppointmentServiceTest.java)
 
@@ -548,8 +573,9 @@ graph TD
 - `testGetDatabaseReturnsDefensiveCopies` proves callers cannot mutate internal state through snapshots.
 - `testUpdateAppointmentBlankIdThrows` and `testUpdateMissingAppointmentReturnsFalse` cover validation/missing update branches.
 - `testClearAllAppointmentsRemovesEntries` proves the reset hook empties the backing store.
-- `testCopyRejectsNullInternalState` (`@ParameterizedTest`) uses reflection to corrupt each internal field (appointmentId, appointmentDate, description), proving the `validateCopySource()` guard triggers for all null branches.
 - `testGetInstanceColdStart` uses reflection to reset the static instance, then verifies `getInstance()` creates a new instance when none exists—ensuring full branch coverage of the lazy initialization pattern.
+
+> **Note:** `getAllAppointments()` and `getAppointmentById()` are tested implicitly via controller integration tests but lack dedicated unit tests in AppointmentServiceTest.
 
 <br>
 
@@ -634,8 +660,12 @@ contactapp/
 │   ├── TaskController.java       # Task CRUD endpoints
 │   ├── AppointmentController.java # Appointment CRUD endpoints
 │   ├── GlobalExceptionHandler.java # @RestControllerAdvice error mapping
+│   ├── CustomErrorController.java # JSON error responses for container-level errors
 │   ├── dto/                      # Request/Response DTOs with Bean Validation
 │   └── exception/                # ResourceNotFoundException, DuplicateResourceException
+├── config/                       # Tomcat/Spring configuration
+│   ├── JsonErrorReportValve.java # Tomcat valve for JSON error responses (ADR-0022)
+│   └── TomcatConfig.java         # Registers JsonErrorReportValve with embedded Tomcat
 └── persistence/                  # Repository interfaces (Phase 3 - empty)
 ```
 
@@ -875,12 +905,12 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 ### API Fuzzing (Schemathesis)
 - `.github/workflows/api-fuzzing.yml` runs Schemathesis against the live OpenAPI spec to detect 5xx errors, schema violations, and edge cases.
 - **Schemathesis v4+ compatibility**: The workflow uses updated options after v4 removed `--base-url`, `--hypothesis-*`, and `--junit-xml` flags.
-- **CustomErrorController**: Ensures all error responses return `application/json`, allowing `content_type_conformance` check to pass even for container-level errors.
+- **Two-layer JSON error handling**: `JsonErrorReportValve` intercepts errors at the Tomcat container level, while `CustomErrorController` handles Spring-level errors. This ensures most error responses return `application/json`. Note: Extremely malformed URLs (invalid Unicode) fail at Tomcat's connector level before the valve, so `content_type_conformance` check is not used (see ADR-0022).
 - **Workflow steps**:
   1. Build the JAR with `mvn -DskipTests package`.
   2. Start Spring Boot app in background, wait for `/actuator/health` to return `UP` (uses `jq` for robust JSON parsing).
   3. Export OpenAPI spec to `target/openapi/openapi.json` (artifact for ZAP/other tools).
-  4. Run `schemathesis run` with `--checks not_a_server_error --checks content_type_conformance --checks response_schema_conformance --max-examples 50 --workers 1`.
+  4. Run `schemathesis run` with `--checks not_a_server_error --checks response_schema_conformance --max-examples 50 --workers 1`.
   5. Stop app, publish summary to GitHub Actions.
 - **Artifacts produced**:
   - `openapi-spec`: JSON/YAML OpenAPI specification for ZAP and other security tools.

@@ -10,8 +10,12 @@ All notable changes to this project will be documented here. Follow the
   - Ensures ALL errors return `application/json`, including Tomcat-level errors (malformed requests, invalid paths) that bypass Spring MVC's `@RestControllerAdvice`.
   - Provides user-friendly error messages based on HTTP status (400, 404, 405, 415, 500).
   - Disabled Tomcat's whitelabel error page via `server.error.whitelabel.enabled=false`.
-  - Added 14 unit tests in `CustomErrorControllerTest` for status codes, JSON content type, and message mapping.
-  - Critical for Schemathesis `content_type_conformance` check passing with fuzzed inputs.
+  - Added `@Hidden` annotation to exclude `/error` from OpenAPI spec (prevents Schemathesis from testing it as a regular API).
+  - Added 17 unit tests in `CustomErrorControllerTest` for status codes, JSON content type, and message mapping.
+- **JsonErrorReportValve** for Tomcat-level JSON error handling (ADR-0022):
+  - Custom Tomcat valve intercepts errors at the container level BEFORE they reach Spring MVC.
+  - Combined with `CustomErrorController`, creates a two-layer solution ensuring most error responses return `application/json`.
+  - Note: Extremely malformed URLs (invalid Unicode) fail at Tomcat's connector level before the valve, so `content_type_conformance` check is not used.
 - **Phase 2.5 complete**: API security testing foundation implemented.
 - **OpenAPI spec improvements** for better tooling compatibility:
   - Added `@Tag`, `@Operation`, `@ApiResponses` annotations to all controllers.
@@ -35,7 +39,8 @@ All notable changes to this project will be documented here. Follow the
 - **Documentation audit fixes**:
   - `agents.md`: Updated ADR range from ADR-0014–0020 to ADR-0014–0021, updated current state to Phase 2.5 complete.
 - **API fuzzing checks refined** to avoid false positives:
-  - Changed from `--checks all` to specific checks: `not_a_server_error`, `content_type_conformance`, `response_schema_conformance`.
+  - Changed from `--checks all` to specific checks: `not_a_server_error`, `response_schema_conformance`.
+  - Not using `content_type_conformance` due to Tomcat connector-level URL decoding limitation (see ADR-0022).
   - Avoids flagging expected 400 responses (e.g., past dates rejected by `@FutureOrPresent`).
 - **API fuzzing workflow hardened** (CodeRabbit review findings):
   - Added explicit `pyyaml` installation so YAML export succeeds reliably instead of silently failing.

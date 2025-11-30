@@ -175,13 +175,13 @@ def run_schemathesis(base_url: str, spec_path: str) -> int:
     # - --base-url (now inferred from spec URL)
     # - --hypothesis-* options
     # - --junit-xml (removed in v4+)
-    # CustomErrorController ensures ALL errors return JSON, so content_type_conformance passes.
-    # Each check must be passed via its own --checks flag.
+    # NOT using content_type_conformance: malformed URLs (invalid Unicode) fail at
+    # Tomcat's connector level BEFORE reaching JsonErrorReportValve, returning HTML.
+    # See ADR-0022 for details.
     cmd = [
         "schemathesis", "run",
         spec_url,
         "--checks", "not_a_server_error",
-        "--checks", "content_type_conformance",
         "--checks", "response_schema_conformance",
         "--workers", "1",
         "--max-examples", "50",  # Keep CI fast

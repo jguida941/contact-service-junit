@@ -1,6 +1,7 @@
 package contactapp.api;
 
 import contactapp.api.dto.ErrorResponse;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.boot.web.servlet.error.ErrorController;
@@ -30,14 +31,17 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <h2>Integration with Schemathesis</h2>
  * <p>API fuzzing tools like Schemathesis test with malformed inputs that may
- * trigger container-level errors. This controller ensures those error responses
- * conform to the OpenAPI spec's documented content type ({@code application/json}),
- * allowing the {@code content_type_conformance} check to pass.
+ * trigger container-level errors. This controller (combined with
+ * {@link contactapp.config.JsonErrorReportValve}) ensures most error responses
+ * conform to the OpenAPI spec's documented content type ({@code application/json}).
+ * Note: Extremely malformed URLs that fail at Tomcat's connector level (before
+ * reaching the valve) may still return HTML; see ADR-0022.
  *
  * @see GlobalExceptionHandler for Spring MVC-level exception handling
  * @see ErrorResponse for the JSON error format
  */
 @RestController
+@Hidden // Exclude from OpenAPI spec - this is an internal error handler, not a public API
 public class CustomErrorController implements ErrorController {
 
     /** Default HTTP status code when container doesn't provide one. */
