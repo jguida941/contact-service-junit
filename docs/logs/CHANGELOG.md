@@ -4,7 +4,11 @@ All notable changes to this project will be documented here. Follow the
 [Semantic Versioning](https://semver.org/) once formal releases begin.
 
 ## [Unreleased]
+### Security
+- **react-router vulnerability**: Bumped `react-router` and `react-router-dom` from 7.0.2 to 7.9.6 to fix CVE for pre-render data spoofing.
+
 ### Fixed
+- **SpotBugs false positive**: Added `@SuppressFBWarnings` to `ApplicationContextProvider.setApplicationContext()` for standard Spring ApplicationContextAware pattern.
 - **Race condition in add methods**: Fixed check-then-insert race condition in `ContactService.addContact()`, `TaskService.addTask()`, and `AppointmentService.addAppointment()` using a hybrid approach: fast-path `existsById()` check for immediate rejection plus `DataIntegrityViolationException` catch for race condition safety in JPA stores. This provides optimal performance (no DB round-trip for obvious duplicates) while ensuring atomicity via database UNIQUE constraints. See ADR-0024 for details.
 - **UI API endpoint mismatch**: Changed API base from `/api` to `/api/v1` to match backend controller mappings.
 - **Appointment date field name**: Fixed `date` → `appointmentDate` to match backend `AppointmentRequest` DTO.
