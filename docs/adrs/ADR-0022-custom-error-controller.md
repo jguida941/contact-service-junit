@@ -161,7 +161,7 @@ Due to Tomcat URL-decoding limitations, the API fuzzing checks are:
 
 ### Negative
 - **Additional complexity**: One more controller to maintain.
-- **Test overhead**: 17 new tests to maintain (total test count now 278).
+- **Test overhead**: 17 new tests to maintain (total test count now 295).
 - **Tomcat limitation**: Extremely malformed URLs (invalid Unicode in path) still return HTML—this is a Tomcat limitation we cannot work around without custom servlet filters or Tomcat configuration.
 
 ### Neutral

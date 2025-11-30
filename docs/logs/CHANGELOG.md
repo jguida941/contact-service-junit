@@ -18,7 +18,7 @@ All notable changes to this project will be documented here. Follow the
   - Combined with `CustomErrorController`, creates a two-layer solution ensuring most error responses return `application/json`.
   - **Fixed chunked encoding issues** with explicit Content-Length: valve now guards with `isCommitted()`, resets buffer, sets explicit `Content-Length`, and writes bytes directly via `OutputStream` (standard Tomcat pattern: guard → reset → set headers → write bytes → flush).
   - Note: Extremely malformed URLs (invalid Unicode) fail at Tomcat's connector level before the valve, so `content_type_conformance` check is not used.
-  - **All Schemathesis phases now pass** (Coverage, Fuzzing, Stateful): 8,245 test cases generated, 8,245 passed.
+  - **All Schemathesis phases now pass** (Coverage, Fuzzing, Stateful): 18,288 test cases generated, 18,288 passed.
 - **Phase 2.5 complete**: API security testing foundation implemented.
 - **Path variable validation** on controllers:
   - Added `@Size(max=MAX_ID_LENGTH)` to all `{id}` path parameters to enforce 10-char limit.

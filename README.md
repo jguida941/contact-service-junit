@@ -924,7 +924,7 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 - **Schemathesis v4+ compatibility**: The workflow uses updated options after v4 removed `--base-url`, `--hypothesis-*`, and `--junit-xml` flags.
 - **Two-layer JSON error handling**: `JsonErrorReportValve` intercepts errors at the Tomcat container level, while `CustomErrorController` handles Spring-level errors. This ensures most error responses return `application/json`. Note: Extremely malformed URLs (invalid Unicode) fail at Tomcat's connector level before the valve, so `content_type_conformance` check is not used (see ADR-0022).
 - **Content-Length fix for chunked encoding**: `JsonErrorReportValve` now sets explicit `Content-Length` to avoid "invalid chunk" errors during fuzzing. The valve implements five safeguards: `isCommitted()` check, buffer reset, `IllegalStateException` bailout, explicit `Content-Length`, and binary write via `OutputStream`. This is the standard Tomcat pattern: guard → reset → set headers → write bytes → flush.
-- **All Schemathesis phases pass**: Coverage, Fuzzing, and Stateful phases all pass (8,245 test cases generated, 8,245 passed).
+- **All Schemathesis phases pass**: Coverage, Fuzzing, and Stateful phases all pass (18,288 test cases generated, 18,288 passed).
 - **Workflow steps**:
   1. Build the JAR with `mvn -DskipTests package`.
   2. Start Spring Boot app in background, wait for `/actuator/health` to return `UP` (uses `jq` for robust JSON parsing).
