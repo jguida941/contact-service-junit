@@ -4,7 +4,29 @@ All notable changes to this project will be documented here. Follow the
 [Semantic Versioning](https://semver.org/) once formal releases begin.
 
 ## [Unreleased]
+### Added
+- **Phase 3 Persistence Stack**:
+  - Added Spring Data JPA, Flyway (core + Postgres), PostgreSQL JDBC driver, H2, and Testcontainers dependencies to `pom.xml`.
+  - Introduced `contactapp.persistence.entity|mapper|repository|store` packages. Services now depend on `ContactStore`/`TaskStore`/`AppointmentStore`, which delegate to Spring Data JPA under normal operation and in-memory stores for legacy `getInstance()` callers.
+  - Created Flyway migrations `V1__create_contacts_table.sql`, `V2__create_tasks_table.sql`, and `V3__create_appointments_table.sql` (constraints derived from `Validation.java`).
+  - Rebuilt `application.yml` as a multi-document profile file (dev/test/integration/prod) with Flyway/JPA configuration per profile.
+  - Added mapper unit tests, repository slice tests (`@DataJpaTest` + Flyway), Spring Boot service tests (H2 + Flyway), and Postgres-backed Testcontainers integration tests for all three services.
+  - Authored ADR-0024 documenting the persistence implementation and profile strategy.
+- **Legacy singleton regression guard**:
+  - Added `LegacySingletonUsageTest` to fail the build if `ContactService.getInstance()`, `TaskService.getInstance()`, or `AppointmentService.getInstance()` appear outside the approved legacy compatibility tests.
+
+### Added
+- **JacksonConfig.java** for strict JSON type enforcement (ADR-0023):
+  - Disables Jackson's default type coercion that silently converts boolean/number values to strings.
+  - `{"address": false}` now returns 400 Bad Request instead of being coerced to `"false"`.
+  - `{"description": 123}` now returns 400 Bad Request instead of being coerced to `"123"`.
+  - Ensures OpenAPI schema compliance for Schemathesis API fuzzing.
+- **ADR-0023**: Documents API fuzzing findings, fixes, and known limitations.
+
 ### Fixed
+- **Undocumented 400 status codes in OpenAPI spec**:
+  - Added `@ApiResponse(responseCode = "400", description = "Invalid ID format")` to GET/{id} and DELETE/{id} endpoints in all controllers.
+  - Schemathesis now validates that path variable validation errors are properly documented.
 - **Path variable validation now enforced at runtime**:
   - Added `@Validated` annotation to `ContactController`, `TaskController`, and `AppointmentController`.
   - Without `@Validated`, Spring ignores `@Size` and other Bean Validation constraints on `@PathVariable` parameters.
@@ -26,7 +48,7 @@ All notable changes to this project will be documented here. Follow the
   - Combined with `CustomErrorController`, creates a two-layer solution ensuring most error responses return `application/json`.
   - **Fixed chunked encoding issues** with explicit Content-Length: valve now guards with `isCommitted()`, resets buffer, sets explicit `Content-Length`, and writes bytes directly via `OutputStream` (standard Tomcat pattern: guard → reset → set headers → write bytes → flush).
   - Note: Extremely malformed URLs (invalid Unicode) fail at Tomcat's connector level before the valve, so `content_type_conformance` check is not used.
-  - **All Schemathesis phases now pass** (Coverage, Fuzzing, Stateful): 18,288 test cases generated, 18,288 passed.
+  - **All Schemathesis phases now pass** (Coverage, Fuzzing, Stateful): 30,668+ test cases generated, 0 failures.
 - **Phase 2.5 complete**: API security testing foundation implemented.
 - **Path variable validation** on controllers:
   - Added `@NotBlank @Size(min=1, max=MAX_ID_LENGTH)` to all `{id}` path parameters to reject whitespace-only and enforce 10-char limit.
@@ -70,6 +92,7 @@ All notable changes to this project will be documented here. Follow the
   - Controllers: Added `@SuppressFBWarnings` for intentional Spring DI singleton service storage (false positive).
 
 ### Changed
+- Simplified legacy singleton compatibility: `getInstance()` in Contact/Task/Appointment services now returns the Spring-managed proxy when the context is ready (or the in-memory fallback before boot) without any manual `Advised` proxy unwrapping. Updated the corresponding Spring Boot service tests to assert shared persistence behavior between DI and legacy access instead of relying on brittle object identity checks.
 - Updated `docs/logs/backlog.md` to mark CVE dependencies as fixed.
 
 ### Added (continued)

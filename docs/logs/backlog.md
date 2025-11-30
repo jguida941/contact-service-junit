@@ -25,6 +25,11 @@ Consider these extensions when adding API/persistence/UI while keeping the curre
 ## Reporting & Observability
 - Future observability enhancements (distributed tracing backends, log shipping) to be considered post-MVP.
 
+## Legacy Singleton Decommission (Future)
+- Once every caller uses Spring DI, delete `getInstance()` and the in-memory store implementations entirely.
+- Remove the legacy singleton tests and compatibility guards after the DI-only migration is complete.
+- Update documentation/ADRs at that time to reflect the fully managed Spring context (no static singletons).
+
 ## Controller/Service Encapsulation ✅ IMPLEMENTED
 Service-level lookup methods have been implemented:
 - **Service-level lookup methods**: ✅ Added `getAllContacts()`/`getContactById(String)` to `ContactService`, `getAllTasks()`/`getTaskById(String)` to `TaskService`, `getAllAppointments()`/`getAppointmentById(String)` to `AppointmentService`. Controllers now use these instead of `getDatabase()`.

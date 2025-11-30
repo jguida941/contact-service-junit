@@ -28,22 +28,23 @@
 
 ## Current State
 
-- **Phase 2 complete**: REST API + DTOs implemented.
+- **Phase 3 complete**: Persistence layer (Spring Data JPA + Flyway + Postgres) implemented; legacy singletons still available for backward compatibility.
 - Spring Boot 3.4.12 Maven project with layered packages (`domain`, `service`, `api`, `persistence`).
 - Domain classes (`Contact`, `Task`, `Appointment`) with validation rules preserved; `appointmentDate` serialized as ISO 8601 with millis + offset (`yyyy-MM-dd'T'HH:mm:ss.SSSXXX`, UTC).
-- Services annotated with `@Service` for Spring DI while retaining `getInstance()` for backward compatibility.
+- Services annotated with `@Service` for Spring DI while retaining `getInstance()` fallbacks powered by in-memory stores that migrate into the JPA-backed stores once Spring initializes; `getInstance()` now simply returns the Spring proxy when available so no manual proxy unwrapping is needed, and the backlog tracks their eventual removal once DI-only usage is confirmed.
 - REST controllers expose CRUD at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`.
 - DTOs with Bean Validation (`@NotBlank`, `@Size`, `@Pattern`, `@FutureOrPresent`) mapped to domain objects.
 - Global exception handler (`GlobalExceptionHandler`) maps exceptions to JSON error responses (400, 404, 409).
 - Custom error controller (`CustomErrorController`) ensures ALL errors return JSON, including container-level errors.
+- Persistence implemented via Spring Data repositories + mapper components; schema managed by Flyway migrations targeting Postgres (dev/prod) and H2/Testcontainers (tests). Application profiles (`dev`, `test`, `integration`, `prod`) are handled via multi-document `application.yml`.
+- Testcontainers-based integration suites cover Contact/Task/Appointment services against real Postgres.
 - OpenAPI/Swagger UI available at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi).
 - Health/info actuator endpoints available; other actuator endpoints locked down.
-- Latest CI: 296 tests passing, 100% mutation score, 100% line coverage, SpotBugs clean.
+- Latest CI: 310 tests passing (unit + slice + Testcontainers integration), 100% mutation score, 100% line coverage, SpotBugs clean.
 - Controller tests (71 tests): ContactControllerTest (30), TaskControllerTest (21), AppointmentControllerTest (20).
 - Exception handler tests (5 tests): GlobalExceptionHandlerTest validates direct handler coverage (including ConstraintViolationException for path variable validation).
 - Error controller tests (34 tests): CustomErrorControllerTest (17) + JsonErrorReportValveTest (17) validate container-level error handling.
-- Service tests include lookup method coverage: getAllContacts/getContactById, getAllTasks/getTaskById, getAllAppointments/getAppointmentById.
-- Data is still volatile (ConcurrentHashMap only); no database, migrations, or persistence abstraction yet (Phase 3).
+- Service tests include lookup method coverage: getAllContacts/getContactById, getAllTasks/getTaskById, getAllAppointments/getAppointmentById, plus mapper/repository slices and legacy singleton tests.
 - `ui/qa-dashboard` is a sample Vite/React metrics console, not a product UI.
 - No authentication, authorization, logging, or observability yet.
 - Controllers use service-level lookup methods (`getAllXxx()`, `getXxxById()`) instead of `getDatabase()` for better encapsulation.
@@ -106,7 +107,7 @@ Implementation details:
   - `contactapp.domain` - Domain entities (Contact, Task, Appointment, Validation)
   - `contactapp.service` - Services with @Service annotations (ContactService, TaskService, AppointmentService)
   - `contactapp.api` - REST controllers (populated in Phase 2)
-  - `contactapp.persistence` - Repository interfaces (Phase 3)
+- `contactapp.persistence` - Entities, mappers, repositories, and store abstractions backing the services (Phase 3)
 - Added `@Service` annotations while preserving `getInstance()` for backward compatibility.
 - Created `application.yml` with profile-based configuration (dev/test/prod).
 - Locked down actuator endpoints to health/info only per OWASP guidelines.
@@ -158,10 +159,24 @@ Implementation details:
   - Robust `jq`-based health check instead of fragile `grep` JSON parsing.
   - JAR file validation: verifies exactly one JAR in `target/` before startup.
 
-### Phase 3: Persistence
-- Add JPA entities/repositories and replace in-memory maps with persistence-backed services.
-- Add Flyway migrations; configure Postgres for dev/prod and H2/Testcontainers for tests.
-- Write integration tests (MockMvc/WebTestClient + Testcontainers) covering API and repository flows.
+### Phase 3: Persistence ✅ (Completed)
+- Added dedicated persistence layer:
+  - JPA entities under `contactapp.persistence.entity`.
+  - Mapper components (`contactapp.persistence.mapper`) that re-use domain constructors for validation when reading DB rows.
+  - Spring Data repositories plus `DomainDataStore` abstractions (`contactapp.persistence.store`) so services can swap between JPA-backed stores and legacy in-memory fallbacks.
+- Services now depend on `ContactStore`/`TaskStore`/`AppointmentStore`:
+  - Spring wiring injects the JPA-backed beans.
+  - Legacy `getInstance()` callers automatically receive in-memory stores until the Spring bean registers, at which point data migrates into the JPA store.
+- Added Flyway migrations (`db/migration/V1__create_contacts_table.sql`, `V2__create_tasks_table.sql`, `V3__create_appointments_table.sql`) mirroring constraints defined in `Validation.java`.
+- Rebuilt `application.yml` as a multi-document file with dev/test/integration/prod profiles:
+  - Dev/prod use Postgres (configurable via env vars).
+  - Test profile uses in-memory H2 in PostgreSQL mode with Flyway enabled for schema parity.
+  - Integration profile works with Testcontainers via `@ServiceConnection`.
+- Expanded test suite:
+  - Spring Boot service tests (H2 + Flyway) for each aggregate.
+  - Legacy singleton tests ensuring `getInstance()` still works outside Spring.
+  - Mapper unit tests and `@DataJpaTest` slices running Flyway migrations.
+  - Testcontainers-based Postgres integration tests verifying persistence wiring and DB constraints.
 
 ### Phase 4: UI
 - Scaffold `ui/app` (React + TypeScript) with routing for Contacts/Tasks/Appointments.
@@ -283,13 +298,13 @@ Implementation details:
 - [x] ZAP-compatible artifacts prepared
 - [x] Workflow hardened (pyyaml, jq health check, JAR validation)
 
-### Phase 3: Persistence
-- [ ] Postgres configuration for dev/prod
-- [ ] H2 or Testcontainers (Postgres) wired for tests
-- [ ] JPA entities and repositories for all aggregates
-- [ ] Flyway migrations created and applied
-- [ ] Profiles for dev/test/prod documented
-- [ ] Integration tests with Testcontainers
+### Phase 3: Persistence ✅
+- [x] Postgres configuration for dev/prod (multi-document `application.yml` + env vars).
+- [x] H2 (test profile) and Testcontainers (integration profile) wired for automated tests.
+- [x] JPA entities, repositories, and mapper components created for Contact/Task/Appointment.
+- [x] Flyway migrations (`V1__contacts`, `V2__tasks`, `V3__appointments`) authored and applied in all environments.
+- [x] Profile documentation updated across README/agents/REQUIREMENTS.
+- [x] Integration tests with Testcontainers covering all three services + DB constraints.
 
 ### Phase 4: Frontend UI
 - [ ] React + Vite + TypeScript app scaffolded under `ui/app`

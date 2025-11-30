@@ -8,11 +8,12 @@
 [![OWASP Dependency-Check](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-service-junit/master/badges/dependency.json&style=for-the-badge)](#static-analysis--quality-gates)
 [![License](https://img.shields.io/badge/License-MIT-1D4ED8?style=for-the-badge)](LICENSE)
 
-Small Java project for the CS320 Contact Service milestone, now expanded to Task and Appointment. The work breaks down into four pieces:
+Small Java project for the CS320 Contact Service milestone, now expanded to Task and Appointment with real persistence. The work breaks down into five pieces:
 1. Build the `Contact` and `ContactService` classes exactly as described in the requirements.
 2. Prove every rule with unit tests (length limits, null checks, unique IDs, and add/update/delete behavior) using the shared `Validation` helper so exceptions surface clear messages.
 3. Mirror the same patterns for the `Task` entity/service (ID/name/description) so both domains share validation, atomic updates, and singleton storage.
 4. Apply the same validation/service patterns for `Appointment` (ID/date/description) with date-not-past enforcement and defensive date copies.
+5. Persist all three aggregates through Spring Data JPA repositories + Flyway migrations (Postgres in dev/prod, H2/Testcontainers in tests) while keeping the legacy `getInstance()` singletons alive for backward compatibility.
 
 Everything is packaged under `contactapp` with layered sub-packages (`domain`, `service`, `api`, `persistence`); production classes live in `src/main/java` and the JUnit tests in `src/test/java`. Spring Boot 3.4.12 provides the runtime with actuator health/info endpoints.
 
@@ -39,7 +40,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
    - **OpenAPI spec** at `http://localhost:8080/v3/api-docs`
    - REST APIs at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`
 4. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-5. Planning note: Phases 0-2.5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing) with 296 tests (100% mutation score). The roadmap for persistence, UI, and security lives in `docs/REQUIREMENTS.md`. ADR-0014..0022 capture the selected stack and implementation decisions.
+5. Planning note: Phases 0-3 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer) with **310 tests** (100% mutation score). The roadmap for UI, security, and packaging lives in `docs/REQUIREMENTS.md`. ADR-0014..0024 capture the selected stack and implementation decisions.
 
 ## Folder Highlights
 | Path                                                                                                                 | Description                                                                                     |
@@ -49,10 +50,15 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 | [`src/main/java/contactapp/domain/Task.java`](src/main/java/contactapp/domain/Task.java)                             | Task entity (ID/name/description) mirroring the requirements document.                          |
 | [`src/main/java/contactapp/domain/Appointment.java`](src/main/java/contactapp/domain/Appointment.java)               | Appointment entity (ID/date/description) with date-not-past enforcement.                        |
 | [`src/main/java/contactapp/domain/Validation.java`](src/main/java/contactapp/domain/Validation.java)                 | Centralized validation helpers (not blank, length, numeric, date-not-past checks).              |
-| [`src/main/java/contactapp/service/ContactService.java`](src/main/java/contactapp/service/ContactService.java)       | @Service bean with in-memory CRUD, uniqueness checks, and validation reuse.                     |
-| [`src/main/java/contactapp/service/TaskService.java`](src/main/java/contactapp/service/TaskService.java)             | Task service API (add/delete/update) mirroring the `ContactService` patterns.                   |
-| [`src/main/java/contactapp/service/AppointmentService.java`](src/main/java/contactapp/service/AppointmentService.java) | Appointment service with in-memory CRUD and ID trim/validation guards.                        |
-| [`src/main/resources/application.yml`](src/main/resources/application.yml)                                           | Profile-based configuration (dev/test/prod) with actuator lockdown.                             |
+| [`src/main/java/contactapp/service/ContactService.java`](src/main/java/contactapp/service/ContactService.java)       | @Service bean backed by a `ContactStore` abstraction (Spring Data or legacy fallback).          |
+| [`src/main/java/contactapp/service/TaskService.java`](src/main/java/contactapp/service/TaskService.java)             | Task service wired the same way via `TaskStore`, still exposing `getInstance()` for legacy callers. |
+| [`src/main/java/contactapp/service/AppointmentService.java`](src/main/java/contactapp/service/AppointmentService.java) | Appointment service using `AppointmentStore` with transactional CRUD + defensive copies.     |
+| [`src/main/java/contactapp/persistence/entity`](src/main/java/contactapp/persistence/entity)                         | JPA entities mirroring the domain objects without validation logic.                             |
+| [`src/main/java/contactapp/persistence/mapper`](src/main/java/contactapp/persistence/mapper)                         | Bidirectional mappers that re-validate persisted data via domain constructors.                  |
+| [`src/main/java/contactapp/persistence/repository`](src/main/java/contactapp/persistence/repository)                 | Spring Data repositories plus in-memory fallbacks for legacy `getInstance()` callers.           |
+| [`src/main/java/contactapp/persistence/store`](src/main/java/contactapp/persistence/store)                           | `DomainDataStore` abstraction + JPA-backed implementations injected into services.              |
+| [`src/main/resources/application.yml`](src/main/resources/application.yml)                                           | Multi-document profile configuration (dev/test/integration/prod + Flyway/JPA settings).         |
+| [`src/main/resources/db/migration`](src/main/resources/db/migration)                                                 | Flyway migrations that create contacts/tasks/appointments tables.                               |
 | [`src/test/java/contactapp/ApplicationTest.java`](src/test/java/contactapp/ApplicationTest.java)                     | Spring Boot context load smoke test.                                                            |
 | [`src/test/java/contactapp/ActuatorEndpointsTest.java`](src/test/java/contactapp/ActuatorEndpointsTest.java)         | Verifies actuator endpoint security (health/info exposed, others blocked).                      |
 | [`src/test/java/contactapp/ServiceBeanTest.java`](src/test/java/contactapp/ServiceBeanTest.java)                     | Verifies service beans are injectable and singletons.                                           |
@@ -60,9 +66,12 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 | [`src/test/java/contactapp/domain/TaskTest.java`](src/test/java/contactapp/domain/TaskTest.java)                     | Unit tests for the `Task` class (trimming, invalid inputs, and atomic update validation).       |
 | [`src/test/java/contactapp/domain/AppointmentTest.java`](src/test/java/contactapp/domain/AppointmentTest.java)       | Unit tests for Appointment entity (ID/date/description validation).                             |
 | [`src/test/java/contactapp/domain/ValidationTest.java`](src/test/java/contactapp/domain/ValidationTest.java)         | Boundary/blank/null/future coverage for the shared validation helpers.                          |
-| [`src/test/java/contactapp/service/ContactServiceTest.java`](src/test/java/contactapp/service/ContactServiceTest.java) | Unit tests for ContactService (singleton behavior and CRUD).                                  |
-| [`src/test/java/contactapp/service/TaskServiceTest.java`](src/test/java/contactapp/service/TaskServiceTest.java)     | Unit tests for `TaskService` (singleton behavior and CRUD).                                     |
-| [`src/test/java/contactapp/service/AppointmentServiceTest.java`](src/test/java/contactapp/service/AppointmentServiceTest.java) | Unit tests for AppointmentService singleton and CRUD behavior.                            |
+| [`src/test/java/contactapp/service/ContactServiceTest.java`](src/test/java/contactapp/service/ContactServiceTest.java) | SpringBootTest exercising ContactService against H2 + Flyway schema.                           |
+| [`src/test/java/contactapp/service/TaskServiceTest.java`](src/test/java/contactapp/service/TaskServiceTest.java)     | SpringBootTest coverage for TaskService persistence flows.                                      |
+| [`src/test/java/contactapp/service/AppointmentServiceTest.java`](src/test/java/contactapp/service/AppointmentServiceTest.java) | SpringBootTest coverage for AppointmentService persistence flows.                         |
+| [`src/test/java/contactapp/service/*LegacyTest.java`](src/test/java/contactapp/service)                              | Verifies the legacy `getInstance()` singletons still work outside Spring.                       |
+| [`src/test/java/contactapp/persistence/mapper`](src/test/java/contactapp/persistence/mapper)                         | Mapper unit tests (Contact/Task/Appointment conversions + validation).                          |
+| [`src/test/java/contactapp/persistence/repository`](src/test/java/contactapp/persistence/repository)                 | `@DataJpaTest` slices for Contact/Task/Appointment repositories (H2 + Flyway).                  |
 | [`src/main/java/contactapp/api/ContactController.java`](src/main/java/contactapp/api/ContactController.java)         | REST controller for Contact CRUD operations at `/api/v1/contacts`.                              |
 | [`src/main/java/contactapp/api/TaskController.java`](src/main/java/contactapp/api/TaskController.java)               | REST controller for Task CRUD operations at `/api/v1/tasks`.                                    |
 | [`src/main/java/contactapp/api/AppointmentController.java`](src/main/java/contactapp/api/AppointmentController.java) | REST controller for Appointment CRUD operations at `/api/v1/appointments`.                      |
@@ -70,11 +79,16 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 | [`src/main/java/contactapp/api/CustomErrorController.java`](src/main/java/contactapp/api/CustomErrorController.java) | Ensures ALL errors return JSON (including Tomcat-level errors).                               |
 | [`src/main/java/contactapp/config/JsonErrorReportValve.java`](src/main/java/contactapp/config/JsonErrorReportValve.java) | Tomcat valve ensuring container-level errors return JSON (see ADR-0022).                    |
 | [`src/main/java/contactapp/config/TomcatConfig.java`](src/main/java/contactapp/config/TomcatConfig.java)             | Registers JsonErrorReportValve with embedded Tomcat.                                            |
+| [`src/main/java/contactapp/config/JacksonConfig.java`](src/main/java/contactapp/config/JacksonConfig.java)           | Disables Jackson type coercion for strict schema compliance (see ADR-0023).                     |
+| [`src/main/java/contactapp/config/ApplicationContextProvider.java`](src/main/java/contactapp/config/ApplicationContextProvider.java) | Captures the Spring context so `getInstance()` can return the DI-managed service even after instrumentation resets static fields. |
 | [`src/main/java/contactapp/api/dto/`](src/main/java/contactapp/api/dto/)                                             | Request/Response DTOs with Bean Validation (`ContactRequest`, `TaskRequest`, etc.).             |
 | [`src/main/java/contactapp/api/exception/`](src/main/java/contactapp/api/exception/)                                 | Custom exceptions (`ResourceNotFoundException`, `DuplicateResourceException`).                  |
 | [`src/test/java/contactapp/ContactControllerTest.java`](src/test/java/contactapp/ContactControllerTest.java)         | MockMvc integration tests for Contact API (30 tests).                                           |
 | [`src/test/java/contactapp/TaskControllerTest.java`](src/test/java/contactapp/TaskControllerTest.java)               | MockMvc integration tests for Task API (21 tests).                                              |
 | [`src/test/java/contactapp/AppointmentControllerTest.java`](src/test/java/contactapp/AppointmentControllerTest.java) | MockMvc integration tests for Appointment API (20 tests).                                       |
+| [`src/test/java/contactapp/service/ContactServiceIT.java`](src/test/java/contactapp/service/ContactServiceIT.java)   | Testcontainers-backed ContactService integration tests (Postgres).                              |
+| [`src/test/java/contactapp/service/TaskServiceIT.java`](src/test/java/contactapp/service/TaskServiceIT.java)         | Testcontainers-backed TaskService integration tests.                                            |
+| [`src/test/java/contactapp/service/AppointmentServiceIT.java`](src/test/java/contactapp/service/AppointmentServiceIT.java) | Testcontainers-backed AppointmentService integration tests.                                 |
 | [`src/test/java/contactapp/GlobalExceptionHandlerTest.java`](src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods (5 tests).                                      |
 | [`src/test/java/contactapp/CustomErrorControllerTest.java`](src/test/java/contactapp/CustomErrorControllerTest.java) | Unit tests for CustomErrorController (17 tests).                                              |
 | [`src/test/java/contactapp/config/JsonErrorReportValveTest.java`](src/test/java/contactapp/config/JsonErrorReportValveTest.java) | Unit tests for JsonErrorReportValve (17 tests).                                         |
@@ -83,7 +97,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 | [`docs/requirements/task-requirements/`](docs/requirements/task-requirements/)                                       | Task assignment requirements and checklist (same format as Contact).                            |
 | [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md) | Task entity/service design plan with Definition of Done and phased approach.                    |
 | [`docs/architecture/2025-11-24-appointment-entity-and-service.md`](docs/architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record.                                               |
-| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index (ADR-0001…ADR-0022).                                         |
+| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                         | Architecture Decision Record index (ADR-0001…ADR-0023).                                         |
 | [`docs/ci-cd/`](docs/ci-cd/)                                                                                         | CI/CD design notes (pipeline plan + badge automation).                                          |
 | [`docs/design-notes/`](docs/design-notes/)                                                                           | Informal design notes hub; individual write-ups live under `docs/design-notes/notes/`.          |
 | [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)                                                                       | **Master document**: scope, architecture, phased plan, checklist, and code examples.            |
@@ -102,7 +116,25 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 - **Immutable identifiers** - `contactId` is set once in the constructor and never mutates, which keeps map keys stable and mirrors real-world record identifiers.
 - **Centralized validation** - Every constructor/setter call funnels through `Validation.validateNotBlank`, `validateLength`, `validateDigits`, and (for appointments) `validateDateNotPast`, so IDs, names, phones, addresses, and dates all share one enforcement pipeline.
 - **Fail-fast IllegalArgumentException** - Invalid input is a caller bug, so we throw standard JDK exceptions with precise messages and assert on them in tests.
-- **ConcurrentHashMap storage strategy** - Milestone 1 uses in-memory `ConcurrentHashMap` stores (inside the singleton `ContactService`, `TaskService`, and `AppointmentService`) for predictable average O(1) CRUD plus thread-safe access, while still treating each service class as the seam for future persistence layers.
+- **DomainDataStore persistence strategy** - Services depend on store interfaces implemented by Spring Data JPA (contacts/tasks/appointments live in Postgres via Flyway migrations) while legacy `getInstance()` callers automatically fall back to in-memory stores. New code always goes through Spring DI so repositories/mappers enforce the same validation.
+- **Legacy singleton compatibility** - `getInstance()` now simply returns the Spring-managed proxy once the context is available (or the in-memory fallback before boot) so we no longer unwrap proxies manually. Tests assert shared behavior/state across both access paths instead of brittle reference equality checks. When every caller uses DI we will delete the static entry points and in-memory stores (see backlog).
+- **Why the map based version disappeared** - The original CS320 version stored everything in a static `ConcurrentHashMap`, which was fine for an in memory demo but lost data on restart, could not support multiple app instances, and had no way to evolve the schema. In Phase 3 the source of truth moved into Spring Data JPA repositories and Flyway managed Postgres tables, and the in memory map now exists only as a compatibility layer for legacy `getInstance()` tests while normal application code always uses the database backed stores.
+
+### Why we dropped the map
+**Previous design (static `ConcurrentHashMap`):**
+- All data lived in the heap of one JVM so restarts dropped every record.
+- No way to share data across multiple instances, which breaks load-balanced deployments.
+- No real database meant no SQL queries, migrations, or schema validation.
+- Cannot enforce constraints at the storage layer or evolve the data model over time.
+- Ignored the stack decisions already captured in ADR-0014/0015 (Postgres, Flyway, Testcontainers).
+- Integration tests only exercised map behavior and proved nothing about persistence.
+
+**Current design (JPA + Flyway + stores):**
+- Postgres (or H2/Testcontainers in tests) is the single source of truth.
+- Schema versions are tracked by Flyway and validated by Hibernate on startup.
+- Services run inside transactions instead of ad hoc map updates.
+- Tests hit the same persistence stack used in development and production.
+- Static `getInstance()` and the in-memory stores exist only to keep old callers working; real code paths use the injected stores.
 - **Defensive copies** - Each entity provides a `copy()` method, and `getDatabase()` returns defensive copies so external callers cannot mutate internal state; safe to surface over APIs.
 - **Boolean service API** - Every service's `add/delete/update` methods return `boolean` so callers know immediately whether the operation succeeded (`true`) or why it failed (`false` for duplicate IDs, missing IDs, etc.). That keeps the milestone interfaces lightweight while still letting JUnit assertions check the outcome without extra exception types.
 - **Security posture** - Input validation in the domain + service layers acts as the first defense layer; nothing reaches the in-memory store unless it passes the guards.
@@ -122,18 +154,15 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 - These helpers double as both correctness logic and security filtering.
 
 ### Service Layer (`ContactService`)
-- Uses a static `ConcurrentHashMap<String, Contact>` keyed by `contactId`, ensuring Spring DI and `getInstance()` share the same data.
-- Provides add/update/delete orchestration, validates/normalizes IDs before touching the map, and delegates all field rules to `Contact` (constructor + `update(...)`) and `Validation`.
-- The service layer remains the seam for swapping in persistence or caching later without touching the entity/tests.
+- Depends on `ContactStore`, an interface implemented by `JpaContactStore` (Spring Data repository + mapper) in normal operation and `InMemoryContactStore` for the legacy `getInstance()` path.
+- Constructor registers the first Spring-managed bean as the singleton instance so controllers/tests can inject it while `getInstance()` callers transparently share the same backing store.
+- `@Transactional` ensures multi-step operations (exists check + save, read + update) remain atomic at the database level; read-only queries opt into `@Transactional(readOnly = true)` for better performance.
+- Defensive copies (`getDatabase()`, `getAllContacts()`, `getContactById()`) still return new domain objects so calling code cannot mutate persistent state.
 
 ### Storage & Extension Points
-**ConcurrentHashMap<String, Contact> (current backing store)**
-| Operation | Average | Worst | Space |
-|-----------|---------|-------|-------|
-| add/get   | O(1)    | O(n)  | O(1)  |
-| update    | O(1)    | O(n)  | O(1)  |
-| delete    | O(1)    | O(n)  | O(1)  |
-- This strategy meets the course requirements while documenting the upgrade path (DAO, repository pattern, etc.).
+- **Primary path**: Spring Data repositories (`JpaContactStore`, `JpaTaskStore`, `JpaAppointmentStore`) backed by Flyway-managed Postgres tables (or H2 in tests). Mappers convert between entities and domain objects, reusing `Validation`.
+- **Legacy fallback**: `InMemory*Store` classes used only when `getInstance()` is called before Spring initializes; as soon as the `@Service` bean registers, data migrates into the JPA-backed store.
+- The `DomainDataStore` abstraction keeps the services agnostic to storage details, so future optimizations (caching, outbox, etc.) localize to the persistence package without touching controllers or domain tests.
 
   <br>
 
@@ -255,62 +284,37 @@ void testInvalidContactId(String id, String expectedMessage) {
 ## [ContactService.java](src/main/java/contactapp/service/ContactService.java) / [ContactServiceTest.java](src/test/java/contactapp/service/ContactServiceTest.java)
 
 ### Service Snapshot
-- **Shared static store** - The backing `ConcurrentHashMap` is static, so both Spring DI and `getInstance()` share the same data regardless of initialization order.
-- **Atomic uniqueness guard** - `addContact` rejects null inputs up front and calls `ConcurrentHashMap.putIfAbsent(...)` directly so duplicate IDs never overwrite state even under concurrent access.
-- **Thread-safe updates** - `updateContact` uses `ConcurrentHashMap.computeIfPresent(...)` for atomic lookup + update, then delegates to `Contact.update(...)` guaranteeing the constructor's length/null/phone rules apply.
-- **Shared validation** - `deleteContact` uses `Validation.validateNotBlank` for IDs; all paths reuse the same `Validation` helpers.
-- **Service-level lookup methods** - `getAllContacts()` returns a list of defensive copies; `getContactById(id)` validates/trims the ID and returns `Optional<Contact>`. Controllers use these instead of `getDatabase()` for better encapsulation.
-- **Defensive views** - `getDatabase()` returns an unmodifiable snapshot of defensive copies (via `Contact.copy()`) so callers can't mutate internal state; tests use `clearAllContacts()` (package-private) to reset between runs.
+- **DomainDataStore abstraction** – `ContactService` depends on `ContactStore`, injected with the JPA-backed implementation during normal operation. The legacy singleton path lazily spins up an `InMemoryContactStore`, then migrates data into the JPA store when Spring finishes wiring beans.
+- **Transactional guarantees** – Methods run inside Spring transactions so the `existsById` + `save` or `findById` + `update` sequences remain atomic. Read methods opt into `@Transactional(readOnly = true)` for SQL efficiency.
+- **Validation + normalization** – Service methods validate/trims IDs via `Validation.validateNotBlank`, but all field-level rules still live inside `Contact` (`update()` and setters). That keeps controller/service logic shallow.
+- **Defensive copies** – `getAllContacts()`, `getDatabase()`, and `getContactById()` return fresh `Contact.copy()` instances so external callers cannot mutate persistent state.
+- **Package-private reset hooks** – `clearAllContacts()` sticks around exclusively for tests in the same package; production code never calls it directly.
 
-## Validation & Error Handling
-
-### Validation Pipeline
+### Persistence Flow
 ```mermaid
 graph TD
-    A[Service call] --> B{Operation}
-    B -->|add| C["contact != null?"]
-    C -->|no| X[IllegalArgumentException]
-    C -->|yes| D["contactId already validated by Contact"]
-    D --> E["putIfAbsent(contactId, contact)"]
-    B -->|delete| F["validateNotBlank(contactId)"]
-    F --> G["trim id, remove from map"]
-    G -->|missing| H[return false]
-    G -->|found| J[entry removed]
-    B -->|update| K["validateNotBlank(contactId)"]
-    K --> L["trim id, computeIfPresent"]
-    L -->|missing| H
-    L -->|found| M["Contact.update(...) reuses Validation"]
-    M --> N[updated contact]
+    A[Controller/Service call] --> B{Operation}
+    B -->|add| C["validate contact != null"]
+    C -->|fail| X[IllegalArgumentException]
+    C -->|pass| D["store.existsById(contactId)?"]
+    D -->|true| E[return false]
+    D -->|false| F["store.save(mapper.toEntity(contact))"]
+    B -->|delete| G["validateNotBlank(contactId)"]
+    G --> H["store.deleteById(trimmedId)"]
+    B -->|update| I["validateNotBlank(contactId)"]
+    I --> J["store.findById(trimmedId)"]
+    J -->|empty| E
+    J -->|present| K["Contact.update(...)"]
+    K --> L["store.save(updated contact)"]
 ```
-- Delete/update paths validate and trim IDs before map access; add relies on the Contact constructor’s validation and stores the already-normalized `contactId`.
-- IDs are trimmed before delete/update map access so callers with surrounding whitespace behave consistently.
-- Setter delegation ensures errors surface with the same messages as the constructor (e.g., “phone must be exactly 10 digits”).
+- `store.save` handles both inserts and updates; the mapper converts domain objects into JPA entities while preserving validation.
+- Delete/update operations trim IDs before handing them to the store so whitespace inputs remain consistent.
+- Duplicate IDs or missing rows return `false`, letting controllers return 409/404 without extra exception types.
 
-### Error Message Philosophy
-- Null service inputs raise `IllegalArgumentException` with explicit labels (e.g., “contact must not be null”).
-- ID validation errors come from the shared `Validation` helper so delete/update use the exact strings already asserted in `ContactTest`.
-- Field-level issues rely on the `Contact` setters, so callers receive consistent messaging whether the data was supplied in the constructor or during an update.
-
-### Propagation Flow
-```mermaid
-graph TD
-    A[Client] --> B[ContactService]
-    B --> C{Operation result}
-    C -->|success| D[State updated]
-    C -->|false| E[Not found / duplicate]
-    C -->|exception| F[Validation message]
-```
-- Successful operations mutate the in-memory map; duplicate IDs or missing contacts simply return `false` so clients can branch without exceptions.
-- Validation failures bubble up as unchecked exceptions, which keeps the fail-fast stance consistent with the domain model.
-## Testing Strategy
-
-### Approach & TDD
-- The service initially shipped as a stub; once CRUD code landed, targeted JUnit tests captured the scenarios before refactoring anything else.
-- `@BeforeEach` clears the singleton’s backing map so tests remain isolated even though the service is shared.
-
-### Assertion Patterns
-- AssertJ collections helpers (`containsKey`, `doesNotContainKey`) verify map entries; field values are checked separately since `getDatabase()` returns defensive copies.
-- Field assertions after update reuse `hasFieldOrPropertyWithValue` so the tests read like a change log.
+### Testing Strategy
+- `ContactServiceTest` is now a `@SpringBootTest` running against the `test` profile (H2 + Flyway) so every service method hits the real repositories/mappers.
+- `ContactServiceLegacyTest` cold-starts the singleton without Spring, proving the fallback still works for older callers (and that state remains isolated between tests via reflection resets).
+- Slice tests live next door for mappers (`ContactMapperTest`) and repositories (`ContactRepositoryTest`), catching schema or mapping regressions without booting the full application context.
 - Boolean outcomes are asserted explicitly (`isTrue()/isFalse()`) so duplicate and missing-ID branches stay verified.
 
 
@@ -404,78 +408,35 @@ graph TD
 ## [TaskService.java](src/main/java/contactapp/service/TaskService.java) / [TaskServiceTest.java](src/test/java/contactapp/service/TaskServiceTest.java)
 
 ### Service Snapshot
-- Uses a static `ConcurrentHashMap<String, Task>` so Spring DI and `getInstance()` share the same data; `clearAllTasks()` (package-private) resets state for tests.
-- `addTask` rejects null tasks and uses `putIfAbsent` so uniqueness checks and inserts are atomic.
-- `deleteTask` validates + trims ids before removal; `updateTask` uses `ConcurrentHashMap.computeIfPresent(...)` for thread-safe atomic lookup + update.
-- **Service-level lookup methods** - `getAllTasks()` returns a list of defensive copies; `getTaskById(id)` validates/trims the ID and returns `Optional<Task>`. Controllers use these instead of `getDatabase()`.
-- `getDatabase()` returns an unmodifiable snapshot of defensive copies (via `Task.copy()`) so callers can't mutate internal state.
+- Depends on `TaskStore`, which is implemented by `JpaTaskStore` (Spring Data repository + mapper) for normal operation and `InMemoryTaskStore` for legacy `getInstance()` callers. As soon as the Spring bean initializes it registers itself as the singleton instance.
+- Transactions wrap add/delete/update operations; read-only queries opt into `@Transactional(readOnly = true)` for efficient SQL on H2/Postgres.
+- Service-level guards cover null task inputs and blank IDs. `Task.update(...)` enforces field rules so error messages stay aligned with the domain tests.
+- `getDatabase()` and `getAllTasks()` return defensive copies, and `clearAllTasks()` stays package-private for test resets.
 
-## Validation & Error Handling
-
-### Validation Pipeline
+### Persistence Flow
 ```mermaid
 graph TD
     A[TaskService call] --> B{Operation}
     B -->|add| C["task != null?"]
     C -->|no| X[IllegalArgumentException]
-    C -->|yes| D["taskId already validated by Task"]
-    D --> E["putIfAbsent(taskId, task)"]
+    C -->|yes| D["store.existsById(taskId)?"]
+    D -->|true| Y[return false]
+    D -->|false| E["store.save(task)"]
     B -->|delete| F["validateNotBlank(taskId)"]
-    F --> G["trim id, remove from map"]
-    G -->|missing| Y[return false]
-    G -->|found| J[entry removed]
-    B -->|update| K["validateNotBlank(taskId)"]
-    K --> L["trim id, computeIfPresent"]
-    L -->|missing| Y
-    L -->|found| H["Task.update(newName, description)"]
+    F --> G["store.deleteById(trimmedId)"]
+    B -->|update| H["validateNotBlank(taskId)"]
+    H --> I["store.findById(trimmedId)"]
+    I -->|empty| Y
+    I -->|present| J["Task.update(newName, description)"]
+    J --> K["store.save(updated task)"]
 ```
-- Delete/update paths validate and trim IDs before map access; add relies on the Task constructor’s validation and stores the normalized `taskId`.
-- Updates delegate to `Task.update(...)`, keeping atomicity centralized; `putIfAbsent` returns `false` on duplicate IDs just like the Contact service.
+- Duplicate IDs or missing rows simply return `false` so controllers can produce 409/404 responses without inspecting exceptions.
+- Mapper conversions ensure persisted data always flows back through the domain constructor/update path for validation.
 
-### Error Message Philosophy
-- Service-level guards emit just two strings (`"task must not be null"` and `"taskId must not be null or blank"`); everything else flows from the Task entity.
-
-### Propagation Flow
-```mermaid
-graph TD
-    A[Client] --> B[TaskService]
-    B --> C{Outcome}
-    C -->|true| D[State updated]
-    C -->|false| E[Duplicate/missing]
-    C -->|exception| F[Validation message]
-```
-- Boolean return mirrors ContactService: duplicates/missing IDs report `false`, invalid inputs throw.
-
-## Testing Strategy
-
-### Approach & TDD
-- `@BeforeEach` clears the singleton to keep tests isolated.
-- Tests were written alongside each service method so duplicates/missing/blank cases were covered before implementation settled.
-- Invalid update inputs throw and leave the stored task unchanged, mirroring the Task entity’s atomicity guarantees.
-
-### Assertion Patterns
-- AssertJ checks (`containsKey`, `doesNotContainKey`, `isTrue/isFalse`) verify map entries; field values are checked separately since `getDatabase()` returns defensive copies.
-- `assertThatThrownBy` verifies the null-task guard and blank-id validation messages.
-
-### Scenario Coverage
-- `testSingletonInstance` proves the singleton accessor returns the same instance.
-- `testAddTask` stores a task and asserts map contents.
-- `testAddDuplicateTaskIdFails` returns `false` on duplicate IDs and preserves the original entry.
-- `testAddTaskNullThrows` asserts the null guard message.
-- `testDeleteTask` removes an existing entry.
-- `testDeleteTaskBlankIdThrows` and `testDeleteMissingTaskReturnsFalse` cover validation/missing delete branches.
-- `testUpdateTask` changes name/description; `testUpdateTaskTrimsId` shows whitespace IDs are trimmed.
-- `testUpdateTaskBlankIdThrows` and `testUpdateMissingTaskReturnsFalse` cover validation/missing update branches.
-- `testUpdateTaskInvalidValuesLeaveStateUnchanged` proves invalid updates throw and leave the stored task unchanged.
-- `testClearAllTasksRemovesEntries` proves the reset hook empties the backing store.
-- `testGetDatabaseReturnsDefensiveCopies` proves callers cannot mutate internal state through the returned snapshot.
-- `testGetInstanceColdStart` uses reflection to reset the static instance, then verifies `getInstance()` creates a new instance when none exists—ensuring full branch coverage of the lazy initialization pattern.
-- `testGetTaskByIdReturnsTask` verifies getTaskById returns the task when it exists.
-- `testGetTaskByIdReturnsEmptyWhenNotFound` verifies getTaskById returns empty when task doesn't exist.
-- `testGetTaskByIdBlankIdThrows` verifies getTaskById throws when ID is blank.
-- `testGetTaskByIdTrimsId` verifies getTaskById trims the ID before lookup.
-- `testGetAllTasksReturnsEmptyList` verifies getAllTasks returns empty list when no tasks exist.
-- `testGetAllTasksReturnsAllTasks` verifies getAllTasks returns all tasks.
+### Testing Strategy
+- `TaskServiceTest` is a Spring Boot test running on the `test` profile (H2 + Flyway), so every operation exercises the real repositories/mappers instead of in-memory maps.
+- `TaskServiceLegacyTest` cold-starts `getInstance()` outside Spring, proving the fallback still works and that legacy callers stay isolated.
+- Mapper/repository tests sit alongside the service tests for faster feedback on schema or conversion issues.
 
   <br>
 
@@ -531,52 +492,35 @@ flowchart TD
 ## [AppointmentService.java](src/main/java/contactapp/service/AppointmentService.java) / [AppointmentServiceTest.java](src/test/java/contactapp/service/AppointmentServiceTest.java)
 
 ### Service Snapshot
-- **Shared static store** - The backing `ConcurrentHashMap<String, Appointment>` is static, so both Spring DI and `getInstance()` share the same data.
-- **Atomic uniqueness guard** - `addAppointment` rejects null inputs, validates IDs (already trimmed by the `Appointment` constructor), and uses `putIfAbsent` so duplicate IDs never overwrite existing entries.
-- **Shared validation** - `deleteAppointment` trims/validates IDs; `updateAppointment` trims IDs and delegates field rules to `Appointment.update(...)` via `computeIfPresent` to avoid a get-then-mutate race.
-- **Service-level lookup methods** - `getAllAppointments()` returns a list of defensive copies; `getAppointmentById(id)` validates/trims the ID and returns `Optional<Appointment>`. Controllers use these instead of `getDatabase()`.
-- **Defensive views** - `getDatabase()` returns an unmodifiable snapshot of defensive copies (via `Appointment.copy()`, which validates the source and reuses the public constructor); `clearAllAppointments()` (package-private) resets state between tests.
+- Uses `AppointmentStore` (JPA-backed) under Spring and `InMemoryAppointmentStore` when `getInstance()` is called before the context loads. As soon as the Spring bean initializes it registers itself as the canonical singleton.
+- Transactions wrap add/delete/update operations; read-only queries use `@Transactional(readOnly = true)` like the other services.
+- Service methods validate/trim IDs via `Validation.validateNotBlank`, but `Appointment.update(...)` enforces the date-not-past rule and description length so error messages match the domain layer.
+- `getDatabase()`, `getAllAppointments()`, and `getAppointmentById()` return defensive copies so external code never mutates persistent state.
 
-### Validation & Error Handling
-
-#### Validation Pipeline
+### Persistence Flow
 ```mermaid
 graph TD
-    A[Service call] --> B{Operation}
-    B -->|addAppointment| C["appointment != null?"]
+    A[AppointmentService call] --> B{Operation}
+    B -->|add| C["appointment != null?"]
     C -->|no| X[IllegalArgumentException]
-    C -->|yes| D["validateNotBlank(appointmentId)"]
-    D --> E["putIfAbsent(id, appointment)"]
-
-    B -->|deleteAppointment| F["validateNotBlank + trim(appointmentId)"]
-    F --> G["remove(trimmedId)"]
-    G -->|missing| Y[return false]
-    G -->|found| Z[entry removed]
-
-    B -->|updateAppointment| H["validateNotBlank + trim(appointmentId)"]
-    H --> I["computeIfPresent(trimmedId, appointment.update(date, desc))"]
-    I -->|missing| Y
-    I -->|found| K["Appointment.update(...) reuses Validation"]
+    C -->|yes| D["store.existsById(appointmentId)?"]
+    D -->|true| Y[return false]
+    D -->|false| E["store.save(appointment)"]
+    B -->|delete| F["validateNotBlank(appointmentId)"]
+    F --> G["store.deleteById(trimmedId)"]
+    B -->|update| H["validateNotBlank(appointmentId)"]
+    H --> I["store.findById(trimmedId)"]
+    I -->|empty| Y
+    I -->|present| J["Appointment.update(date, description)"]
+    J --> K["store.save(updated appointment)"]
 ```
-- Add path validates the (already trimmed) ID and uses `putIfAbsent`; delete/update trim + validate IDs before map access; validation failures bubble as `IllegalArgumentException`; duplicates/missing entries return `false`.
+- Duplicate IDs/missing rows return `false`; invalid fields bubble up as `IllegalArgumentException`, keeping the fail-fast philosophy intact.
+- Mapper conversions preserve the Instant/Date handling so persisted timestamps match domain expectations.
 
 ### Testing Strategy
-- `AppointmentServiceTest` mirrors the Contact/Task patterns: singleton identity, add success/duplicate/null add, add-blank-id guard, delete success/blank/missing, update success/blank/missing/trimmed IDs, clear-all, and defensive-copy verification.
-- Future dates are generated relative to “now” to keep “not in the past” checks stable.
-
-### Scenario Coverage
-- `testSingletonInstance` proves the singleton accessor returns the same instance.
-- `testAddAppointment` stores a future-dated appointment and asserts map contents.
-- `testAddDuplicateAppointmentIdFails` returns `false` on duplicate IDs and preserves the original entry.
-- `testAddAppointmentNullThrows` asserts the null guard message.
-- `testAddAppointmentWithBlankIdThrows` hits the add-path ID validation guard.
-- `testDeleteAppointment` removes an existing entry.
-- `testDeleteAppointmentBlankIdThrows` and `testDeleteMissingAppointmentReturnsFalse` cover validation/missing delete branches.
-- `testUpdateAppointment` changes date/description; `testUpdateAppointmentTrimsId` shows whitespace IDs are trimmed.
-- `testGetDatabaseReturnsDefensiveCopies` proves callers cannot mutate internal state through snapshots.
-- `testUpdateAppointmentBlankIdThrows` and `testUpdateMissingAppointmentReturnsFalse` cover validation/missing update branches.
-- `testClearAllAppointmentsRemovesEntries` proves the reset hook empties the backing store.
-- `testGetInstanceColdStart` uses reflection to reset the static instance, then verifies `getInstance()` creates a new instance when none exists—ensuring full branch coverage of the lazy initialization pattern.
+- `AppointmentServiceTest` runs against H2 + Flyway (`test` profile) and covers add/delete/update/defensive-copy behaviors end-to-end.
+- `AppointmentServiceLegacyTest` validates the non-Spring fallback and uses reflection resets to isolate state between runs.
+- Mapper/repository tests verify Instant↔Date conversion plus schema-level guarantees (e.g., NOT NULL/length constraints).
 
 > **Note:** `getAllAppointments()` and `getAppointmentById()` are tested implicitly via controller integration tests but lack dedicated unit tests in AppointmentServiceTest.
 
@@ -924,7 +868,7 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 - **Schemathesis v4+ compatibility**: The workflow uses updated options after v4 removed `--base-url`, `--hypothesis-*`, and `--junit-xml` flags.
 - **Two-layer JSON error handling**: `JsonErrorReportValve` intercepts errors at the Tomcat container level, while `CustomErrorController` handles Spring-level errors. This ensures most error responses return `application/json`. Note: Extremely malformed URLs (invalid Unicode) fail at Tomcat's connector level before the valve, so `content_type_conformance` check is not used (see ADR-0022).
 - **Content-Length fix for chunked encoding**: `JsonErrorReportValve` now sets explicit `Content-Length` to avoid "invalid chunk" errors during fuzzing. The valve implements five safeguards: `isCommitted()` check, buffer reset, `IllegalStateException` bailout, explicit `Content-Length`, and binary write via `OutputStream`. This is the standard Tomcat pattern: guard → reset → set headers → write bytes → flush.
-- **All Schemathesis phases pass**: Coverage, Fuzzing, and Stateful phases all pass (18,288 test cases generated, 18,288 passed).
+- **All Schemathesis phases pass**: Coverage, Fuzzing, and Stateful phases all pass (30,668 test cases generated, 0 failures).
 - **Workflow steps**:
   1. Build the JAR with `mvn -DskipTests package`.
   2. Start Spring Boot app in background, wait for `/actuator/health` to return `UP` (uses `jq` for robust JSON parsing).

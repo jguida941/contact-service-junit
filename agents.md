@@ -9,25 +9,27 @@ Quick links and context for automation/assistant workflows implementing this pla
 | **Requirements** | `docs/REQUIREMENTS.md` | **START HERE** - Master document with scope, phases, checklist, code examples |
 | **Roadmap** | `docs/ROADMAP.md` | Quick phase overview |
 | **Index** | `docs/INDEX.md` | Full file/folder navigation |
-| **ADR Index** | `docs/adrs/README.md` | Stack decisions (ADR-0014–0022) |
+| **ADR Index** | `docs/adrs/README.md` | Stack decisions (ADR-0014–0024) |
 | **CI/CD Plan** | `docs/ci-cd/ci_cd_plan.md` | Pipeline phases including security testing |
 | **Backlog** | `docs/logs/backlog.md` | Deferred decisions (do not implement yet) |
 
 ## Current State
 
-- **Phase 2.5 complete**: REST API + DTOs + API fuzzing in CI
+- **Phase 3 complete**: Persistence layer (Spring Data JPA + Flyway + Testcontainers) with legacy singleton fallbacks intact
 - Spring Boot 3.4.12 with layered packages (`contactapp.domain`, `contactapp.service`, `contactapp.api`, `contactapp.persistence`)
 - Services annotated with `@Service` for Spring DI while retaining `getInstance()` for backward compatibility
+- Legacy `getInstance()` access shares the same Spring proxy once the context starts (or an in-memory fallback before boot), so no proxy unwrapping is required and tests focus on shared behavior/state instead of object identity; backlog tracks the follow-up to delete the static entry points once every caller uses DI.
 - REST controllers at `/api/v1/contacts`, `/api/v1/tasks`, `/api/v1/appointments`
 - DTOs with Bean Validation mapped to domain objects; constraints use `Validation.MAX_*` constants
 - Global exception handler (`GlobalExceptionHandler`) maps exceptions to JSON responses (400, 404, 409)
 - Custom error controller (`CustomErrorController`) ensures ALL errors return JSON (including Tomcat-level errors)
 - JsonErrorReportValve in `contactapp.config` intercepts Tomcat container-level errors with explicit Content-Length (ADR-0022)
+- JacksonConfig disables type coercion for strict OpenAPI schema compliance (ADR-0023)
 - OpenAPI/Swagger UI at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi)
 - Health/info actuator endpoints available; other actuator endpoints locked down
-- Latest CI: **296 tests passing** (100% mutation score), **100% line coverage**, SpotBugs clean
-- All Schemathesis API fuzzing phases pass (Coverage, Fuzzing, Stateful: 18,288 test cases)
-- No persistence yet (Phase 3+)
+- Latest CI run: **310 tests passing** (unit + slice + Testcontainers), **100% mutation score**, **100% line coverage**, SpotBugs clean
+- All Schemathesis API fuzzing phases pass (Coverage, Fuzzing, Stateful: 30,668 test cases, 0 failures)
+- Persistence implemented via Spring Data JPA repositories + Flyway migrations (Postgres dev/prod, H2/Testcontainers tests)
 - Domain validation in `Validation.java` is the **source of truth** for all field rules
 - Controllers use service-level lookup methods (`getAllXxx()`, `getXxxById()`) for better encapsulation
 
