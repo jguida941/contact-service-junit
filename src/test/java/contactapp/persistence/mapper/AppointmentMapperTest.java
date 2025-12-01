@@ -119,6 +119,29 @@ class AppointmentMapperTest {
         assertThat(entity.getDescription()).isEqualTo("New Desc");
     }
 
+    @Test
+    void updateEntityThrowsWhenTargetIsNull() {
+        Appointment source = new Appointment(
+                "appt-1",
+                new Date(System.currentTimeMillis() + 1_000),
+                "Desc");
+        assertThatThrownBy(() -> mapper.updateEntity(null, source))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("target entity must not be null");
+    }
+
+    @Test
+    void updateEntityThrowsWhenSourceIsNull() {
+        AppointmentEntity entity = new AppointmentEntity(
+                "appt-1",
+                Instant.now().plusSeconds(600),
+                "Old Desc",
+                TestUserFactory.createUser("appointment-mapper-null-source"));
+        assertThatThrownBy(() -> mapper.updateEntity(entity, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("source appointment must not be null");
+    }
+
     private static void setField(final Object target, final String fieldName, final Object value) {
         try {
             final Field field = target.getClass().getDeclaredField(fieldName);

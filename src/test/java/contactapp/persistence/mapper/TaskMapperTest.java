@@ -90,4 +90,24 @@ class TaskMapperTest {
         assertThat(entity.getName()).isEqualTo("New Name");
         assertThat(entity.getDescription()).isEqualTo("New Desc");
     }
+
+    @Test
+    void updateEntityThrowsWhenTargetIsNull() {
+        Task source = new Task("task-1", "Name", "Desc");
+        assertThatThrownBy(() -> mapper.updateEntity(null, source))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("target entity must not be null");
+    }
+
+    @Test
+    void updateEntityThrowsWhenSourceIsNull() {
+        TaskEntity entity = new TaskEntity(
+                "task-1",
+                "Old",
+                "Old desc",
+                TestUserFactory.createUser("task-mapper-null-source"));
+        assertThatThrownBy(() -> mapper.updateEntity(entity, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("source task must not be null");
+    }
 }

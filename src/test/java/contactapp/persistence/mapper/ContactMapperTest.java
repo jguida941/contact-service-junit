@@ -113,4 +113,26 @@ class ContactMapperTest {
         assertThat(entity.getPhone()).isEqualTo("1112223333");
         assertThat(entity.getAddress()).isEqualTo("New Address");
     }
+
+    @Test
+    void updateEntityThrowsWhenTargetIsNull() {
+        Contact source = new Contact("contact-1", "First", "Last", "1234567890", "Addr");
+        assertThatThrownBy(() -> mapper.updateEntity(null, source))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("target entity must not be null");
+    }
+
+    @Test
+    void updateEntityThrowsWhenSourceIsNull() {
+        ContactEntity entity = new ContactEntity(
+                "contact-1",
+                "Old",
+                "Name",
+                "0000000000",
+                "Old Address",
+                TestUserFactory.createUser("contact-mapper-null-source"));
+        assertThatThrownBy(() -> mapper.updateEntity(entity, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("source contact must not be null");
+    }
 }
