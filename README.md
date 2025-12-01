@@ -1,6 +1,6 @@
 # Multi-Entity Contact Suite (Spring Boot, React, and JUnit)
 [![CodeQL](https://img.shields.io/github/actions/workflow/status/jguida941/contact-suite-spring-react/codeql.yml?branch=master&label=CodeQL&style=for-the-badge&logo=github&logoColor=white&color=16A34A)](https://github.com/jguida941/contact-suite-spring-react/actions/workflows/codeql.yml)
-[![Java CI](https://img.shields.io/github/actions/workflow/status/jguida941/contact-suite-spring-react/java-ci.yml?branch=master&label=Java%20CI&style=for-the-badge&logo=github&logoColor=white)](https://github.com/jguida941/contact-suite-spring-react/actions/workflows/java-ci.yml)
+[![Java CI](https://img.shields.io/github/actions/workflow/status/jguida941/contact-suite-spring-react/java-ci.yml?branch=master&label=Java%20CI&style=for-the-badge&logo=github&logoColor=white&color=16A34A)](https://github.com/jguida941/contact-suite-spring-react/actions/workflows/java-ci.yml)
 [![Codecov](https://img.shields.io/codecov/c/github/jguida941/contact-suite-spring-react/master?label=Codecov&style=for-the-badge&logo=codecov&logoColor=white&color=CA8A04)](https://codecov.io/gh/jguida941/contact-suite-spring-react)
 [![JaCoCo](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-suite-spring-react/master/badges/jacoco.json&style=for-the-badge)](#qa-summary)
 [![PITest](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-suite-spring-react/master/badges/mutation.json&style=for-the-badge)](#qa-summary)
