@@ -1,10 +1,10 @@
 # Multi-Entity Contact Suite (Spring Boot, React, and JUnit)
-[![CodeQL](https://img.shields.io/github/actions/workflow/status/jguida941/contact-service-junit/codeql.yml?branch=master&label=CodeQL&style=for-the-badge&logo=github&logoColor=white&color=16A34A)](https://github.com/jguida941/contact-service-junit/actions/workflows/codeql.yml)
-[![Codecov](https://img.shields.io/codecov/c/github/jguida941/contact-service-junit/master?label=Codecov&style=for-the-badge&logo=codecov&logoColor=white&color=CA8A04)](https://codecov.io/gh/jguida941/contact-service-junit)
-[![JaCoCo](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-service-junit/master/badges/jacoco.json&style=for-the-badge)](#qa-summary)
-[![PITest](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-service-junit/master/badges/mutation.json&style=for-the-badge)](#qa-summary)
-[![SpotBugs](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-service-junit/master/badges/spotbugs.json&style=for-the-badge)](#static-analysis--quality-gates)
-[![OWASP Dependency-Check](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-service-junit/master/badges/dependency.json&style=for-the-badge)](#static-analysis--quality-gates)
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/jguida941/contact-suite-spring-react/codeql.yml?branch=master&label=CodeQL&style=for-the-badge&logo=github&logoColor=white&color=16A34A)](https://github.com/jguida941/contact-suite-spring-react/actions/workflows/codeql.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/jguida941/contact-suite-spring-react/master?label=Codecov&style=for-the-badge&logo=codecov&logoColor=white&color=CA8A04)](https://codecov.io/gh/jguida941/contact-suite-spring-react)
+[![JaCoCo](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-suite-spring-react/master/badges/jacoco.json&style=for-the-badge)](#qa-summary)
+[![PITest](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-suite-spring-react/master/badges/mutation.json&style=for-the-badge)](#qa-summary)
+[![SpotBugs](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-suite-spring-react/master/badges/spotbugs.json&style=for-the-badge)](#static-analysis--quality-gates)
+[![OWASP Dependency-Check](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-suite-spring-react/master/badges/dependency.json&style=for-the-badge)](#static-analysis--quality-gates)
 [![License](https://img.shields.io/badge/License-MIT-1D4ED8?style=for-the-badge)](LICENSE)
 
 Started as the simple CS320 contact-service milestone and grew into a multi-entity suite (Contact/Task/Appointment) with full persistence, Spring Boot 3.4.12, and backward-compatible singletons. The work breaks down into five pieces:
@@ -1034,7 +1034,7 @@ If you skip these steps, the OSS Index analyzer simply logs warnings while the r
 - The `release-artifacts` job is intentionally gated with `if: github.event_name == 'release' && github.event.action == 'published'`, so you will see it marked as “skipped” on normal pushes or pull requests. It only runs when a GitHub release/tag is published.
 
 ### Coverage Publishing (Codecov)
-- After JaCoCo generates `target/site/jacoco/jacoco.xml`, the workflow uploads it to [Codecov](https://codecov.io/gh/jguida941/contact-service-junit) so the coverage badge stays current.
+- After JaCoCo generates `target/site/jacoco/jacoco.xml`, the workflow uploads it to [Codecov](https://codecov.io/gh/jguida941/contact-suite-spring-react) so the coverage badge stays current.
 - Setup steps (once per repository):
   1. Sign in to Codecov with GitHub and add this repo.
   2. Generate a repository token in Codecov and save it as the GitHub secret `CODECOV_TOKEN`.
@@ -1128,16 +1128,16 @@ You’ll see the same KPIs, inline progress bars, and quick links over to the Ja
 <table>
   <tr>
     <td width="300" valign="middle">
-      <a href="https://app.codecov.io/gh/jguida941/contact-service-junit">
+      <a href="https://app.codecov.io/gh/jguida941/contact-suite-spring-react">
         <img
-          src="https://codecov.io/gh/jguida941/contact-service-junit/graphs/sunburst.svg?token=WUWITZ797X"
+          src="https://codecov.io/gh/jguida941/contact-suite-spring-react/graphs/sunburst.svg"
           alt="Codecov coverage sunburst"
         />
       </a>
     </td>
     <td valign="middle">
       The sunburst shows which packages and classes are covered by tests.<br/>
-      <a href="https://app.codecov.io/gh/jguida941/contact-service-junit">
+      <a href="https://app.codecov.io/gh/jguida941/contact-suite-spring-react">
         Open the full-screen interactive sunburst on Codecov »
       </a>
     </td>
@@ -1169,7 +1169,7 @@ You’ll see the same KPIs, inline progress bars, and quick links over to the Ja
   tar xzf ./actions-runner-osx-*.tar.gz
 
   # Configure the runner (get token from GitHub UI)
-  ./config.sh --url https://github.com/jguida941/contact-service-junit --token YOUR_TOKEN_FROM_GITHUB
+  ./config.sh --url https://github.com/jguida941/contact-suite-spring-react --token YOUR_TOKEN_FROM_GITHUB
 
   # Set MAVEN_OPTS permanently (choose based on your shell)
   # For zsh (default on modern macOS):

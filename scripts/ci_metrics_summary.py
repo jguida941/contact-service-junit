@@ -400,7 +400,7 @@ def write_dashboard(
     timeline = _timeline(dependency)
 
     run_metadata = {
-        "repo": os.environ.get("GITHUB_REPOSITORY", "contact-service-junit"),
+        "repo": os.environ.get("GITHUB_REPOSITORY", "contact-suite-spring-react"),
         "workflow": os.environ.get("GITHUB_WORKFLOW", "local"),
         "os": os.environ.get("MATRIX_OS", os.environ.get("RUNNER_OS", "local")),
         "jdk": os.environ.get("MATRIX_JAVA", "local"),

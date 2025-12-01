@@ -1,6 +1,6 @@
 const sampleMetrics = {
   run: {
-    repo: "contact-service-junit",
+    repo: "contact-suite-spring-react",
     workflow: "Verify",
     os: "ubuntu-latest",
     jdk: "21",

@@ -60,7 +60,7 @@ function App() {
     <div className="app">
       <header className="header">
         <div>
-          <h1>contact-service-junit · QA Console</h1>
+          <h1>contact-suite-spring-react · QA Console</h1>
           <small>
             {metrics.run.workflow} &mdash; {metrics.run.os} / JDK {metrics.run.jdk} ·{' '}
             {metrics.run.timestamp}
