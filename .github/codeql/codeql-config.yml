@@ -1,0 +1,11 @@
+name: "Custom CodeQL Configuration"
+
+queries:
+  - uses: security-and-quality
+
+packs:
+  java:
+    - codeql/java-queries
+
+model-packs:
+  - ./.github/codeql

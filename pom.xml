@@ -106,18 +106,18 @@
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
-            <version>0.12.6</version>
+            <version>0.13.0</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
-            <version>0.12.6</version>
+            <version>0.13.0</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
-            <version>0.12.6</version>
+            <version>0.13.0</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -138,7 +138,7 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>3.1.8</version>
+            <version>3.2.3</version>
         </dependency>
 
         <!--
@@ -177,12 +177,12 @@
             SpringDoc OpenAPI: Auto-generates OpenAPI 3.0 specification from
             Spring MVC controllers. Provides Swagger UI at /swagger-ui.html
             and OpenAPI JSON at /v3/api-docs. Required for Phase 2 API docs.
-            Updated to 2.8.7 to fix CVE-2025-26791 (DOMPurify vulnerability in swagger-ui).
+            Updated to 3.0.0 for latest features and security fixes.
         -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.8.7</version>
+            <version>3.0.0</version>
         </dependency>
 
         <!--
@@ -196,13 +196,13 @@
         </dependency>
 
         <!--
-            Force commons-compress to 1.26.2 to remediate CVE-2024-25710/CVE-2024-26308
+            Force commons-compress to 1.28.0 to remediate CVE-2024-25710/CVE-2024-26308
             flagged by OWASP Dependency-Check (transitive dependency via SpringDoc).
         -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
-            <version>1.26.2</version>
+            <version>1.28.0</version>
         </dependency>
 
         <!--

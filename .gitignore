@@ -56,3 +56,8 @@ chatgptaudit.md
 
 # Agent docs
 agents.md
+
+# Environment files (contain secrets - NEVER commit)
+.env
+.env.local
+.env.*.local
