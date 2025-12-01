@@ -65,8 +65,8 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 7. Planning note: Phases 0-4 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI) with **345 tests** covering both the JPA path and the legacy singleton fallbacks (PIT mutation coverage 99% with 99% line coverage on mutated classes). Three remaining PIT mutants correspond to the constant `return true` statements inside the `add*` methods—tests already exercise those success paths, but this mutator replaces the return with `true` again so PIT reports them as uncovered. The roadmap for security and packaging lives in `docs/REQUIREMENTS.md`. ADR-0014..0028 capture the selected stack and implementation decisions.
 
 ## Branches & History
-- `master` (this branch) – the Spring Boot + React suite with persistence, CI, and the full UI.
-- `original-cs320` – the unmodified CS320 milestone (HashMap-backed services + the original requirements/tests). Browse it at [`original-cs320`](https://github.com/jguida941/contact-suite-spring-react/tree/original-cs320) to compare the baseline against this modern implementation.
+- `master` (this branch) - the Spring Boot + React suite with persistence, CI, and the full UI.
+- `original-cs320` - the unmodified CS320 milestone (HashMap-backed services + the original requirements/tests). Browse it at [`original-cs320`](https://github.com/jguida941/contact-suite-spring-react/tree/original-cs320) to compare the baseline against this modern implementation.
 
 We tag releases from both branches so GitHub’s “Releases” view exposes the original assignment snapshot alongside the current platform.
 
@@ -312,11 +312,11 @@ void testInvalidContactId(String id, String expectedMessage) {
 ## [ContactService.java](src/main/java/contactapp/service/ContactService.java) / [ContactServiceTest.java](src/test/java/contactapp/service/ContactServiceTest.java)
 
 ### Service Snapshot
-- **DomainDataStore abstraction** – `ContactService` depends on `ContactStore`, injected with the JPA-backed implementation during normal operation. The legacy singleton path lazily spins up an `InMemoryContactStore`, then migrates data into the JPA store when Spring finishes wiring beans.
-- **Transactional guarantees** – Methods run inside Spring transactions so the `existsById` + `save` or `findById` + `update` sequences remain atomic. Read methods opt into `@Transactional(readOnly = true)` for SQL efficiency.
-- **Validation + normalization** – Service methods validate/trims IDs via `Validation.validateNotBlank`, but all field-level rules still live inside `Contact` (`update()` and setters). That keeps controller/service logic shallow.
-- **Defensive copies** – `getAllContacts()`, `getDatabase()`, and `getContactById()` return fresh `Contact.copy()` instances so external callers cannot mutate persistent state.
-- **Package-private reset hooks** – `clearAllContacts()` sticks around exclusively for tests in the same package; production code never calls it directly.
+- **DomainDataStore abstraction** - `ContactService` depends on `ContactStore`, injected with the JPA-backed implementation during normal operation. The legacy singleton path lazily spins up an `InMemoryContactStore`, then migrates data into the JPA store when Spring finishes wiring beans.
+- **Transactional guarantees** - Methods run inside Spring transactions so the `existsById` + `save` or `findById` + `update` sequences remain atomic. Read methods opt into `@Transactional(readOnly = true)` for SQL efficiency.
+- **Validation + normalization** - Service methods validate/trims IDs via `Validation.validateNotBlank`, but all field-level rules still live inside `Contact` (`update()` and setters). That keeps controller/service logic shallow.
+- **Defensive copies** - `getAllContacts()`, `getDatabase()`, and `getContactById()` return fresh `Contact.copy()` instances so external callers cannot mutate persistent state.
+- **Package-private reset hooks** - `clearAllContacts()` sticks around exclusively for tests in the same package; production code never calls it directly.
 
 ### Persistence Flow
 ```mermaid
