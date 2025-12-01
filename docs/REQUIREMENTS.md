@@ -41,7 +41,7 @@
 - Mapper/unit suites now include null-guard coverage plus JPA entity accessor tests to keep persistence mutation-safe even when Hibernate instantiates proxies through the protected constructors.
 - OpenAPI/Swagger UI available at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi).
 - Health/info actuator endpoints available; other actuator endpoints locked down.
-- Latest CI: 345 tests passing (unit + slice + Testcontainers integration), 100% mutation score, 99% line coverage on mutated classes, SpotBugs clean.
+- Latest CI: 345 tests passing (unit + slice + Testcontainers integration), 99% mutation score (308/311 mutants killed; PIT cannot eliminate the constant `return true` success-path mutants in the `add*` methods), 99% line coverage on mutated classes, SpotBugs clean.
 - Controller tests (71 tests): ContactControllerTest (30), TaskControllerTest (21), AppointmentControllerTest (20).
 - Exception handler tests (5 tests): GlobalExceptionHandlerTest validates direct handler coverage (including ConstraintViolationException for path variable validation).
 - Error controller tests (34 tests): CustomErrorControllerTest (17) + JsonErrorReportValveTest (17) validate container-level error handling.

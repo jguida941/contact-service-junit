@@ -1,5 +1,4 @@
-# CS320 Milestone 1 - Contact Service
-[![Java CI](https://img.shields.io/github/actions/workflow/status/jguida941/contact-service-junit/java-ci.yml?branch=master&label=Java%20CI&style=for-the-badge&logo=githubactions&logoColor=white&color=16A34A)](https://github.com/jguida941/contact-service-junit/actions/workflows/java-ci.yml)
+# Multi-Entity Contact Suite (Spring Boot, React, and JUnit)
 [![CodeQL](https://img.shields.io/github/actions/workflow/status/jguida941/contact-service-junit/codeql.yml?branch=master&label=CodeQL&style=for-the-badge&logo=github&logoColor=white&color=16A34A)](https://github.com/jguida941/contact-service-junit/actions/workflows/codeql.yml)
 [![Codecov](https://img.shields.io/codecov/c/github/jguida941/contact-service-junit/master?label=Codecov&style=for-the-badge&logo=codecov&logoColor=white&color=CA8A04)](https://codecov.io/gh/jguida941/contact-service-junit)
 [![JaCoCo](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-service-junit/master/badges/jacoco.json&style=for-the-badge)](#qa-summary)
@@ -8,7 +7,7 @@
 [![OWASP Dependency-Check](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-service-junit/master/badges/dependency.json&style=for-the-badge)](#static-analysis--quality-gates)
 [![License](https://img.shields.io/badge/License-MIT-1D4ED8?style=for-the-badge)](LICENSE)
 
-Small Java project for the CS320 Contact Service milestone, now expanded to Task and Appointment with real persistence. The work breaks down into five pieces:
+Started as the simple CS320 contact-service milestone and grew into a multi-entity suite (Contact/Task/Appointment) with full persistence, Spring Boot 3.4.12, and backward-compatible singletons. The work breaks down into five pieces:
 1. Build the `Contact` and `ContactService` classes exactly as described in the requirements.
 2. Prove every rule with unit tests (length limits, null checks, unique IDs, and add/update/delete behavior) using the shared `Validation` helper so exceptions surface clear messages.
 3. Mirror the same patterns for the `Task` entity/service (ID/name/description) so both domains share validation, atomic updates, and singleton storage.
@@ -63,7 +62,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
    ```
    Open `http://localhost:8080` — Spring Boot serves both the React UI and REST API from the same origin.
 6. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-7. Planning note: Phases 0-4 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI) with **344 tests** covering both the JPA path and the legacy singleton fallbacks (PIT mutation coverage 100% with 99% line coverage on mutated classes). The roadmap for security and packaging lives in `docs/REQUIREMENTS.md`. ADR-0014..0028 capture the selected stack and implementation decisions.
+7. Planning note: Phases 0-4 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI) with **345 tests** covering both the JPA path and the legacy singleton fallbacks (PIT mutation coverage 99% with 99% line coverage on mutated classes). Three remaining PIT mutants correspond to the constant `return true` statements inside the `add*` methods—tests already exercise those success paths, but this mutator replaces the return with `true` again so PIT reports them as uncovered. The roadmap for security and packaging lives in `docs/REQUIREMENTS.md`. ADR-0014..0028 capture the selected stack and implementation decisions.
 
 ## Folder Highlights
 | Path                                                                                                                 | Description                                                                                     |
@@ -368,7 +367,7 @@ graph TD
 - Mapper tests (`ContactMapperTest`, `TaskMapperTest`, `AppointmentMapperTest`) now assert the null-input short-circuit paths so PIT can mutate those guards without leaving uncovered lines.
 - New JPA entity tests (`ContactEntityTest`, `TaskEntityTest`, `AppointmentEntityTest`) exercise the protected constructors and setters to prove Hibernate proxies can hydrate every column even when instantiated via reflection.
 - Legacy `InMemory*Store` suites assert the `Optional.empty` branch of `findById` so both success and miss paths copy data defensively.
-- Combined with the existing controller/service suites this brings the repo to **345 tests** with **100% mutation kills** and **99% line coverage on mutated classes**.
+- Combined with the existing controller/service suites this brings the repo to **345 tests** with **99% mutation kills** (308/311 mutants killed; the remaining three are PIT's `BooleanTrueReturnValsMutator` hitting the constant `return true` success cases in the `add*` methods) and **99% line coverage on mutated classes**.
 
 <br>
 
