@@ -65,6 +65,11 @@ public class SecurityConfig {
     private static final long DEFAULT_CORS_MAX_AGE_SECONDS = 3600L;
     private static final RequestMatcher API_MATCHER = new AntPathRequestMatcher("/api/**");
     private static final RequestMatcher ACTUATOR_MATCHER = new AntPathRequestMatcher("/actuator/**");
+    private static final String[] ACTUATOR_PUBLIC_ENDPOINTS = {
+            "/actuator/health",
+            "/actuator/health/**",
+            "/actuator/info"
+    };
     /**
      * Matches SPA route requests (GETs that do not target /api/** or /actuator/**) so deep links and refreshes can
      * load the bundle without requiring an existing JWT. This matcher is combined with the static resource rules to
@@ -105,7 +110,7 @@ public class SecurityConfig {
                         // Public endpoints - authentication
                         .requestMatchers("/api/auth/**").permitAll()
                         // Public endpoints - health/monitoring
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers(ACTUATOR_PUBLIC_ENDPOINTS).permitAll()
                         // Public endpoints - API documentation
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         // Public endpoints - static resources (SPA)

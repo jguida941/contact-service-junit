@@ -67,6 +67,10 @@ jobs:
 
       # Start the Spring Boot app in the background
       - name: Start Spring Boot app
+        env:
+          # Required: BCrypt hash for disabled system user (Flyway migration placeholder).
+          # Set this as a GitHub repository secret.
+          SYSTEM_USER_PASSWORD_HASH: ${{ secrets.SYSTEM_USER_PASSWORD_HASH }}
         run: |
           echo "Starting Spring Boot application..."
           # Validate exactly one JAR exists before starting
