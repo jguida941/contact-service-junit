@@ -1,0 +1,26 @@
+extensions:
+  - addsTo:
+      pack: codeql/java-all
+      extensible: summaryModel
+    data:
+      # Mark sanitization methods as sanitizing taint from argument to return value
+      # Format: [package, type, subtypes, name, signature, ext, input, output, kind, provenance]
+      - ["contactapp.config", "RateLimitingFilter", false, "sanitizeForLogging", "(String)", "", "Argument[0]", "ReturnValue", "value", "manual"]
+      - ["contactapp.config", "RequestLoggingFilter", false, "sanitizeLogValue", "(String)", "", "Argument[0]", "ReturnValue", "value", "manual"]
+      - ["contactapp.config", "RequestLoggingFilter", false, "sanitizeLogValue", "(String,String)", "", "Argument[0]", "ReturnValue", "value", "manual"]
+      - ["contactapp.config", "RequestLoggingFilter", false, "sanitizeQueryString", "(String)", "", "Argument[0]", "ReturnValue", "value", "manual"]
+      - ["contactapp.config", "RequestLoggingFilter", false, "maskClientIp", "(String)", "", "Argument[0]", "ReturnValue", "value", "manual"]
+      - ["contactapp.config", "RequestLoggingFilter", false, "sanitizeUserAgent", "(String)", "", "Argument[0]", "ReturnValue", "value", "manual"]
+
+  - addsTo:
+      pack: codeql/java-queries
+      extensible: logInjectionSanitizer
+    data:
+      # Mark these methods as log injection sanitizers
+      # Format: [package, type, subtypes, name, signature, ext, input, kind, provenance]
+      - ["contactapp.config", "RateLimitingFilter", false, "sanitizeForLogging", "(String)", "", "Argument[0]", "value", "manual"]
+      - ["contactapp.config", "RequestLoggingFilter", false, "sanitizeLogValue", "(String)", "", "Argument[0]", "value", "manual"]
+      - ["contactapp.config", "RequestLoggingFilter", false, "sanitizeLogValue", "(String,String)", "", "Argument[0]", "value", "manual"]
+      - ["contactapp.config", "RequestLoggingFilter", false, "sanitizeQueryString", "(String)", "", "Argument[0]", "value", "manual"]
+      - ["contactapp.config", "RequestLoggingFilter", false, "maskClientIp", "(String)", "", "Argument[0]", "value", "manual"]
+      - ["contactapp.config", "RequestLoggingFilter", false, "sanitizeUserAgent", "(String)", "", "Argument[0]", "value", "manual"]

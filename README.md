@@ -114,7 +114,7 @@ Flyway automatically creates the schema on first run. Stop the database with `do
    ```
    Open `http://localhost:8080` — Spring Boot serves both the React UI and REST API from the same origin.
 6. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-7. Planning note: Phases 0-5.5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability, DAST). **580 tests** (586 with integration tests via Failsafe) cover the JPA path, legacy singleton fallbacks, JWT auth components, and User entity validation (PIT mutation coverage 94% with 95% line coverage on mutated classes). ADR-0014..0044 capture the selected stack, implementation decisions, and engineering principles. See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for the consolidated deliverables list plus upcoming work.
+7. Planning note: Phases 0-5.5 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability, DAST). **642 tests** (648 with integration tests via Failsafe) cover the JPA path, legacy singleton fallbacks, JWT auth components, and User entity validation (PIT mutation coverage 94% with 96%+ line coverage on stores, 95%+ on mappers). ADR-0014..0044 capture the selected stack, implementation decisions, and engineering principles. See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for the consolidated deliverables list plus upcoming work.
 
 ## Phase Roadmap & Highlights
 
@@ -530,7 +530,7 @@ graph TD
 - Mapper tests (`ContactMapperTest`, `TaskMapperTest`, `AppointmentMapperTest`) now assert the null-input short-circuit paths so PIT can mutate those guards without leaving uncovered lines.
 - New JPA entity tests (`ContactEntityTest`, `TaskEntityTest`, `AppointmentEntityTest`) exercise the protected constructors and setters to prove Hibernate proxies can hydrate every column even when instantiated via reflection.
 - Legacy `InMemory*Store` suites assert the `Optional.empty` branch of `findById` so both success and miss paths copy data defensively.
-- Combined with the existing controller/service suites and the security additions above, this brings the repo to **580 tests** (586 with ITs) with **94% mutation kills** (615/656 mutants killed) and **95% line coverage on mutated classes**.
+- Combined with the existing controller/service suites and the security additions above, this brings the repo to **642 tests** (648 with ITs) with **94% mutation kills** (615/656 mutants killed) and **96%+ line coverage on stores, 95%+ on mappers**.
 
 <br>
 

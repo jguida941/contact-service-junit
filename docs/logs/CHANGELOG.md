@@ -6,6 +6,22 @@ All notable changes to this project will be documented here. Follow the
 ## [Unreleased]
 
 ### Added
+- **CodeQL Custom Sanitizer Configuration**:
+  - Created `.github/codeql/custom-sanitizers.yml` to mark `sanitizeForLogging` (RateLimitingFilter) and `sanitizeLogValue` (RequestLoggingFilter) as recognized log injection sanitizers.
+  - Created `.github/codeql/codeql-config.yml` to reference custom model extensions.
+  - Updated `.github/workflows/codeql.yml` to use the custom configuration file.
+  - This resolves false positive log injection alerts where the code already properly sanitizes user input before logging.
+
+- **Store and Mapper Test Coverage Improvements**:
+  - Added comprehensive null parameter validation tests to `JpaContactStoreTest`, `JpaTaskStoreTest`, and `JpaAppointmentStoreTest`.
+  - Added save/update path tests covering both insert (new entity) and update (existing entity) branches.
+  - Added `insert()`, `findAll()`, and `deleteAll()` method tests for complete JPA store coverage.
+  - Added `updateEntity` null check tests to `ContactMapperTest`, `TaskMapperTest`, and `AppointmentMapperTest`.
+  - Store coverage improved from 78% to **96%** (instructions), 73% to **97%** (branches).
+  - All JPA stores now at **100%** coverage.
+  - Mapper coverage improved to **95%+** with ContactMapper and TaskMapper at 100%.
+  - Total tests now at **642** (648 with ITs).
+
 - **Phase 5.5 DAST + Runtime Security** (complete):
   - Added password strength validation to `RegisterRequest` via `@Pattern` regex (uppercase, lowercase, digit required).
   - Added Content-Security-Policy (CSP) header to `SecurityConfig` (default-src 'self', script-src 'self', etc.).
@@ -14,7 +30,6 @@ All notable changes to this project will be documented here. Follow the
   - Created `.zap/rules.tsv` for ZAP rule configuration.
   - Added 4 new auth controller tests for password strength validation (no uppercase, no lowercase, no digit).
   - Added CSP header integration test in `SecurityConfigIntegrationTest`.
-  - Total tests now at 580 (586 with ITs), mutation coverage at 94% (615/656 mutants killed).
 
 - **README System Requirements**: Added a toolchain/hardware table plus OS guidance, and documented Node.js 22+ to match the frontend-maven-plugin + CI workflow.
 - **ADR-0040**: Request Tracing and Logging Infrastructure – detailed documentation for CorrelationIdFilter, RequestLoggingFilter, and RequestUtils with test coverage.

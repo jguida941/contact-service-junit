@@ -37,11 +37,11 @@
 - Global exception handler (`GlobalExceptionHandler`) maps exceptions to JSON error responses (400, 401, 403, 404, 409 including optimistic locking conflicts).
 - Custom error controller (`CustomErrorController`) ensures ALL errors return JSON, including container-level errors, and `RequestLoggingFilter` logs masked IP/query data + user agents whenever request logging is enabled.
 - Persistence implemented via Spring Data repositories + mapper components; schema managed by Flyway migrations targeting Postgres (dev/prod) and H2/Testcontainers (tests). The default (no profile) run uses in-memory H2 in PostgreSQL compatibility mode so `mvn spring-boot:run` works out of the box; `dev`/`integration`/`prod` profiles point at Postgres. Shared migrations now live under `db/migration/common`, with profile-specific overrides under `db/migration/h2` and `db/migration/postgresql`.
-- Testcontainers-based integration suites cover Contact/Task/Appointment services against real Postgres, while new JWT/config/filter/unit tests push total coverage to 580 backend tests (586 with ITs).
+- Testcontainers-based integration suites cover Contact/Task/Appointment services against real Postgres, while new JWT/config/filter/unit tests push total coverage to 642 backend tests (648 with ITs).
 - Mapper/unit suites now include null-guard coverage plus JPA entity accessor tests to keep persistence mutation-safe even when Hibernate instantiates proxies through the protected constructors.
 - OpenAPI/Swagger UI available at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi).
 - Health/info actuator endpoints available; other actuator endpoints locked down.
-- Latest CI: 580 tests passing (586 with ITs; unit + slice + Testcontainers + security + filter + config tests), 94% mutation score (615/656 mutants killed), 95% line coverage on mutated classes, SpotBugs clean.
+- Latest CI: 642 tests passing (648 with ITs; unit + slice + Testcontainers + security + filter + config tests), 94% mutation score (615/656 mutants killed), 96%+ line coverage on stores, 95%+ on mappers, SpotBugs clean.
 - Testcontainers-backed Postgres integration tests run automatically in CI (Ubuntu jobs pass `-DskipITs=false`) while local `mvn verify` runs set `skipITs=true` by default; enable them locally with `mvn verify -DskipITs=false` once Docker Desktop/Colima is running.
 - Controller tests (71 tests): ContactControllerTest (30), TaskControllerTest (21), AppointmentControllerTest (20).
 - Exception handler tests (5 tests): GlobalExceptionHandlerTest validates direct handler coverage (including ConstraintViolationException for path variable validation).

@@ -7,7 +7,7 @@
 ```
 Phase 0   ✅ Pre-API fixes (defensive copies, date validation)
 Phase 1   ✅ Spring Boot scaffold (layered packages, actuator, smoke tests)
-Phase 2   ✅ REST API + DTOs + OpenAPI (580 tests, 586 with ITs; PIT mutation 94% / 96% line coverage on mutated classes)
+Phase 2   ✅ REST API + DTOs + OpenAPI (642 tests, 648 with ITs; PIT mutation 94% / 96%+ store coverage)
 Phase 2.5 ✅ API fuzzing in CI (Schemathesis 30,668 tests, ZAP-ready artifacts)
 Phase 3   ✅ Persistence (Spring Data JPA, Flyway, Postgres, Testcontainers)
 Phase 4   ✅ React UI (Vite + React 19 + Tailwind v4 + shadcn/ui, full CRUD, Maven-integrated)

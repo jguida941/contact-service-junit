@@ -1,0 +1,14 @@
+name: "Custom CodeQL Configuration"
+
+# Use the standard CodeQL queries plus security-and-quality
+queries:
+  - uses: security-and-quality
+
+# Include custom model extensions for sanitizers
+packs:
+  java:
+    - codeql/java-queries
+
+# Path to model extensions
+model-paths:
+  - ./.github/codeql

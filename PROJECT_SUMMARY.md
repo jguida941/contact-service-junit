@@ -104,9 +104,9 @@ Built a complete React frontend with:
 
 | Metric | Value |
 |--------|-------|
-| **Total Tests** | 580 (586 with ITs) |
+| **Total Tests** | 642 (648 with ITs) |
 | **Mutation Coverage (PITest)** | 94% (615/656 mutants killed) |
-| **Line Coverage (JaCoCo)** | 95% on mutated classes |
+| **Line Coverage (JaCoCo)** | 96%+ stores, 95%+ mappers |
 | **Static Analysis** | SpotBugs clean |
 | **API Fuzzing** | 30,668 Schemathesis tests |
 
@@ -384,7 +384,7 @@ contact-suite-spring-react/
 │   ├── api/             # REST controllers, DTOs, exception handling
 │   ├── persistence/     # JPA entities, mappers, repositories, stores
 │   └── config/          # Spring configuration
-├── src/test/java/       # 580 tests (unit, integration, legacy, security)
+├── src/test/java/       # 642 tests (unit, integration, legacy, security)
 ├── ui/contact-app/      # React 19 + Vite + TypeScript frontend
 ├── docs/
 │   ├── adrs/            # 44 Architecture Decision Records
