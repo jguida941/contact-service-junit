@@ -306,6 +306,7 @@ Implementation details:
 - [x] Flyway migrations (`V1__contacts`, `V2__tasks`, `V3__appointments`) authored and applied in all environments.
 - [x] Profile documentation updated across README/agents/REQUIREMENTS.
 - [x] Integration tests with Testcontainers covering all three services + DB constraints.
+- [x] Local Postgres persistence wired via `docker-compose.dev.yml` + `dev` Spring profile (see README for env exports).
 
 ### Phase 4: Frontend UI ✅
 - [x] React + Vite + TypeScript app scaffolded under `ui/contact-app`
@@ -338,6 +339,7 @@ Implementation details:
 - [ ] Auth/role integration tests asserting 401/403 and allowed roles
 - [ ] Security scan documentation/checks repeatable in CI
 - [ ] Dependency-Check/CodeQL suppressions tracked with reasoning; coverage/mutation thresholds enforced in CI
+- [ ] GitHub Actions updated to run `npm run test:run` (Vitest) and `npm run test:e2e` (Playwright) with branch protection on all required jobs
 
 ### Phase 6: Packaging + CI
 - [ ] Dockerfiles for backend and UI
@@ -346,6 +348,7 @@ Implementation details:
 - [ ] Environment variables documented (sample `.env`)
 - [ ] CI builds/tests images and publishes artifacts
 - [ ] Health check step in CI to curl `/actuator/health` after startup to ensure container wiring works
+- [ ] GH Actions job builds Docker image/compose stack and verifies `/actuator/health` before publishing
 
 ### Phase 7: UX Polish + Backlog
 - [ ] Search/pagination/sorting for large datasets

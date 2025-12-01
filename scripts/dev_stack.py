@@ -10,12 +10,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import signal
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -58,9 +59,9 @@ def _maybe_install_frontend(skip_install: bool) -> None:
     _run(["npm", "install"], cwd=FRONTEND_DIR)
 
 
-def _start_process(cmd: Sequence[str], *, cwd: Path) -> subprocess.Popen:
+def _start_process(cmd: Sequence[str], *, cwd: Path, env: Dict[str, str] | None = None) -> subprocess.Popen:
     """Spawn a long-running process (backend or frontend) and immediately return the handle."""
-    return subprocess.Popen(cmd, cwd=str(cwd))
+    return subprocess.Popen(cmd, cwd=str(cwd), env=env)
 
 
 def _attach_signal_handlers(children: List[Tuple[str, subprocess.Popen]]) -> None:
@@ -115,21 +116,94 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--backend-goal",
         default="spring-boot:run",
-        help="Maven goal used to start the backend (default: spring-boot:run).",
+        help="Arguments passed to Maven after `mvn` (default: spring-boot:run).",
+    )
+    parser.add_argument(
+        "--database",
+        choices=("h2", "postgres"),
+        default="h2",
+        help="Database backing the backend service (default: h2).",
+    )
+    parser.add_argument(
+        "--docker-compose-file",
+        default="docker-compose.dev.yml",
+        help="Docker compose file used when starting the Postgres dev database.",
+    )
+    parser.add_argument(
+        "--postgres-url",
+        default="jdbc:postgresql://localhost:5432/contactapp",
+        help="JDBC URL applied to the backend when using the Postgres database.",
+    )
+    parser.add_argument(
+        "--postgres-username",
+        default="contactapp",
+        help="Username for the Postgres dev database.",
+    )
+    parser.add_argument(
+        "--postgres-password",
+        default="contactapp",
+        help="Password for the Postgres dev database.",
+    )
+    parser.add_argument(
+        "--postgres-profile",
+        default="dev",
+        help="Spring profile activated when using the Postgres dev database.",
     )
     return parser.parse_args()
 
 
+def _ensure_postgres(compose_file: Path) -> None:
+    """Start the dockerized Postgres dev database if requested."""
+    if not compose_file.exists():
+        raise FileNotFoundError(f"Docker compose file not found: {compose_file}")
+    print(f"[dev-stack] Ensuring Postgres is running via {compose_file}...", flush=True)
+    try:
+        subprocess.run(
+            ["docker", "compose", "-f", str(compose_file), "up", "-d"],
+            cwd=str(ROOT),
+            check=True,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError("Docker is required to run the Postgres stack but is not installed.") from exc
+
+
+def _build_backend_env(args: argparse.Namespace) -> Dict[str, str]:
+    """
+    Construct environment variables for the backend process. When Postgres is selected,
+    default datasource credentials and the Spring profile are configured unless already set.
+    """
+    env = os.environ.copy()
+    if args.database == "postgres":
+        env.setdefault("SPRING_PROFILES_ACTIVE", args.postgres_profile)
+        env.setdefault("SPRING_DATASOURCE_URL", args.postgres_url)
+        env.setdefault("SPRING_DATASOURCE_USERNAME", args.postgres_username)
+        env.setdefault("SPRING_DATASOURCE_PASSWORD", args.postgres_password)
+        env.setdefault("SPRING_DATASOURCE_DRIVER_CLASS_NAME", "org.postgresql.Driver")
+    return env
+
+
 def main() -> None:
     args = parse_args()
-    backend_cmd = ["mvn", args.backend_goal]
+    backend_cmd = ["mvn"] + shlex.split(args.backend_goal)
     frontend_cmd = ["npm", "run", "dev", "--", "--port", str(args.frontend_port)]
+    compose_file = Path(args.docker_compose_file)
+    if not compose_file.is_absolute():
+        compose_file = ROOT / compose_file
 
     running: List[Tuple[str, subprocess.Popen]] = []
     _attach_signal_handlers(running)
 
+    if args.database == "postgres":
+        try:
+            _ensure_postgres(compose_file)
+        except Exception as exc:  # noqa: BLE001 - user-facing CLI error handling
+            print(f"[dev-stack] Failed to start Postgres: {exc}", file=sys.stderr)
+            sys.exit(1)
+
+    backend_env = _build_backend_env(args)
+
     print("[dev-stack] Starting Spring Boot backend...", flush=True)
-    backend = _start_process(backend_cmd, cwd=ROOT)
+    backend = _start_process(backend_cmd, cwd=ROOT, env=backend_env)
     running.append(("backend", backend))
 
     try:

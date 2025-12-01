@@ -35,7 +35,7 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
 ## Getting Started
 1. Install Java 17 and Apache Maven (3.9+).
 2. Run `mvn verify` from the project root to compile everything, execute the JUnit suite, and run Checkstyle/SpotBugs/JaCoCo quality gates.
-3. **Development mode** (backend only): `mvn spring-boot:run` (base profile uses an in-memory H2 database in PostgreSQL compatibility mode so you can try the API without installing Postgres; use `--spring.profiles.active=dev` or `prod` to connect to a real Postgres instance)
+3. **Development mode** (backend only): `mvn spring-boot:run` (base profile uses an in-memory H2 database in PostgreSQL compatibility mode so you can try the API without installing Postgres; use `--spring.profiles.active=dev` or `prod` to connect to a real Postgres instance that persists data between restarts)
    - Health/info actuator endpoints at `http://localhost:8080/actuator/health`
    - **Swagger UI** at `http://localhost:8080/swagger-ui.html`
    - **OpenAPI spec** at `http://localhost:8080/v3/api-docs`
@@ -56,7 +56,36 @@ Everything is packaged under `contactapp` with layered sub-packages (`domain`, `
    > | http://localhost:8080/swagger-ui.html | API documentation |
    > | http://localhost:8080/actuator/health | Health check endpoint |
    > 
-   > **One-command option**: `python scripts/dev_stack.py` starts `mvn spring-boot:run`, waits for `http://localhost:8080/actuator/health`, installs UI deps if needed, and launches `npm run dev -- --port 5173`. Press Ctrl+C once to shut down both services.
+   > **One-command option**: `python scripts/dev_stack.py` starts `mvn spring-boot:run`, waits for `http://localhost:8080/actuator/health`, installs UI deps if needed, and launches `npm run dev -- --port 5173`. Press Ctrl+C once to shut down both services. Add `--database postgres` to have the helper start Docker Compose, set the `dev` profile, and inject datasource env vars automatically.
+   
+### Persisting Dev Data with Postgres
+The default profile uses in-memory H2, so data disappears when the backend stops. To keep data between restarts, let the launcher handle the Postgres database setup:
+
+```bash
+python scripts/dev_stack.py --database postgres
+```
+
+This command runs `docker compose -f docker-compose.dev.yml up -d`, wires datasource env vars/credentials, activates the `dev` profile, and launches both servers.
+
+Prefer manual control? Follow these steps instead:
+
+1. Start Postgres via Docker Compose (ships with default `contactapp/contactapp` creds):
+   ```bash
+   docker compose -f docker-compose.dev.yml up -d
+   ```
+2. Export datasource credentials (or add them to your shell profile):
+   ```bash
+   export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/contactapp
+   export SPRING_DATASOURCE_USERNAME=contactapp
+   export SPRING_DATASOURCE_PASSWORD=contactapp
+   ```
+3. Run the stack with the `dev` profile so Spring Boot connects to Postgres:
+   ```bash
+   mvn spring-boot:run -Dspring-boot.run.profiles=dev
+   npm run dev
+   ```
+
+Flyway automatically creates the schema on first run. Stop the database with `docker compose -f docker-compose.dev.yml down` when you are done (data stays in the `pgdata` volume).
 5. **Production build** (single JAR with UI):
    ```bash
    mvn package -DskipTests
@@ -149,6 +178,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`scripts/serve_quality_dashboard.py`](scripts/serve_quality_dashboard.py)                                           | Tiny HTTP server that opens `target/site/qa-dashboard` locally after downloading CI artifacts.  |
 | [`scripts/api_fuzzing.py`](scripts/api_fuzzing.py)                                                                   | API fuzzing helper for local Schemathesis runs (starts app, fuzzes, exports OpenAPI spec).      |
 | [`scripts/dev_stack.py`](scripts/dev_stack.py)                                                                       | Runs the Spring Boot API and Vite UI together with health checks and dependency bootstrapping.  |
+| [`docker-compose.dev.yml`](docker-compose.dev.yml)                                                                   | One-command Postgres stack for local persistence (`docker compose -f docker-compose.dev.yml up`). |
 | [`.github/workflows`](.github/workflows)                                                                             | CI/CD pipelines (tests, quality gates, release packaging, CodeQL, API fuzzing).                 |
 
 ## Design Decisions & Highlights
@@ -672,9 +702,9 @@ flowchart TD
 ```
 
 ### Local Dev Script
-- Use `python scripts/dev_stack.py` to launch Spring Boot (`mvn spring-boot:run`) and the Vite UI (`npm run dev -- --port 5173`) in one terminal.
+- Use `python scripts/dev_stack.py` to launch Spring Boot (`mvn spring-boot:run`) and the Vite UI (`npm run dev -- --port 5173`) in one terminal; add `--database postgres` to have it start Docker Compose, enable the `dev` profile, and wire datasource env vars automatically.
 - The helper polls `http://localhost:8080/actuator/health` before starting the frontend, installs `ui/contact-app` dependencies if `node_modules` is missing, and shuts everything down on Ctrl+C.
-- Flags: `--frontend-port 4000`, `--backend-goal spring-boot:run -Dspring.profiles.active=dev`, or `--skip-frontend-install` keep it flexible for custom setups.
+- Flags: `--frontend-port 4000`, `--backend-goal "spring-boot:run -Dspring-boot.run.profiles=dev"`, `--skip-frontend-install`, `--database postgres`, `--docker-compose-file ./docker-compose.dev.yml`, `--postgres-url jdbc:postgresql://localhost:5432/contactapp`, `--postgres-username contactapp`, `--postgres-password contactapp`, and `--postgres-profile dev` keep it flexible for custom setups.
 
 
 ### App Shell Layout

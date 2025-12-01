@@ -27,6 +27,7 @@ Quick links and context for automation/assistant workflows implementing this pla
 - JacksonConfig disables type coercion for strict OpenAPI schema compliance (ADR-0023)
 - OpenAPI/Swagger UI at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi)
 - Health/info actuator endpoints available; other actuator endpoints locked down
+- Local dev can persist data via `docker-compose.dev.yml` (Postgres 16) + `dev` Spring profile (`SPRING_DATASOURCE_*` env vars)
 - Latest CI run: **345 tests passing** (unit + slice + Testcontainers), **99% mutation score** (308/311 mutants killed; remaining ones are PIT's constant `return true` mutations in the `add*` success paths), **99% line coverage on mutated classes**, SpotBugs clean
 - All Schemathesis API fuzzing phases pass (Coverage, Fuzzing, Stateful: 30,668 test cases, 0 failures)
 - Persistence implemented via Spring Data JPA repositories + Flyway migrations (Postgres dev/prod, H2/Testcontainers tests)

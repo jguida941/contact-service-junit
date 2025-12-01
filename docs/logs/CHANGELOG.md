@@ -8,6 +8,7 @@ All notable changes to this project will be documented here. Follow the
 - **react-router vulnerability**: Bumped `react-router` and `react-router-dom` from 7.0.2 to 7.9.6 to fix CVE for pre-render data spoofing.
 
 ### Fixed
+- **Dev profile Postgres driver**: `application.yml` now sets the PostgreSQL driver (and the launcher injects `SPRING_DATASOURCE_DRIVER_CLASS_NAME`) so running with `SPRING_PROFILES_ACTIVE=dev` or `python scripts/dev_stack.py --database postgres` no longer fails with "Driver org.h2.Driver claims to not accept jdbcUrl".
 - **SpotBugs false positive**: Added `@SuppressFBWarnings` to `ApplicationContextProvider.setApplicationContext()` for standard Spring ApplicationContextAware pattern.
 - **Race condition in add methods**: Fixed check-then-insert race condition in `ContactService.addContact()`, `TaskService.addTask()`, and `AppointmentService.addAppointment()` using a hybrid approach: fast-path `existsById()` check for immediate rejection plus `DataIntegrityViolationException` catch for race condition safety in JPA stores. This provides optimal performance (no DB round-trip for obvious duplicates) while ensuring atomicity via database UNIQUE constraints. See ADR-0024 for details.
 - **UI API endpoint mismatch**: Changed API base from `/api` to `/api/v1` to match backend controller mappings.
@@ -138,6 +139,7 @@ All notable changes to this project will be documented here. Follow the
   - Controllers: Added `@SuppressFBWarnings` for intentional Spring DI singleton service storage (false positive).
 
 ### Changed
+- `scripts/dev_stack.py` now supports `--database postgres`, Docker Compose startup, datasource/profile defaults, and multi-argument Maven goals; README/PROJECT_SUMMARY explain the new workflow.
 - `ApplicationTest.mainMethodCoverage` now launches `Application` with `--server.port=0` so PIT/CI runs pick an ephemeral port instead of colliding with another JVM on the agent.
 - README/REQUIREMENTS/agents/Roadmap now document the expanded **319-test** suite and PIT's **96% mutation / 93% line coverage** after the new regression tests.
 - Simplified legacy singleton compatibility: `getInstance()` in Contact/Task/Appointment services now returns the Spring-managed proxy when the context is ready (or the in-memory fallback before boot) without any manual `Advised` proxy unwrapping. Updated the corresponding Spring Boot service tests to assert shared persistence behavior between DI and legacy access instead of relying on brittle object identity checks.

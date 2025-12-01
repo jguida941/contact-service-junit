@@ -178,19 +178,19 @@ Every major decision is documented with context, rationale, and consequences:
 |----------|-------|
 | Java Production Classes | 45 |
 | Java Test Classes | 38 |
-| React Components | 30+ |
+| React Components | 40+ |
 | ADRs | 35 |
 | Database Migrations | 3 |
 | CI/CD Workflows | 4 |
-| Documentation Files | 50+ |
+| Documentation Files | 70+ |
 
 ---
 
 ## What's Left To Do
 
 ### Phase 4: Frontend Tests ✅
-- [x] Vitest + React Testing Library — 22 component tests
-- [x] Playwright E2E — 5 happy-path tests (list/create/edit/delete)
+- [x] Vitest + React Testing Library — 22 component tests (think “Jest for Vite”: it renders React components in jsdom and lets us assert on things like “does the Contact form show a validation message when fields are empty?”)
+- [x] Playwright E2E — 5 happy-path tests (Playwright launches a real browser, visits the running app, and clicks through the list/create/edit/delete flow the way a human user would)
 
 ### Phase 5: Security + Observability
 - [ ] JWT authentication with Spring Security
@@ -406,6 +406,16 @@ cd ui/contact-app && npm install && npm run dev
 
 # Full stack (one command)
 python scripts/dev_stack.py
+
+# Persist data between restarts (dev profile + Postgres)
+python scripts/dev_stack.py --database postgres
+# or manually:
+docker compose -f docker-compose.dev.yml up -d
+export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/contactapp
+export SPRING_DATASOURCE_USERNAME=contactapp
+export SPRING_DATASOURCE_PASSWORD=contactapp
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+cd ui/contact-app && npm run dev
 
 # Production build (single JAR)
 mvn package -DskipTests

@@ -360,7 +360,7 @@
                 <version>1.15.1</version>
                 <configuration>
                     <workingDirectory>ui/contact-app</workingDirectory>
-                    <nodeVersion>v20.19.0</nodeVersion>
+                    <nodeVersion>v22.16.0</nodeVersion>
                 </configuration>
                 <executions>
                     <execution>

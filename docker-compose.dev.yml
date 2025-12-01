@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: contactapp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: contactapp
+      POSTGRES_USER: contactapp
+      POSTGRES_PASSWORD: contactapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
