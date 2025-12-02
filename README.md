@@ -8,6 +8,7 @@
 [![OWASP Dependency-Check](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/contact-suite-spring-react/master/badges/dependency.json&style=for-the-badge)](#static-analysis--quality-gates)
 [![License](https://img.shields.io/badge/License-MIT-1D4ED8?style=for-the-badge)](LICENSE)
 
+
 ## Executive Summary
 
 - **Overview**: Full-stack contact, task, appointment, and project tracker built with Spring Boot 4.0.0 and React 19.
@@ -17,14 +18,15 @@
 
 ---
 
-Started as the simple CS320 contact-service milestone and grew into a multi-entity suite (Contact/Task/Appointment/Project) with full persistence, Spring Boot 4.0.0, React 19 SPA, and backward-compatible singletons. The work breaks down into key pieces:
-1. Build the `Contact` and `ContactService` classes exactly as described in the requirements.
-2. Prove every rule with unit tests (length limits, null checks, unique IDs, and add/update/delete behavior) using the shared `Validation` helper so exceptions surface clear messages.
-3. Mirror the same patterns for the `Task` entity/service (ID/name/description) and `Appointment` (ID/date/description) so all domains share validation, atomic updates, and singleton storage.
-4. Persist all aggregates through Spring Data JPA repositories + Flyway migrations (Postgres in dev/prod, Postgres via Testcontainers for SpringBootTests, H2 for targeted slices) while keeping the legacy `getInstance()` singletons alive for backward compatibility.
-5. Add comprehensive security (JWT auth, per-user data isolation, rate limiting, CSRF protection) and observability (structured logging, Prometheus metrics, PII masking).
-6. Build a production-ready React 19 SPA with TanStack Query, search/pagination/sorting, admin dashboard, and full accessibility support.
-7. Implement Project/Task Tracker Evolution (ADR-0045 Phases 1-5): Project entity with CRUD operations and status tracking, Task enhancements (status/due dates), task-project linking, appointment-task/project linking, and team collaboration via task assignment with access control.
+Started as the simple CS320 contact-service milestone and grew into a multi-entity suite (Contact, Task, Appointment, Project) with full persistence, Spring Boot 4.0.0, a React 19 SPA, and backward-compatible singletons. The work breaks down into:
+
+1. Built the `Contact` and `ContactService` classes exactly as described in the original requirements.
+2. Proved every rule with unit tests (length limits, null checks, unique IDs, add/update/delete behavior) using a shared `Validation` helper so exceptions surface clear messages.
+3. Mirrored the same patterns for the `Task` entity/service (ID, name, description) and `Appointment` (ID, date, description) so all domains share validation, atomic updates, and singleton storage.
+4. Persisted all aggregates through Spring Data JPA repositories and Flyway migrations (Postgres in dev/prod, Postgres via Testcontainers for SpringBootTests, H2 for targeted slices) while keeping the legacy `getInstance()` singletons alive for backward compatibility.
+5. Added comprehensive security (JWT auth, per-user data isolation, rate limiting, CSRF protection) and observability (structured logging, Prometheus metrics, PII masking).
+6. Built a production-ready React 19 SPA with TanStack Query, search/pagination/sorting, an admin dashboard, and full accessibility support.
+7. Implemented Project/Task Tracker Evolution (ADR-0045 Phases 1–5): Project entity with CRUD operations and status tracking, task enhancements (status and due dates), task–project linking, appointment–task/project linking, and team collaboration via task assignment with access control.
 
 Everything is packaged under `contactapp` with layered sub-packages (`domain`, `service`, `api`, `persistence`, `security`, `config`); production classes live in `src/main/java` and the JUnit tests in `src/test/java`. Spring Boot 4.0.0 provides the runtime with actuator health/info endpoints and Prometheus metrics.
 
