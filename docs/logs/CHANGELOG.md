@@ -6,6 +6,20 @@ All notable changes to this project will be documented here. Follow the
 ## [Unreleased]
 
 ### Added
+- **TaskService Test Coverage Improvements (2025-12-02)**:
+  - Added 44 new tests to TaskServiceTest bringing total from 29 to 73 tests
+  - New coverage for null taskId validation, extended update overloads (5, 6, 7 params)
+  - Query method tests: getTasksByStatus, getTasksDueBefore, getTasksByProjectId, getTasksByAssigneeId, getOverdueTasks
+  - Defensive copy tests for all query methods ensuring returned lists are independent copies
+  - User isolation tests verifying query methods only return current user's tasks
+  - Total test count now at **1026** tests (up from 951)
+
+### Fixed
+- **Pre-existing Config Test Fixes (2025-12-02)**:
+  - Fixed RateLimitingFilterTest.doFilterInternal_logsSanitizedClientIp: Updated assertion to verify CR/LF is stripped rather than expecting `[unsafe-value]` (the implementation correctly sanitizes by removing CR/LF characters)
+  - Fixed RequestLoggingFilterTest: Removed broken test for getSafeLogValue method which was refactored out in a previous change
+  - Fixed ProjectService.java checkstyle error: Shortened SuppressFBWarnings justification to stay within 120-character line limit
+
 - **Project/Task Tracker Evolution Phases 1-5 Complete (ADR-0045) (2025-12-01)**:
   - **Phase 1 - Project Entity**: Project domain with CRUD API at `/api/v1/projects`, status tracking (ACTIVE/ON_HOLD/COMPLETED/ARCHIVED), migration V7
   - **Phase 2 - Task Status/Due Date**: Enhanced Task with status (TODO/IN_PROGRESS/DONE), dueDate, createdAt/updatedAt timestamps, migration V8
