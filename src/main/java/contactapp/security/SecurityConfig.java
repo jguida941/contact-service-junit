@@ -88,16 +88,14 @@ public class SecurityConfig {
     );
     // CSRF disabled only for endpoints that don't need protection:
     // - actuator/swagger: not cookie-authenticated
+    // - /api/auth/**: authentication endpoints (login, register) don't have sessions yet
     // - GET /api/auth/csrf-token: bootstrap call that hands the SPA its token
     // All other /api/** endpoints require CSRF token (X-XSRF-TOKEN header)
     private static final RequestMatcher CSRF_IGNORED_MATCHERS = new OrRequestMatcher(
             ACTUATOR_MATCHER,
             PathPatternRequestMatcher.withDefaults().matcher("/swagger-ui/**"),
             PathPatternRequestMatcher.withDefaults().matcher("/v3/api-docs/**"),
-            new AndRequestMatcher(
-                    PathPatternRequestMatcher.withDefaults().matcher("/api/auth/csrf-token"),
-                    request -> HttpMethod.GET.matches(request.getMethod())
-            )
+            PathPatternRequestMatcher.withDefaults().matcher("/api/auth/**")
     );
 
     private final JwtAuthenticationFilter jwtAuthFilter;

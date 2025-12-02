@@ -265,34 +265,39 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Logs a value at DEBUG level only if it passes safety validation.
-     *
-     * <p>Inline sanitization ensures CodeQL can trace the data flow.
+     * Logs a value at DEBUG level after applying safety validation.
      *
      * @param message the log message format (must contain exactly one {} placeholder)
      * @param value the potentially untrusted input
      */
     private void logSafeValue(final String message, final String value) {
+        logger.debug(message, getSafeLogValue(value));
+    }
+
+    /**
+     * Validates and sanitizes a potentially untrusted value for logging.
+     *
+     * <p>Rejects control characters and anything outside the whitelist pattern,
+     * trims surrounding whitespace, and caps the length to avoid log flooding.
+     *
+     * @param value the raw value to sanitize
+     * @return a safe value for logging or a placeholder describing why it was rejected
+     */
+    private String getSafeLogValue(final String value) {
         if (value == null) {
-            logger.debug(message, "[null]");
-            return;
+            return "[null]";
         }
-        // Inline sanitization for CodeQL - strip CR/LF to prevent log injection
-        final String sanitized = value.replace("\r", "").replace("\n", "").trim();
-        if (sanitized.isEmpty()) {
-            logger.debug(message, "[empty]");
-            return;
+        final String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return "[empty]";
         }
-        if (!SAFE_LOG_PATTERN.matcher(sanitized).matches()) {
-            logger.debug(message, "[unsafe-value]");
-            return;
+        if (!SAFE_LOG_PATTERN.matcher(trimmed).matches()) {
+            return "[unsafe-value]";
         }
-        if (sanitized.length() > MAX_LOG_LENGTH) {
-            logger.debug(message, sanitized.substring(0, MAX_LOG_LENGTH) + "...");
-            return;
+        if (trimmed.length() > MAX_LOG_LENGTH) {
+            return trimmed.substring(0, MAX_LOG_LENGTH) + "...";
         }
-        // Value passed all validation checks - safe to log
-        logger.debug(message, sanitized);
+        return trimmed;
     }
 
     /**
@@ -325,29 +330,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Sanitizes a value for warning-level logging with full validation inline.
-     *
-     * <p>Applies all security checks: CR/LF removal, whitelist pattern, length cap.
-     * Inlined for CodeQL data flow tracing.
+     * Sanitizes a value for warning-level logging using the shared validator.
      */
     private String sanitizeForWarningLog(final String value) {
-        if (value == null) {
-            return "[null]";
-        }
-        // Inline CR/LF removal for CodeQL + trim
-        final String sanitized = value.replace("\r", "").replace("\n", "").trim();
-        if (sanitized.isEmpty()) {
-            return "[empty]";
-        }
-        // Whitelist: only allow safe characters
-        if (!SAFE_LOG_PATTERN.matcher(sanitized).matches()) {
-            return "[unsafe-value]";
-        }
-        // Length cap to prevent log exhaustion
-        if (sanitized.length() > MAX_LOG_LENGTH) {
-            return sanitized.substring(0, MAX_LOG_LENGTH) + "...";
-        }
-        return sanitized;
+        return getSafeLogValue(value);
     }
 
 }

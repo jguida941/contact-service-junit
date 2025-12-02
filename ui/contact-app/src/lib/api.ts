@@ -157,13 +157,15 @@ function readCookie(name: string): string | null {
 }
 
 async function ensureCsrfToken(): Promise<string | null> {
-  if (cachedCsrfToken) {
-    return cachedCsrfToken;
-  }
+  // Always read from cookie first (Spring Security rotates tokens after each request)
   const existingCookie = readCookie(CSRF_COOKIE_NAME);
   if (existingCookie) {
     cachedCsrfToken = existingCookie;
     return existingCookie;
+  }
+  // If no cookie, fetch from endpoint (bootstrap case)
+  if (cachedCsrfToken) {
+    return cachedCsrfToken;
   }
   try {
     const response = await fetch(`${AUTH_BASE}/csrf-token`, {

@@ -507,7 +507,7 @@ void testInvalidContactId(String id, String expectedMessage) {
 
 Security hardening introduced specialized test utilities to simplify authenticated testing:
 
-- **`@WithMockAppUser`** ([WithMockAppUser.java](src/test/java/contactapp/security/WithMockAppUser.java)) - Custom annotation that populates the SecurityContext with a real `User` entity (not just a generic Spring Security stub). Use `@WithMockAppUser` on test methods or classes to authenticate as a default user, or customize with `@WithMockAppUser(username = "admin", role = Role.ADMIN)` for role-specific tests. The factory creates a detached user instance so tests don't need database setup.
+- **`@WithMockAppUser`** ([WithMockAppUser.java](src/test/java/contactapp/security/WithMockAppUser.java)) - Custom annotation that populates the SecurityContext with a real `User` entity (not just a generic Spring Security stub). Use `@WithMockAppUser` on test methods or classes to authenticate as a default c, or customize with `@WithMockAppUser(username = "admin", role = Role.ADMIN)` for role-specific tests. The factory creates a detached user instance so tests don't need database setup.
 
 - **`TestUserSetup`** ([TestUserSetup.java](src/test/java/contactapp/security/TestUserSetup.java)) - Spring `@Component` that persists a test user to the database and configures the SecurityContext, satisfying foreign key constraints when creating contacts/tasks/appointments. Inject via `@Autowired` and call `setupTestUser()` in `@BeforeEach`. This utility is essential for integration tests that exercise full service-to-repository flows with real database persistence.
 

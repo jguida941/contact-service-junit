@@ -6,6 +6,10 @@ All notable changes to this project will be documented here. Follow the
 ## [Unreleased]
 
 ### Fixed
+- **RateLimitingFilter log sanitizer helper restored (2025-12-02)**:
+  - Reintroduced `getSafeLogValue` with whitelist/length guards and shared it across log helpers
+  - Fixes `RateLimitingFilterTest` reflection coverage and keeps log injection defenses centralized
+
 - **Parallel Test Execution Fix (2025-12-02)**:
   - Disabled JUnit Platform parallel execution to prevent singleton state collisions in @Isolated tests
   - Added `junit.jupiter.execution.parallel.enabled=false` to junit-platform.properties
