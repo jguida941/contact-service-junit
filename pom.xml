@@ -416,6 +416,10 @@
                                     </limits>
                                 </rule>
                             </rules>
+                            <excludes>
+                                <!-- Exclude container-only support classes from coverage checks (reduces noise on skip-testcontainers runs) -->
+                                <exclude>contactapp/support/PostgresContainerSupport*.class</exclude>
+                            </excludes>
                         </configuration>
                     </execution>
                 </executions>
@@ -635,6 +639,8 @@
                 <spring.datasource.driver-class-name>org.h2.Driver</spring.datasource.driver-class-name>
                 <spring.datasource.username>sa</spring.datasource.username>
                 <spring.datasource.password></spring.datasource.password>
+                <!-- Skip Jacoco gate on the no-Docker profile; coverage enforced on full suite -->
+                <jacoco.skip>true</jacoco.skip>
                 <!-- Disable Flyway against H2 for this profile if desired -->
                 <!-- <spring.flyway.enabled>false</spring.flyway.enabled> -->
             </properties>
