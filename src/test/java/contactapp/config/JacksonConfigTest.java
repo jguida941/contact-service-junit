@@ -1,11 +1,10 @@
 package contactapp.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.jackson2.autoconfigure.Jackson2ObjectMapperBuilderCustomizer;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
+import tools.jackson.databind.exc.MismatchedInputException;
+import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -15,19 +14,24 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class JacksonConfigTest {
 
-    private ObjectMapper mapper;
+    private JsonMapper mapper;
 
     @BeforeEach
     void setUp() {
         JacksonConfig config = new JacksonConfig();
-        Jackson2ObjectMapperBuilderCustomizer customizer = config.strictCoercionCustomizer();
-        Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
+        JsonMapperBuilderCustomizer customizer = config.strictCoercionCustomizer();
+        JsonMapper.Builder builder = JsonMapper.builder();
         customizer.customize(builder);
         mapper = builder.build();
     }
 
     @Test
-    void objectMapperRejectsBooleanCoercion() {
+    void jsonMapperIsConfigured() {
+        assertThat(mapper).isNotNull();
+    }
+
+    @Test
+    void objectMapperRejectsBooleanCoercion() throws Exception {
         assertThat(mapper).isNotNull();
 
         String payload = """

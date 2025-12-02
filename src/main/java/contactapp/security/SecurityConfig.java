@@ -146,7 +146,7 @@ public class SecurityConfig {
                                     + "form-action 'self'; "
                                     + "base-uri 'self'; "
                                     + "object-src 'none'"));
-                    headers.permissionsPolicy(permissions -> permissions
+                    headers.permissionsPolicyHeader(permissions -> permissions
                             .policy("geolocation=(), microphone=(), camera=(), "
                                     + "payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"));
                     headers.contentTypeOptions(contentType -> { });

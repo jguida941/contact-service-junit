@@ -1,12 +1,12 @@
 package contactapp.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.cfg.CoercionAction;
-import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
-import com.fasterxml.jackson.databind.type.LogicalType;
-import org.springframework.boot.jackson2.autoconfigure.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.cfg.CoercionAction;
+import tools.jackson.databind.cfg.CoercionInputShape;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.type.LogicalType;
 
 /**
  * Jackson configuration to enforce strict type checking.
@@ -30,29 +30,25 @@ import org.springframework.context.annotation.Configuration;
 public class JacksonConfig {
 
     /**
-     * Customizes Jackson to reject type coercion for string fields.
+     * Customizes Jackson 3 JsonMapper to reject type coercion for string fields.
      *
      * <p>This ensures that boolean, integer, and float values are not silently
      * converted to strings, enforcing strict schema compliance.
      *
-     * @return customizer for the ObjectMapper builder
+     * @return customizer for the JsonMapper builder
      */
     @Bean
-    public Jackson2ObjectMapperBuilderCustomizer strictCoercionCustomizer() {
-        return builder -> builder.postConfigurer(this::configureStrictCoercion);
+    public JsonMapperBuilderCustomizer strictCoercionCustomizer() {
+        return builder -> configureStrictCoercion(builder);
     }
 
-    private void configureStrictCoercion(final ObjectMapper mapper) {
-        // Disable coercion of boolean to String
-        mapper.coercionConfigFor(LogicalType.Textual)
-                .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail);
-
-        // Disable coercion of integer to String
-        mapper.coercionConfigFor(LogicalType.Textual)
-                .setCoercion(CoercionInputShape.Integer, CoercionAction.Fail);
-
-        // Disable coercion of float to String
-        mapper.coercionConfigFor(LogicalType.Textual)
-                .setCoercion(CoercionInputShape.Float, CoercionAction.Fail);
+    private void configureStrictCoercion(final JsonMapper.Builder builder) {
+        // Configure coercion to fail when non-string values are provided for String fields
+        // This enforces strict schema compliance per OpenAPI contract
+        builder.withCoercionConfig(LogicalType.Textual, config -> {
+            config.setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail);
+            config.setCoercion(CoercionInputShape.Integer, CoercionAction.Fail);
+            config.setCoercion(CoercionInputShape.Float, CoercionAction.Fail);
+        });
     }
 }
