@@ -46,9 +46,12 @@ public class ProjectServiceTest {
      */
     @BeforeEach
     void clearBeforeTest() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        testUserSetup.cleanup();
         testUserSetup.setupTestUser();
         service.clearAllProjects();
         contactService.clearAllContacts();
+        setInstance(null);
     }
 
     /**
@@ -56,6 +59,12 @@ public class ProjectServiceTest {
      */
     @Test
     void testSingletonSharesStateWithSpringBean() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        testUserSetup.cleanup();
+        testUserSetup.setupTestUser();
+        service.clearAllProjects();
+        setInstance(null);
+
         ProjectService singleton = ProjectService.getInstance();
         singleton.clearAllProjects();
 
@@ -70,6 +79,16 @@ public class ProjectServiceTest {
 
         assertThat(addedViaSingleton).isTrue();
         assertThat(service.getProjectById("legacy-100")).isPresent();
+    }
+
+    private static void setInstance(final ProjectService newInstance) {
+        try {
+            final var instanceField = ProjectService.class.getDeclaredField("instance");
+            instanceField.setAccessible(true);
+            instanceField.set(null, newInstance);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Failed to reset ProjectService singleton for test isolation", e);
+        }
     }
 
     /**

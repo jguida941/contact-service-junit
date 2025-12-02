@@ -38,6 +38,7 @@ public class AppointmentServiceTest {
      */
     @BeforeEach
     void reset() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
         testUserSetup.setupTestUser();
         service.clearAllAppointments();
     }

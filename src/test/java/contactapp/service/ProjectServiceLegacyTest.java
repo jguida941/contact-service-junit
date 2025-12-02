@@ -36,6 +36,8 @@ class ProjectServiceLegacyTest {
 
     @BeforeEach
     void resetSingleton() throws Exception {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        testUserSetup.cleanup();
         testUserSetup.setupTestUser();
         springService.clearAllProjects();
         setInstance(null);

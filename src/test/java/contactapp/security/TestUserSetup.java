@@ -58,10 +58,10 @@ public class TestUserSetup {
      */
     @Transactional
     public User setupTestUser(final String username, final String email, final Role role) {
-        // Check if user already exists
+        // Reset any stale authentication and ensure a fresh user row exists for FK targets
+        SecurityContextHolder.clearContext();
         User user = userRepository.findByUsername(username).orElse(null);
-
-        if (user == null) {
+        if (user == null || (user.getId() != null && !userRepository.existsById(user.getId()))) {
             user = new User(username, email, TEST_PASSWORD_HASH, role);
             user = userRepository.save(user);
         }

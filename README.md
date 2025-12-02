@@ -116,7 +116,7 @@ Flyway automatically creates the schema on first run. Stop the database with `do
    ```
    Open `http://localhost:8080` — Spring Boot serves both the React UI and REST API from the same origin.
 6. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-7. Planning note: Phases 0-7 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability, DAST, packaging/CI, UX polish). **951 tests** cover the JPA path, legacy singleton fallbacks, JWT auth components, User entity validation, Project CRUD, and the validation helpers including the new `validateNotNull` enum helper (PIT mutation coverage 94%+ with 96%+ line coverage on stores, 95%+ on mappers). +84 mutation-focused tests added targeting boundary conditions, comparison operators, copy semantics, and helper adapters. ADR-0014..0046 capture the selected stack plus validation/Project evolution decisions. See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for the consolidated deliverables list.
+7. Planning note: Phases 0-7 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability, DAST, packaging/CI, UX polish). **1056 tests** cover the JPA path, legacy singleton fallbacks, JWT auth components, User entity validation, Project CRUD, and the validation helpers including the new `validateNotNull` enum helper (PIT mutation coverage 94%+ with 96%+ line coverage on stores, 95%+ on mappers). +84 mutation-focused tests added targeting boundary conditions, comparison operators, copy semantics, and helper adapters. ADR-0014..0046 capture the selected stack plus validation/Project evolution decisions. See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for the consolidated deliverables list.
 
 ## Phase Roadmap & Highlights
 
@@ -168,11 +168,11 @@ The phased plan in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) governs scope.
 - `GET /api/v1/appointments?taskId={id}` - Filter appointments by task
 - `GET /api/v1/appointments?projectId={id}` - Filter appointments by project
 
-**Database Schema**: 5 new migrations (V7, V8, V10, V11, V12) add projects table, task status/due dates, task-project relationships, appointment-task/project relationships, and task assignment relationships with proper foreign keys and indexes.
+**Database Schema**: 7 new migrations (V7-V13) add optimistic locking (V7), projects table (V8), task status/due dates (V9), task-project relationships (V10), appointment-task/project relationships (V11), task assignment (V12), and project-contact junction table (V13) with proper foreign keys and indexes.
 
 **Test Coverage**: 1056 total tests with comprehensive coverage across domain validation, persistence layers, service operations, and REST API endpoints for all implemented phases.
 
-**Deferred Features**: Phase 6 (Contact-Project Linking via V13 junction table) is deferred to future implementation. See ADR-0045 for details.
+**Phase 6 Implementation**: Contact-Project Linking is fully implemented via V13 junction table with API endpoints for adding/removing contacts to projects (`POST /api/v1/projects/{id}/contacts`, `DELETE /api/v1/projects/{id}/contacts/{contactId}`) and retrieving project contacts (`GET /api/v1/projects/{id}/contacts`). See ADR-0045 for details.
 
 ## React UI Highlights
 - Built with **Vite + React 19 + TypeScript + Tailwind CSS v4** plus shadcn/ui components for a professional look.
@@ -205,7 +205,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`src/main/java/contactapp/persistence/repository`](src/main/java/contactapp/persistence/repository)                                 | Spring Data repositories plus in-memory fallbacks for legacy `getInstance()` callers.                                             |
 | [`src/main/java/contactapp/persistence/store`](src/main/java/contactapp/persistence/store)                                           | `DomainDataStore` abstraction + JPA-backed implementations injected into services.                                                |
 | [`src/main/resources/application.yml`](src/main/resources/application.yml)                                                           | Multi-document profile configuration (dev/test/integration/prod + Flyway/JPA settings).                                           |
-| [`src/main/resources/db/migration`](src/main/resources/db/migration)                                                                 | Flyway migrations (V1-V12) split by database (common/h2/postgresql): contacts (V1), tasks (V2), appointments (V3), users (V4), user FKs (V5), surrogate keys (V6), projects (V7), task status/dueDate (V8), task-project FK (V10), appointment-task/project FKs (V11), task assignment FK (V12). |
+| [`src/main/resources/db/migration`](src/main/resources/db/migration)                                                                 | Flyway migrations (V1-V13) split by database (common/h2/postgresql): contacts (V1), tasks (V2), appointments (V3), users (V4), user FKs (V5), surrogate keys (V6), version columns (V7), projects (V8), task status/dueDate (V9), task-project FK (V10), appointment-task/project FKs (V11), task assignment FK (V12), project-contacts junction table (V13). |
 | [`src/test/java/contactapp/ApplicationTest.java`](src/test/java/contactapp/ApplicationTest.java)                                     | Spring Boot context load smoke test.                                                                                              |
 | [`src/test/java/contactapp/ActuatorEndpointsTest.java`](src/test/java/contactapp/ActuatorEndpointsTest.java)                         | Verifies actuator endpoint security (health/info exposed, others blocked).                                                        |
 | [`src/test/java/contactapp/ServiceBeanTest.java`](src/test/java/contactapp/ServiceBeanTest.java)                                     | Verifies service beans are injectable and singletons.                                                                             |
@@ -1792,6 +1792,7 @@ Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation scor
 - 94%+ mutation kill rate (PIT)
 - 96%+ line coverage on stores, 95%+ on mappers
 - All domain entities have comprehensive boundary testing
+- Test fixtures now reset the SecurityContext, reseed the test user, and reset singleton instances when needed to keep legacy/spring singleton-sharing tests isolated from FK collisions.
 
 Recent PIT survivors in the rate-limiting/logging filters and the TaskService legacy fallback are now covered with dedicated unit tests (log capturing + legacy-store spies), so sanitization helpers and legacy data migration can't be removed without failing tests.
 

@@ -43,12 +43,21 @@ public class TaskServiceTest {
      */
     @BeforeEach
     void reset() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        testUserSetup.cleanup();
         testUserSetup.setupTestUser();
         service.clearAllTasks();
+        resetSingleton();
     }
 
     @Test
     void testSingletonSharesStateWithSpringBean() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        testUserSetup.cleanup();
+        testUserSetup.setupTestUser();
+        service.clearAllTasks();
+        resetSingleton();
+
         TaskService singleton = TaskService.getInstance();
         singleton.clearAllTasks();
 
@@ -57,6 +66,16 @@ public class TaskServiceTest {
 
         assertThat(addedViaSingleton).isTrue();
         assertThat(service.getTaskById("legacy10")).isPresent();
+    }
+
+    private static void resetSingleton() {
+        try {
+            final var instanceField = TaskService.class.getDeclaredField("instance");
+            instanceField.setAccessible(true);
+            instanceField.set(null, null);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Failed to reset TaskService singleton for test isolation", e);
+        }
     }
 
     /**

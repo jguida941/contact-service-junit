@@ -41,6 +41,8 @@ class ContactServiceLegacyTest {
 
     @BeforeEach
     void resetSingleton() throws Exception {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        testUserSetup.cleanup();
         testUserSetup.setupTestUser();
         springService.clearAllContacts();
         setInstance(null);

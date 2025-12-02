@@ -5,6 +5,13 @@ All notable changes to this project will be documented here. Follow the
 
 ## [Unreleased]
 
+### Fixed
+- **Parallel Test Execution Fix (2025-12-02)**:
+  - Disabled JUnit Platform parallel execution to prevent singleton state collisions in @Isolated tests
+  - Added `junit.jupiter.execution.parallel.enabled=false` to junit-platform.properties
+  - Eliminates race conditions where parallel execution attempted to share singleton state across test classes despite @Isolated annotations
+  - Total test count now at **1056** tests
+
 ### Added
 - **TaskService Test Coverage Improvements (2025-12-02)**:
   - Added 44 new tests to TaskServiceTest bringing total from 29 to 73 tests
@@ -12,7 +19,7 @@ All notable changes to this project will be documented here. Follow the
   - Query method tests: getTasksByStatus, getTasksDueBefore, getTasksByProjectId, getTasksByAssigneeId, getOverdueTasks
   - Defensive copy tests for all query methods ensuring returned lists are independent copies
   - User isolation tests verifying query methods only return current user's tasks
-  - Total test count now at **1056** tests (up from 951)
+  - Test count updated to **1056** tests (up from 951)
 
 ### Fixed
 - **Entity setVersion Methods (2025-12-02)**:
@@ -20,6 +27,11 @@ All notable changes to this project will be documented here. Follow the
   - Removed duplicate setVersion method from AppointmentEntity that was causing compilation errors
   - Entity tests now pass with version field properly settable for testing purposes
   - Fixed ProjectService.java checkstyle error (line 93 exceeded 120 chars)
+- **Test User Reset Guards (2025-12-02)**:
+  - Hardened `TestUserSetup` to clear stale SecurityContext entries and recreate the test user if its row was deleted
+  - Prevents FK/unique constraint collisions in legacy service singleton tests (e.g., `legacy10`, `legacy-apt`, `777` paths)
+- **Singleton Test Isolation (2025-12-02)**:
+  - Contact/Project singleton-sharing tests now reset the static service instance and reseed users before each run to avoid FK collisions (`legacy-100`, `legacy1` IDs) in CI
 
 - **CodeQL Workflow Fix (2025-12-02)**:
   - Upgraded CodeQL action from v3 to v4 (v3 deprecated December 2026)

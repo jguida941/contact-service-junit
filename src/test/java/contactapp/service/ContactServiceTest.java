@@ -38,8 +38,11 @@ public class ContactServiceTest {
      */
     @BeforeEach
     void clearBeforeTest() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        testUserSetup.cleanup();
         testUserSetup.setupTestUser();
         service.clearAllContacts();
+        setInstance(null);
     }
 
     /**
@@ -62,6 +65,16 @@ public class ContactServiceTest {
 
         assertThat(addedViaSingleton).isTrue();
         assertThat(service.getContactById("legacy-100")).isPresent();
+    }
+
+    private static void setInstance(final ContactService newInstance) {
+        try {
+            final var instanceField = ContactService.class.getDeclaredField("instance");
+            instanceField.setAccessible(true);
+            instanceField.set(null, newInstance);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Failed to reset ContactService singleton for test isolation", e);
+        }
     }
 
     /**

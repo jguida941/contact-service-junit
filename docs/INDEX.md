@@ -217,7 +217,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/test/java/contactapp/security/CustomUserDetailsServiceTest.java`](../src/test/java/contactapp/security/CustomUserDetailsServiceTest.java) | Unit tests for user lookup and exception handling. |
 | [`../src/test/java/contactapp/security/WithMockAppUser.java`](../src/test/java/contactapp/security/WithMockAppUser.java) | Custom annotation for populating SecurityContext with real User instances in tests. |
 | [`../src/test/java/contactapp/security/WithMockAppUserSecurityContextFactory.java`](../src/test/java/contactapp/security/WithMockAppUserSecurityContextFactory.java) | SecurityContextFactory creating concrete User entities for @WithMockAppUser annotation. |
-| [`../src/test/java/contactapp/security/TestUserSetup.java`](../src/test/java/contactapp/security/TestUserSetup.java) | Test utility component for database persistence and SecurityContext setup of authenticated users. |
+| [`../src/test/java/contactapp/security/TestUserSetup.java`](../src/test/java/contactapp/security/TestUserSetup.java) | Test utility component for database persistence and SecurityContext setup of authenticated users; clears stale auth and recreates the seed user if missing to keep FK-backed tests stable. |
 
 ### React UI Layer (`ui/contact-app`)
 

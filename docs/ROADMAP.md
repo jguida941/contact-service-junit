@@ -24,6 +24,7 @@ Phase 7 note: UX polish complete with search/pagination/sorting (debounced Searc
 Phase 3 note: legacy `getInstance()` access now reuses the Spring-managed proxies (or the in-memory fallback pre-boot) without proxy unwrapping; behavior tests verify both entry points stay in sync.
 
 Phase 5 focus: End-to-end authentication/authorization, per-tenant data isolation, Docker/compose deployment with health probes, structured logging/metrics, rate limiting, threat modeling, and a documented ZAP baseline scan. See `docs/REQUIREMENTS.md` for the full checklist (JWT login, SPA-only CORS, security headers, bucket4j throttling, Prometheus/Actuator exposure, CI health checks, and runbook updates). The most recent hardening explicitly sets `SameSite=Lax` (plus inherits the secure-cookie flag) on the SPA-visible `XSRF-TOKEN` cookie so ZAP rule 10054 no longer fails.
+Test fixtures now reset stale SecurityContext entries and recreate the seed user when missing to prevent FK/unique collisions during singleton-sharing service tests.
 
 **Project/Task Tracker Evolution (Phases 1-5 Complete - 2025-12-01).** ADR-0045 documents the evolution plan. Phases 1-5 are complete and production-ready:
 - **Phase 1 (Project Entity)**: Full CRUD operations, status tracking, migration V7
