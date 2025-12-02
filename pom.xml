@@ -312,6 +312,7 @@
                     <forkCount>1</forkCount>
                     <reuseForks>true</reuseForks>
                     <!-- Sequential execution to ensure @Isolated tests don't collide -->
+                    <excludedGroups>legacy-singleton</excludedGroups>
                     <excludes>
                         <exclude>**/*IT.java</exclude>
                     </excludes>
@@ -582,8 +583,9 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
+                            <groups>legacy-singleton</groups>
                             <includes>
-                                <include>**/service/*ServiceLegacyTest.java</include>
+                                <include>**/service/*Test.java</include>
                             </includes>
                             <excludes>
                                 <exclude>**/*IT.java</exclude>

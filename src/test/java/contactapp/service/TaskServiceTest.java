@@ -5,6 +5,7 @@ import contactapp.domain.Task;
 import contactapp.domain.TaskStatus;
 import contactapp.security.Role;
 import contactapp.security.TestUserSetup;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -31,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("integration")
 @Isolated
+@Tag("legacy-singleton")
 public class TaskServiceTest {
 
     @Autowired
