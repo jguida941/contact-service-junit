@@ -65,7 +65,7 @@ public class TestUserSetup {
         User user = userRepository.findByUsername(username).orElse(null);
         if (user == null || (user.getId() != null && !userRepository.existsById(user.getId()))) {
             user = new User(username, email, TEST_PASSWORD_HASH, role);
-            user = userRepository.save(user);
+            user = userRepository.saveAndFlush(user); // ensure row exists before tasks reference it
         }
 
         // Set up SecurityContext with this user

@@ -151,6 +151,7 @@ public class TestCleanupUtility {
      * Setup helper that creates a fresh test user after cleanup.
      * Call this after cleanAll() in your @BeforeEach.
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void setupFreshTestUser() {
         if (testUserSetup != null) {
             testUserSetup.setupTestUser();
@@ -161,7 +162,6 @@ public class TestCleanupUtility {
      * Complete cleanup + setup in one call.
      * Equivalent to: cleanAll() + setupFreshTestUser()
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void resetTestEnvironment() {
         cleanAll();
         setupFreshTestUser();
