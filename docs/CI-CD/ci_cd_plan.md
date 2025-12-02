@@ -23,6 +23,7 @@ This document tracks how we will harden the GitHub Actions workflow from a simpl
 ## Phase 4 - Cross-Version Confidence
 1. ✅ Expand the job matrix to JDK 17 and JDK 21 on Ubuntu.
 2. ✅ (Optional) Add a Windows runner to ensure developer parity across OSes.
+   - Windows uses the `skip-testcontainers` profile: runs service/controller suites against H2 (no Docker) with a reduced JaCoCo gate that excludes container-only paths; mutation still runs. Legacy `getInstance()` suites are tagged `legacy-singleton` and can be run separately with `-Plegacy-singleton` when needed.
 
 ## Phase 5 - Release Automation
 1. ✅ On tagged releases (`v*`), run `mvn package` and upload the JAR as a release artifact using `actions/upload-artifact`.
@@ -43,6 +44,7 @@ This document tracks how we will harden the GitHub Actions workflow from a simpl
 5. ✅ Revisit workflow documentation in `README.md` once enhancements land and include the build badge.
 6. ✅ Publish per-run QA summaries in the GitHub Actions job summary (tests, JaCoCo, PITest, Dependency-Check) via `scripts/ci_metrics_summary.py`.
 7. ✅ Normalize CI flags so Dependency-Check skip/delay settings (`dependency.check.skip`, `nvdApiDelay`) match the Maven configuration and avoid hanging runs when secrets are absent.
+8. ✅ Containerized Maven rerun (`container-test`) now uses the `skip-testcontainers` profile (H2 only) because the inner Maven container has no Docker socket; quality gates still run with the reduced JaCoCo scope.
 8. ✅ Add mutation-focused tests (+71 tests) targeting boundary conditions and comparison operators to improve mutation kill rate. See ADR-0046.
 
 ---

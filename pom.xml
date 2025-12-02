@@ -384,6 +384,10 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
+                <configuration>
+                    <!-- Allow profiles (e.g., skip-testcontainers) to disable JaCoCo gates via jacoco.skip -->
+                    <skip>${jacoco.skip}</skip>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -617,6 +621,54 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <configuration>
+                            <!-- Run a reduced JaCoCo check on Windows/H2 by excluding container-only code paths -->
+                            <skip>false</skip>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>check</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <rule>
+                                            <element>BUNDLE</element>
+                                            <limits>
+                                                <limit>
+                                                    <counter>INSTRUCTION</counter>
+                                                    <value>COVEREDRATIO</value>
+                                                    <minimum>0.80</minimum>
+                                                </limit>
+                                            </limits>
+                                        </rule>
+                                    </rules>
+                                    <excludes>
+                                        <exclude>contactapp/support/PostgresContainerSupport*.class</exclude>
+                                        <exclude>contactapp/api/**</exclude>
+                                        <exclude>contactapp/config/**</exclude>
+                                        <exclude>contactapp/Application*.class</exclude>
+                                    </excludes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
@@ -639,7 +691,7 @@
                 <spring.datasource.driver-class-name>org.h2.Driver</spring.datasource.driver-class-name>
                 <spring.datasource.username>sa</spring.datasource.username>
                 <spring.datasource.password></spring.datasource.password>
-                <!-- Skip Jacoco gate on the no-Docker profile; coverage enforced on full suite -->
+                <!-- Skip the global Jacoco gate; use the profile-scoped reduced gate above -->
                 <jacoco.skip>true</jacoco.skip>
                 <!-- Disable Flyway against H2 for this profile if desired -->
                 <!-- <spring.flyway.enabled>false</spring.flyway.enabled> -->

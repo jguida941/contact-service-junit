@@ -234,23 +234,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run Maven verify inside container
+      - name: Run Maven verify inside container (H2 / no Testcontainers)
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
           # Set MAVEN_OPTS for PITest to work properly
           MAVEN_OPTS_VALUE="--enable-native-access=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true"
 
+          # No Docker socket inside the container; run the H2 profile that skips Testcontainers suites
+          TEST_OPTS="-DskipTestcontainersTests=true -Pskip-testcontainers"
+
           if [ -z "${NVD_API_KEY:-}" ]; then
             echo "NVD_API_KEY not set; skipping Dependency-Check in container"
-            CONTAINER_CMD="mvn -B -Ddependency.check.skip=true -Dpit.skip=false verify"
+            CONTAINER_CMD="mvn -B -Ddependency.check.skip=true -Dpit.skip=false ${TEST_OPTS} verify"
           else
-            CONTAINER_CMD="mvn -B -DnvdApiKey=\"${NVD_API_KEY}\" -DnvdApiDelay=5000 -Ddependency.check.skip=false -Dpit.skip=false verify"
+            CONTAINER_CMD="mvn -B -DnvdApiKey=\"${NVD_API_KEY}\" -DnvdApiDelay=5000 -Ddependency.check.skip=false -Dpit.skip=false ${TEST_OPTS} verify"
           fi
 
           if ! docker run --rm -e NVD_API_KEY="$NVD_API_KEY" -e MAVEN_OPTS="$MAVEN_OPTS_VALUE" -v "${{ github.workspace }}":/workspace -w /workspace maven:3.9.9-eclipse-temurin-17 bash -c "$CONTAINER_CMD"; then
             echo "Re-running inside container with quality gates skipped"
-            docker run --rm -e MAVEN_OPTS="$MAVEN_OPTS_VALUE" -v "${{ github.workspace }}":/workspace -w /workspace maven:3.9.9-eclipse-temurin-17 mvn -B -Ddependency.check.skip=true -Dpit.skip=true verify
+            docker run --rm -e MAVEN_OPTS="$MAVEN_OPTS_VALUE" -v "${{ github.workspace }}":/workspace -w /workspace maven:3.9.9-eclipse-temurin-17 mvn -B -Ddependency.check.skip=true -Dpit.skip=true ${TEST_OPTS} verify
           fi
 
   mutation-test:

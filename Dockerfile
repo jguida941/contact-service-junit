@@ -38,6 +38,8 @@ RUN ./mvnw dependency:go-offline -B
 # Copy application source code
 COPY src/ ./src/
 COPY config/ ./config/
+# Copy frontend source for the Vite/React build (frontend-maven-plugin expects ui/contact-app)
+COPY ui/ ./ui/
 
 # Build the application JAR
 # - clean: Remove previous build artifacts
