@@ -126,6 +126,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    @SuppressWarnings("deprecation") // requiresChannel deprecated in Spring Security 6.1; kept for SSL config
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) {
         try {
             final CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();

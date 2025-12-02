@@ -4,6 +4,8 @@ import contactapp.api.dto.ErrorResponse;
 import contactapp.api.exception.DuplicateResourceException;
 import contactapp.api.exception.ResourceNotFoundException;
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -38,6 +40,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * Handles domain validation errors from Validation.java.
@@ -134,16 +138,14 @@ public class GlobalExceptionHandler {
      * Handles optimistic locking failures when concurrent updates occur.
      *
      * Returns a generic error message to avoid leaking entity names or version values.
-     * The exception parameter is required by Spring's {@link ExceptionHandler} contract
-     * but intentionally unused to prevent information disclosure.
      *
-     * @param ex the optimistic locking exception (unused intentionally)
+     * @param ex the optimistic locking exception (logged at debug, not returned to client)
      * @return 409 Conflict with a friendly message
      */
-    @SuppressWarnings("java:S1172") // Parameter required by Spring @ExceptionHandler contract
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     public ResponseEntity<ErrorResponse> handleOptimisticLock(final ObjectOptimisticLockingFailureException ex) {
-        // Avoid echoing entity/version info from the exception back to the client
+        // Log for debugging but avoid echoing entity/version info to the client
+        LOG.debug("Optimistic locking failure: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse("Resource was modified by another request. Refresh and try again."));
     }
