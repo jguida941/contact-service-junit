@@ -153,16 +153,16 @@ RUN ./mvnw dependency:go-offline -B
 
 ```bash
 # Build and run entire stack
-docker-compose up --build
+docker compose up --build
 
 # View logs
-docker-compose logs -f app
+docker compose logs -f app
 
 # Stop without data loss
-docker-compose down
+docker compose down
 
 # Stop with data removal
-docker-compose down -v
+docker compose down -v
 ```
 
 ### Production Deployment
