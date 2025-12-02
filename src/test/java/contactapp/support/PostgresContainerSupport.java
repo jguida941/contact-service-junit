@@ -1,8 +1,6 @@
 package contactapp.support;
 
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
@@ -13,8 +11,9 @@ import org.testcontainers.containers.PostgreSQLContainer;
  * This approach aligns with Spring's test context caching, preventing connection pool
  * issues when the same @SpringBootTest configuration is reused across multiple test classes.
  *
- * <p>Removing @Testcontainers/@Container annotations ensures the container lifecycle
- * matches Spring context lifecycle, avoiding port conflicts from container recreation.
+ * <p>@ServiceConnection automatically configures Spring Boot's datasource properties
+ * from the container, eliminating the need for manual @DynamicPropertySource configuration.
+ * This prevents configuration conflicts that could cause Spring context initialization hangs.
  */
 public abstract class PostgresContainerSupport {
 
@@ -24,12 +23,5 @@ public abstract class PostgresContainerSupport {
     static {
         postgres = new PostgreSQLContainer<>("postgres:16-alpine");
         postgres.start();
-    }
-
-    @DynamicPropertySource
-    static void postgresProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
     }
 }
