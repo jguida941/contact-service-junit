@@ -313,12 +313,6 @@
                     <reuseForks>true</reuseForks>
                     <!-- Sequential execution to ensure @Isolated tests don't collide -->
                     <excludes>
-                        <!-- Move singleton/legacy coverage into a dedicated profile -->
-                        <exclude>**/service/*ServiceLegacyTest.java</exclude>
-                        <exclude>**/service/ContactServiceTest.java</exclude>
-                        <exclude>**/service/TaskServiceTest.java</exclude>
-                        <exclude>**/service/AppointmentServiceTest.java</exclude>
-                        <exclude>**/service/ProjectServiceTest.java</exclude>
                         <exclude>**/*IT.java</exclude>
                     </excludes>
                 </configuration>
@@ -590,10 +584,6 @@
                         <configuration>
                             <includes>
                                 <include>**/service/*ServiceLegacyTest.java</include>
-                                <include>**/service/ContactServiceTest.java</include>
-                                <include>**/service/TaskServiceTest.java</include>
-                                <include>**/service/AppointmentServiceTest.java</include>
-                                <include>**/service/ProjectServiceTest.java</include>
                             </includes>
                             <excludes>
                                 <exclude>**/*IT.java</exclude>
