@@ -52,8 +52,10 @@ public class TaskServiceTest extends PostgresContainerSupport {
 
     @Test
     void testSingletonSharesStateWithSpringBean() {
+        // Ensure we have a fresh authenticated user in the security context
+        testUserSetup.setupTestUser("test-singleton", "singleton@example.com", Role.USER);
+
         TaskService singleton = TaskService.getInstance();
-        singleton.clearAllTasks();
 
         Task task = new Task("legacy10", "Legacy add", "added through getInstance");
         boolean addedViaSingleton = singleton.addTask(task);

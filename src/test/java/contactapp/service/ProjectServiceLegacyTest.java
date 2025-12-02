@@ -50,6 +50,8 @@ class ProjectServiceLegacyTest extends PostgresContainerSupport {
 
     @Test
     void coldStartReturnsInMemoryStore() {
+        testUserSetup.setupTestUser("test-proj-legacy", "proj-legacy@example.com", Role.USER);
+
         ProjectService legacy = ProjectService.getInstance();
         assertThat(legacy).isNotNull();
 

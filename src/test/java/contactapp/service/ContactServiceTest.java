@@ -50,8 +50,9 @@ public class ContactServiceTest extends PostgresContainerSupport {
      */
     @Test
     void testSingletonSharesStateWithSpringBean() {
+        testUserSetup.setupTestUser("test-contact-singleton", "contact-singleton@example.com", Role.USER);
+
         ContactService singleton = ContactService.getInstance();
-        singleton.clearAllContacts();
 
         Contact legacyContact = new Contact(
                 "legacy-100",

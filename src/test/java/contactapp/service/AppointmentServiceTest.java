@@ -47,8 +47,9 @@ public class AppointmentServiceTest extends PostgresContainerSupport {
 
     @Test
     void testSingletonSharesStateWithSpringBean() {
+        testUserSetup.setupTestUser("test-appt-singleton", "appt-singleton@example.com", Role.USER);
+
         AppointmentService singleton = AppointmentService.getInstance();
-        singleton.clearAllAppointments();
 
         Date futureDate = futureDate(10);
         Appointment legacyAppointment = new Appointment("legacy-apt", futureDate, "Singleton path");

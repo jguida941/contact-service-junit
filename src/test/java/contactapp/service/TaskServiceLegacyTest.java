@@ -55,6 +55,8 @@ class TaskServiceLegacyTest extends PostgresContainerSupport {
 
     @Test
     void coldStartReturnsInMemoryStore() {
+        testUserSetup.setupTestUser("test-task-legacy", "task-legacy@example.com", Role.USER);
+
         TaskService legacy = TaskService.getInstance();
         assertThat(legacy).isNotNull();
 

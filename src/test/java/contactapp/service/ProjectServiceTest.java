@@ -58,8 +58,9 @@ public class ProjectServiceTest extends PostgresContainerSupport {
      */
     @Test
     void testSingletonSharesStateWithSpringBean() {
+        testUserSetup.setupTestUser("test-proj-singleton", "proj-singleton@example.com", Role.USER);
+
         ProjectService singleton = ProjectService.getInstance();
-        singleton.clearAllProjects();
 
         Project legacyProject = new Project(
                 "legacy-100",

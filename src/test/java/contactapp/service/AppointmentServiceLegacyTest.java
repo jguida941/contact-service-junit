@@ -57,6 +57,8 @@ class AppointmentServiceLegacyTest extends PostgresContainerSupport {
 
     @Test
     void coldStartReturnsInMemoryStore() {
+        testUserSetup.setupTestUser("test-appt-legacy", "appt-legacy@example.com", Role.USER);
+
         AppointmentService legacy = AppointmentService.getInstance();
         assertThat(legacy).isNotNull();
 

@@ -161,6 +161,12 @@ public class TestCleanupUtility {
     /**
      * Complete cleanup + setup in one call.
      * Equivalent to: cleanAll() + setupFreshTestUser()
+     *
+     * <p>Note: This method intentionally does NOT have @Transactional since both
+     * cleanAll() and setupFreshTestUser() already use REQUIRES_NEW to run in their
+     * own independent transactions. Adding another REQUIRES_NEW here would create
+     * nested transactions that could leave the environment inconsistent if the outer
+     * transaction rolls back after cleanup commits.
      */
     public void resetTestEnvironment() {
         cleanAll();

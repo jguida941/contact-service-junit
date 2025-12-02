@@ -55,6 +55,8 @@ class ContactServiceLegacyTest extends PostgresContainerSupport {
 
     @Test
     void coldStartReturnsInMemoryInstance() {
+        testUserSetup.setupTestUser("test-contact-legacy", "contact-legacy@example.com", Role.USER);
+
         ContactService legacy = ContactService.getInstance();
         assertThat(legacy).isNotNull();
 
