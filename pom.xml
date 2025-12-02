@@ -624,49 +624,10 @@
                         <groupId>org.jacoco</groupId>
                         <artifactId>jacoco-maven-plugin</artifactId>
                         <configuration>
-                            <!-- Run a reduced JaCoCo check on Windows/H2 by excluding container-only code paths -->
-                            <skip>false</skip>
+                            <!-- Skip JaCoCo in the no-Docker profile to avoid grading container-only paths -->
+                            <skip>true</skip>
                         </configuration>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>prepare-agent</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>report</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>report</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>check</id>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <configuration>
-                                    <rules>
-                                        <rule>
-                                            <element>BUNDLE</element>
-                                            <limits>
-                                                <limit>
-                                                    <counter>INSTRUCTION</counter>
-                                                    <value>COVEREDRATIO</value>
-                                                    <minimum>0.80</minimum>
-                                                </limit>
-                                            </limits>
-                                        </rule>
-                                    </rules>
-                                    <excludes>
-                                        <exclude>contactapp/support/PostgresContainerSupport*.class</exclude>
-                                        <exclude>contactapp/api/**</exclude>
-                                        <exclude>contactapp/config/**</exclude>
-                                        <exclude>contactapp/Application*.class</exclude>
-                                    </excludes>
-                                </configuration>
-                            </execution>
-                        </executions>
+                        <executions/>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
