@@ -21,7 +21,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`requirements/appointment-requirements/`](requirements/appointment-requirements/) | Appointment assignment requirements (object/service specs + checklist). |
 | [`requirements/task-requirements/`](requirements/task-requirements/) | Task assignment requirements (task object/service specs + checklist). |
 | [`architecture/`](architecture/) | Feature design briefs (e.g., Task entity/service plan with Definition of Done). |
-| [`adrs/`](adrs/) | Architecture Decision Records index plus individual ADR files (ADR-0001..0046). |
+| [`adrs/`](adrs/) | Architecture Decision Records index plus individual ADR files (ADR-0001..0048). |
 | [`design-notes/`](design-notes/) | Personal design note hub with supporting explanations under `design-notes/notes/`. |
 | [`logs/`](logs/) | Changelog and backlog. |
 | [`operations/`](operations/) | Operations documentation (Docker setup, Actuator endpoints, deployment guides). |
@@ -180,6 +180,9 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | Path | Description |
 |------|-------------|
 | [`../src/test/java/contactapp/support/TestUserFactory.java`](../src/test/java/contactapp/support/TestUserFactory.java) | Factory utility for creating User instances in tests with deterministic usernames/emails and valid BCrypt hashes. |
+| [`../src/test/java/contactapp/support/PostgresContainerSupport.java`](../src/test/java/contactapp/support/PostgresContainerSupport.java) | Base class for Testcontainers-based integration tests with shared Postgres container lifecycle (ADR-0048). |
+| [`../src/test/java/contactapp/support/TestDates.java`](../src/test/java/contactapp/support/TestDates.java) | Test fixture utility providing deterministic dates for appointment and task testing. |
+| [`../src/test/java/contactapp/support/SecuredMockMvcTest.java`](../src/test/java/contactapp/support/SecuredMockMvcTest.java) | Base class for secured MockMvc integration tests with authentication setup (Spring Boot 4.0/Spring Security 7). |
 
 ### Config Layer (`contactapp.config`)
 | Path | Description |
@@ -300,7 +303,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 ### Build & Configuration
 | Path | Description |
 |------|-------------|
-| [`../pom.xml`](../pom.xml) | Maven project file with Spring Boot 3.4.12 parent and dependencies. |
+| [`../pom.xml`](../pom.xml) | Maven project file with Spring Boot 4.0.0 parent and dependencies. |
 | [`../config/checkstyle/checkstyle.xml`](../config/checkstyle/checkstyle.xml) | Custom Checkstyle rules enforced in CI. |
 | [`../config/owasp-suppressions.xml`](../config/owasp-suppressions.xml) | Placeholder suppression list for OWASP Dependency-Check. |
 | [`../scripts/ci_metrics_summary.py`](../scripts/ci_metrics_summary.py) | Prints the QA metrics table (tests/coverage/mutations/dependencies) in GitHub Actions. |
@@ -309,7 +312,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`architecture/2025-11-19-task-entity-and-service.md`](architecture/2025-11-19-task-entity-and-service.md) | Task entity/service plan with Definition of Done and phase breakdown. |
 | [`architecture/2025-11-24-appointment-entity-and-service.md`](architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record. |
 | [`architecture/threat-model.md`](architecture/threat-model.md) | End-to-end threat model (assets, trust zones, mitigations, residual risks). |
-| [`adrs/README.md`](adrs/README.md) | ADR index (ADR-0001..0046 covering validation, persistence, API, UI, security, observability, test coverage). |
+| [`adrs/README.md`](adrs/README.md) | ADR index (ADR-0001..0048 covering validation, persistence, API, UI, security, observability, test coverage, test isolation). |
 | [`design-notes/README.md`](design-notes/README.md) | Landing page for informal design notes (individual topics in `design-notes/notes/`). |
 | [`logs/backlog.md`](logs/backlog.md) | Backlog for reporting and domain enhancements. |
 | [`logs/CHANGELOG.md`](logs/CHANGELOG.md) | Project changelog. |

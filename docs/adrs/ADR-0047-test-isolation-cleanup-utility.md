@@ -92,13 +92,13 @@ public class TestCleanupUtility {
         // This prevents registerInstance() from migrating old data
         resetAllSingletons();
 
-        // Step 3: Clean up test users (FK constraints)
+        // Step 3: Clear all service data FIRST (tasks/contacts/appointments reference users)
+        clearAllServiceData();
+
+        // Step 4: Clean up test users LAST (FK cascade will handle orphans)
         if (testUserSetup != null) {
             testUserSetup.cleanup();
         }
-
-        // Step 4: Clear all service data
-        clearAllServiceData();
 
         // Step 5: Setup fresh test user
         if (testUserSetup != null) {
@@ -112,8 +112,8 @@ public class TestCleanupUtility {
 
 1. **Security contexts first** - Prevents authentication errors during cleanup
 2. **Singleton reset second** - Setting `instance = null` prevents `registerInstance()` from copying old data
-3. **Users third** - Must delete users before their associated data (FK constraints)
-4. **Service data fourth** - Now safe to clear without FK violations
+3. **Service data third** - Must delete child records (tasks/contacts/appointments) BEFORE parent records (users)
+4. **Users fourth** - PostgreSQL enforces FK constraints strictly; children must be deleted first (see ADR-0048)
 5. **Fresh user last** - Ready for test execution
 
 ### Singleton Reset via Reflection

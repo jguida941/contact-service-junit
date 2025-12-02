@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests {@link TaskService} behavior against the Spring context (H2 + Flyway).
+ * Tests {@link TaskService} behavior against the Spring context (PostgreSQL + Flyway via Testcontainers).
  *
  * <p>Remaining in the same package allows direct access to {@link TaskService#clearAllTasks()}.
  */

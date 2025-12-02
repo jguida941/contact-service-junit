@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests {@link AppointmentService} behavior against the Spring context (H2 + Flyway).
+ * Tests {@link AppointmentService} behavior against the Spring context (PostgreSQL + Flyway via Testcontainers).
  */
 @SpringBootTest
 @ActiveProfiles("integration")

@@ -19,9 +19,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Tests the ContactService behavior.
  *
- * <p>Runs against the Spring context (H2 + Flyway) so the service exercises the real
- * persistence layer instead of the legacy in-memory map. Tests stay in the same package
- * to access package-private helpers like {@link ContactService#clearAllContacts()}.
+ * <p>Runs against the Spring context (PostgreSQL + Flyway via Testcontainers) so the service
+ * exercises the real persistence layer instead of the legacy in-memory map. Tests stay in the
+ * same package to access package-private helpers like {@link ContactService#clearAllContacts()}.
  */
 @SpringBootTest
 @ActiveProfiles("integration")
