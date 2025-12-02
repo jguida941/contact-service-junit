@@ -9,6 +9,8 @@ import { OverviewPage } from '@/pages/OverviewPage';
 import { ContactsPage } from '@/pages/ContactsPage';
 import { TasksPage } from '@/pages/TasksPage';
 import { AppointmentsPage } from '@/pages/AppointmentsPage';
+import { ProjectsPage } from '@/pages/ProjectsPage';
+import { ProjectDetailPage } from '@/pages/ProjectDetailPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { HelpPage } from '@/pages/HelpPage';
 import { LoginPage } from '@/pages/LoginPage';
@@ -35,6 +37,8 @@ function App() {
               <Route path="contacts" element={<ContactsPage />} />
               <Route path="tasks" element={<TasksPage />} />
               <Route path="appointments" element={<AppointmentsPage />} />
+              <Route path="projects" element={<ProjectsPage />} />
+              <Route path="projects/:id" element={<ProjectDetailPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="help" element={<HelpPage />} />
               {/* Admin-only routes (ADR-0036) - nested under RequireAdmin guard */}

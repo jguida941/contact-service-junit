@@ -15,7 +15,7 @@ Started as the simple CS320 contact-service milestone and grew into a multi-enti
 4. Persist all aggregates through Spring Data JPA repositories + Flyway migrations (Postgres in dev/prod, H2/Testcontainers in tests) while keeping the legacy `getInstance()` singletons alive for backward compatibility.
 5. Add comprehensive security (JWT auth, per-user data isolation, rate limiting, CSRF protection) and observability (structured logging, Prometheus metrics, PII masking).
 6. Build a production-ready React 19 SPA with TanStack Query, search/pagination/sorting, admin dashboard, and full accessibility support.
-7. Introduce the `Project` entity for task organization with status tracking, project-task linking, and team collaboration features (see ADR-0045).
+7. Implement Project/Task Tracker Evolution (ADR-0045 Phases 1-5): Project entity with CRUD operations and status tracking, Task enhancements (status/due dates), task-project linking, appointment-task/project linking, and team collaboration via task assignment with access control.
 
 Everything is packaged under `contactapp` with layered sub-packages (`domain`, `service`, `api`, `persistence`, `security`, `config`); production classes live in `src/main/java` and the JUnit tests in `src/test/java`. Spring Boot 4.0.0 provides the runtime with actuator health/info endpoints and Prometheus metrics.
 
@@ -133,7 +133,7 @@ The phased plan in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) governs scope.
 | 5 | Complete | Security & observability | JWT auth, per-user tenancy, rate limiting, sanitized logging, Prometheus |
 | 5.5 | Complete | CI security gates | ZAP DAST scans, password strength validation, CSP/Permissions-Policy headers |
 | 6 | Complete | Packaging + CI | Makefile (30+ targets), CI docker-build job, GHCR push, health checks |
-| 7 | Complete | UX polish (Projects + accessibility) | Search/pagination/sorting, toasts, empty states, admin dashboard, validation helper refactor |
+| 7 | Complete | UX polish + Project Tracker (ADR-0045 Phases 1-5) | Search/pagination/sorting, toasts, empty states, admin dashboard; Project CRUD with status tracking, task status/due dates/project linking, appointment linking, task assignment with access control |
 
 ### Phase 5 Security & Observability Summary
 - **Per-user data isolation**: `user_id` foreign keys on contacts, tasks, and appointments enforce multi-tenancy while services scope queries to the authenticated user.
@@ -146,6 +146,33 @@ The phased plan in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) governs scope.
 - **Structured logging**: Correlation IDs (`X-Correlation-ID`) flow through MDC for distributed tracing; `PiiMaskingConverter` redacts sensitive patterns in log output.
 - **Prometheus metrics**: `/actuator/prometheus` exposes Micrometer metrics with custom timers for API endpoints; liveness/readiness probes remain on `/actuator/health`.
 - **Production-ready Docker packaging**: Multi-stage build (Eclipse Temurin 17, non-root user, layered JAR extraction) keeps runtime images lean; detailed steps live in [`Dockerfile`](Dockerfile).
+
+### Project/Task Tracker Evolution Summary (ADR-0045 Phases 1-5)
+
+**Completed Features** (2025-12-01):
+- **Phase 1 - Project Entity**: Full CRUD operations at `/api/v1/projects` with status tracking (ACTIVE, ON_HOLD, COMPLETED, ARCHIVED), per-user data isolation, migration V7
+- **Phase 2 - Task Status/Due Date**: Enhanced Task with status enum (TODO, IN_PROGRESS, DONE), optional due dates, createdAt/updatedAt timestamps, migration V8
+- **Phase 3 - Task-Project Linking**: Tasks can be assigned to projects for organization via nullable projectId FK, query parameters `?projectId={id}` and `?projectId=none`, migration V10
+- **Phase 4 - Appointment Linking**: Appointments can reference tasks and/or projects for calendar context via nullable taskId/projectId FKs, query parameters `?taskId={id}` and `?projectId={id}`, migration V11
+- **Phase 5 - Task Assignment**: Tasks can be assigned to team members via assigneeId FK, access control ensures users see tasks they own or are assigned to (plus project owners see all project tasks, admins see everything), query parameter `?assigneeId={userId}`, migration V12
+
+**API Enhancements**:
+- `POST /api/v1/projects` - Create project
+- `GET /api/v1/projects` - List projects (with optional `?status=ACTIVE` filter)
+- `GET /api/v1/projects/{id}` - Get project by ID
+- `PUT /api/v1/projects/{id}` - Update project
+- `DELETE /api/v1/projects/{id}` - Delete project
+- `GET /api/v1/tasks?projectId={id}` - Filter tasks by project
+- `GET /api/v1/tasks?status=TODO` - Filter tasks by status
+- `GET /api/v1/tasks?assigneeId={userId}` - Filter tasks by assignee
+- `GET /api/v1/appointments?taskId={id}` - Filter appointments by task
+- `GET /api/v1/appointments?projectId={id}` - Filter appointments by project
+
+**Database Schema**: 5 new migrations (V7, V8, V10, V11, V12) add projects table, task status/due dates, task-project relationships, appointment-task/project relationships, and task assignment relationships with proper foreign keys and indexes.
+
+**Test Coverage**: 951 total tests with comprehensive coverage across domain validation, persistence layers, service operations, and REST API endpoints for all implemented phases.
+
+**Deferred Features**: Phase 6 (Contact-Project Linking via V13 junction table) is deferred to future implementation. See ADR-0045 for details.
 
 ## React UI Highlights
 - Built with **Vite + React 19 + TypeScript + Tailwind CSS v4** plus shadcn/ui components for a professional look.
@@ -178,7 +205,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`src/main/java/contactapp/persistence/repository`](src/main/java/contactapp/persistence/repository)                                 | Spring Data repositories plus in-memory fallbacks for legacy `getInstance()` callers.                                             |
 | [`src/main/java/contactapp/persistence/store`](src/main/java/contactapp/persistence/store)                                           | `DomainDataStore` abstraction + JPA-backed implementations injected into services.                                                |
 | [`src/main/resources/application.yml`](src/main/resources/application.yml)                                                           | Multi-document profile configuration (dev/test/integration/prod + Flyway/JPA settings).                                           |
-| [`src/main/resources/db/migration`](src/main/resources/db/migration)                                                                 | Flyway migrations (V1-V10) split by database (common/h2/postgresql): contacts, tasks, appointments, users, projects tables + user FK columns + surrogate keys + version columns + task status/dueDate/projectId. |
+| [`src/main/resources/db/migration`](src/main/resources/db/migration)                                                                 | Flyway migrations (V1-V12) split by database (common/h2/postgresql): contacts (V1), tasks (V2), appointments (V3), users (V4), user FKs (V5), surrogate keys (V6), projects (V7), task status/dueDate (V8), task-project FK (V10), appointment-task/project FKs (V11), task assignment FK (V12). |
 | [`src/test/java/contactapp/ApplicationTest.java`](src/test/java/contactapp/ApplicationTest.java)                                     | Spring Boot context load smoke test.                                                                                              |
 | [`src/test/java/contactapp/ActuatorEndpointsTest.java`](src/test/java/contactapp/ActuatorEndpointsTest.java)                         | Verifies actuator endpoint security (health/info exposed, others blocked).                                                        |
 | [`src/test/java/contactapp/ServiceBeanTest.java`](src/test/java/contactapp/ServiceBeanTest.java)                                     | Verifies service beans are injectable and singletons.                                                                             |

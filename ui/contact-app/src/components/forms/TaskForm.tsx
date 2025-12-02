@@ -1,9 +1,18 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { taskRequestSchema, ValidationLimits, type TaskRequest, type Task } from '@/lib/schemas';
+import { projectsApi, adminApi, authApi } from '@/lib/api';
 
 interface TaskFormProps {
   task?: Task;
@@ -14,10 +23,26 @@ interface TaskFormProps {
 
 export function TaskForm({ task, onSubmit, onCancel, isLoading }: TaskFormProps) {
   const isEdit = !!task;
+  const currentUser = authApi.getCurrentUser();
+  const isAdmin = currentUser?.role === 'ADMIN';
+
+  // Fetch projects for dropdown
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: projectsApi.getAll,
+  });
+
+  // Fetch users for assignee dropdown (admin only)
+  const { data: users = [] } = useQuery({
+    queryKey: ['admin-users'],
+    queryFn: adminApi.getAllUsers,
+    enabled: isAdmin,
+  });
 
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<TaskRequest>({
     resolver: zodResolver(taskRequestSchema),
@@ -26,8 +51,14 @@ export function TaskForm({ task, onSubmit, onCancel, isLoading }: TaskFormProps)
           id: task.id,
           name: task.name,
           description: task.description,
+          status: task.status,
+          dueDate: task.dueDate || undefined,
+          projectId: task.projectId || undefined,
+          assigneeId: task.assigneeId || undefined,
         }
-      : undefined,
+      : {
+          status: 'TODO',
+        },
   });
 
   return (
@@ -99,6 +130,107 @@ export function TaskForm({ task, onSubmit, onCancel, isLoading }: TaskFormProps)
           Max {ValidationLimits.MAX_DESCRIPTION_LENGTH} characters
         </p>
       </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="status">Status</Label>
+        <Controller
+          name="status"
+          control={control}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <SelectTrigger id="status" aria-invalid={errors.status ? 'true' : 'false'}>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="TODO">To Do</SelectItem>
+                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                <SelectItem value="DONE">Done</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.status && (
+          <p className="text-sm text-destructive" role="alert">
+            {errors.status.message}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="dueDate">Due Date (Optional)</Label>
+        <Input
+          id="dueDate"
+          type="date"
+          {...register('dueDate')}
+          aria-invalid={errors.dueDate ? 'true' : 'false'}
+        />
+        {errors.dueDate && (
+          <p className="text-sm text-destructive" role="alert">
+            {errors.dueDate.message}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="projectId">Project (Optional)</Label>
+        <Controller
+          name="projectId"
+          control={control}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+              <SelectTrigger id="projectId">
+                <SelectValue placeholder="Select project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.projectId && (
+          <p className="text-sm text-destructive" role="alert">
+            {errors.projectId.message}
+          </p>
+        )}
+      </div>
+
+      {isAdmin && (
+        <div className="space-y-2">
+          <Label htmlFor="assigneeId">Assignee (Optional)</Label>
+          <Controller
+            name="assigneeId"
+            control={control}
+            render={({ field }) => (
+              <Select
+                onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                defaultValue={field.value?.toString() || undefined}
+              >
+                <SelectTrigger id="assigneeId">
+                  <SelectValue placeholder="Select assignee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.username} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {errors.assigneeId && (
+            <p className="text-sm text-destructive" role="alert">
+              {errors.assigneeId.message}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="flex justify-end gap-2 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>

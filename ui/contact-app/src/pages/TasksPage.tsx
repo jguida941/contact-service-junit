@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { format, isPast, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { Pagination } from '@/components/ui/pagination';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -23,9 +31,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { TaskForm } from '@/components/forms/TaskForm';
 import { DeleteConfirmDialog } from '@/components/dialogs/DeleteConfirmDialog';
-import { tasksApi } from '@/lib/api';
+import { tasksApi, projectsApi } from '@/lib/api';
 import { useFilteredSortedPaginatedData } from '@/lib/hooks/useTableState';
-import type { Task, TaskRequest } from '@/lib/schemas';
+import type { Task, TaskRequest, TaskStatus } from '@/lib/schemas';
 
 type SheetMode = 'view' | 'create' | 'edit';
 

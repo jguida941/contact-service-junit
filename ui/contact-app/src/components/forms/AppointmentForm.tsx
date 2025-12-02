@@ -1,9 +1,18 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { appointmentRequestSchema, ValidationLimits, type AppointmentRequest, type Appointment } from '@/lib/schemas';
+import { projectsApi, tasksApi } from '@/lib/api';
 
 interface AppointmentFormProps {
   appointment?: Appointment;
@@ -71,9 +80,23 @@ function fromDateTimeLocalValue(localValue: string): string {
 export function AppointmentForm({ appointment, onSubmit, onCancel, isLoading }: AppointmentFormProps) {
   const isEdit = !!appointment;
 
+  // Fetch projects for dropdown
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: projectsApi.getAll,
+  });
+
+  // Fetch tasks for dropdown
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: tasksApi.getAll,
+  });
+
   const {
     register,
     handleSubmit,
+    control,
+    watch,
     formState: { errors },
   } = useForm<AppointmentRequest>({
     resolver: zodResolver(appointmentRequestSchema),
@@ -82,9 +105,14 @@ export function AppointmentForm({ appointment, onSubmit, onCancel, isLoading }: 
           id: appointment.id,
           appointmentDate: toDateTimeLocalValue(appointment.appointmentDate),
           description: appointment.description,
+          projectId: appointment.projectId || undefined,
+          taskId: appointment.taskId || undefined,
         }
       : undefined,
   });
+
+  // Watch selected project to filter tasks
+  const selectedProjectId = watch('projectId');
 
   const onFormSubmit = (data: AppointmentRequest) => {
     // Convert datetime-local value to ISO string
@@ -161,6 +189,69 @@ export function AppointmentForm({ appointment, onSubmit, onCancel, isLoading }: 
         <p id="description-help" className="text-xs text-muted-foreground">
           Max {ValidationLimits.MAX_DESCRIPTION_LENGTH} characters
         </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="projectId">Project (Optional)</Label>
+        <Controller
+          name="projectId"
+          control={control}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+              <SelectTrigger id="projectId">
+                <SelectValue placeholder="Select project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.projectId && (
+          <p className="text-sm text-destructive" role="alert">
+            {errors.projectId.message}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="taskId">Task (Optional)</Label>
+        <Controller
+          name="taskId"
+          control={control}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+              <SelectTrigger id="taskId">
+                <SelectValue placeholder="Select task" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {tasks
+                  .filter((task) => !selectedProjectId || task.projectId === selectedProjectId)
+                  .map((task) => (
+                    <SelectItem key={task.id} value={task.id}>
+                      {task.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.taskId && (
+          <p className="text-sm text-destructive" role="alert">
+            {errors.taskId.message}
+          </p>
+        )}
+        {selectedProjectId && (
+          <p className="text-xs text-muted-foreground">
+            Showing tasks from selected project
+          </p>
+        )}
       </div>
 
       <div className="flex justify-end gap-2 pt-4">

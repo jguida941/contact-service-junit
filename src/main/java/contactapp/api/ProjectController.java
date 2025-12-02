@@ -1,9 +1,12 @@
 package contactapp.api;
 
+import contactapp.api.dto.ContactResponse;
 import contactapp.api.dto.ErrorResponse;
+import contactapp.api.dto.ProjectContactRequest;
 import contactapp.api.dto.ProjectRequest;
 import contactapp.api.dto.ProjectResponse;
 import contactapp.api.exception.ResourceNotFoundException;
+import contactapp.domain.Contact;
 import contactapp.domain.Project;
 import contactapp.domain.ProjectStatus;
 import contactapp.service.ProjectService;
@@ -300,5 +303,124 @@ public class ProjectController {
         return authentication != null
                 && authentication.getAuthorities().stream()
                 .anyMatch(grantedAuthority -> "ROLE_ADMIN".equals(grantedAuthority.getAuthority()));
+    }
+
+    // ==================== Contact Linking Endpoints ====================
+
+    /**
+     * Adds a contact to a project with an optional role.
+     *
+     * <p>Requires USER or ADMIN role. Both the project and contact must belong
+     * to the authenticated user.
+     *
+     * @param projectId the project ID
+     * @param request the contact ID and optional role
+     * @throws ResourceNotFoundException if project or contact not found
+     */
+    @Operation(summary = "Add contact to project",
+            description = "Links a contact to a project with an optional role (e.g., CLIENT, STAKEHOLDER)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Contact added to project"),
+            @ApiResponse(responseCode = "400", description = "Validation error",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Not authenticated",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Project or contact not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PostMapping(value = "/{projectId}/contacts", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public void addContactToProject(
+            @Parameter(
+                    description = "Project ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
+            @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String projectId,
+            @Valid @RequestBody final ProjectContactRequest request) {
+        projectService.addContactToProject(projectId, request.contactId(), request.role());
+    }
+
+    /**
+     * Removes a contact from a project.
+     *
+     * <p>Requires USER or ADMIN role. Both the project and contact must belong
+     * to the authenticated user.
+     *
+     * @param projectId the project ID
+     * @param contactId the contact ID
+     * @throws ResourceNotFoundException if project or contact not found
+     */
+    @Operation(summary = "Remove contact from project",
+            description = "Removes the link between a project and a contact")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Contact removed from project"),
+            @ApiResponse(responseCode = "400", description = "Invalid ID format",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Not authenticated",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Project or contact not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @DeleteMapping("/{projectId}/contacts/{contactId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public void removeContactFromProject(
+            @Parameter(
+                    description = "Project ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
+            @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String projectId,
+            @Parameter(
+                    description = "Contact ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
+            @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String contactId) {
+        if (!projectService.removeContactFromProject(projectId, contactId)) {
+            throw new ResourceNotFoundException(
+                    "No link exists between project " + projectId + " and contact " + contactId);
+        }
+    }
+
+    /**
+     * Gets all contacts linked to a project.
+     *
+     * <p>Requires USER or ADMIN role. The project must belong to the authenticated user.
+     *
+     * @param projectId the project ID
+     * @return list of contacts
+     * @throws ResourceNotFoundException if project not found
+     */
+    @Operation(summary = "Get project contacts",
+            description = "Returns all contacts linked to a project")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of contacts"),
+            @ApiResponse(responseCode = "400", description = "Invalid ID format",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Not authenticated",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Project not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @GetMapping("/{projectId}/contacts")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public List<ContactResponse> getProjectContacts(
+            @Parameter(
+                    description = "Project ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
+            @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String projectId) {
+        final List<Contact> contacts = projectService.getProjectContacts(projectId);
+        return contacts.stream()
+                .map(ContactResponse::from)
+                .toList();
     }
 }

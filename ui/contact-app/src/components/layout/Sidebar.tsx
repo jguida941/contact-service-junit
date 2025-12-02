@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, CheckSquare, Calendar, Settings, HelpCircle, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, CheckSquare, Calendar, FolderKanban, Settings, HelpCircle, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/contacts', icon: Users, label: 'Contacts' },
   { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
   { to: '/appointments', icon: Calendar, label: 'Appointments' },
+  { to: '/projects', icon: FolderKanban, label: 'Projects' },
 ];
 
 const footerItems = [

@@ -1,6 +1,8 @@
 package contactapp.service;
 
 import contactapp.api.exception.DuplicateResourceException;
+import contactapp.api.exception.ResourceNotFoundException;
+import contactapp.domain.Contact;
 import contactapp.domain.Project;
 import contactapp.domain.ProjectStatus;
 import contactapp.security.Role;
@@ -11,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.ActiveProfiles;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,6 +32,9 @@ public class ProjectServiceTest {
 
     @Autowired
     private ProjectService service;
+
+    @Autowired
+    private ContactService contactService;
 
     @Autowired
     private TestUserSetup testUserSetup;
