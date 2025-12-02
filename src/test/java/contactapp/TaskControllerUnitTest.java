@@ -61,6 +61,7 @@ class TaskControllerUnitTest {
         when(taskService.getTasksDueBefore(cutoff)).thenReturn(List.of(
                 new Task("due-1", "Due Soon", "Desc")));
 
+        // Cover the dueBefore branch and mapping
         final List<TaskResponse> responses = controller.getAll(false, null, cutoff, false, null, null);
 
         verify(taskService).getTasksDueBefore(cutoff);
@@ -72,6 +73,7 @@ class TaskControllerUnitTest {
         when(taskService.getOverdueTasks()).thenReturn(List.of(
                 new Task("ov-1", "Overdue", "Desc")));
 
+        // Cover the overdue=true branch
         final List<TaskResponse> responses = controller.getAll(false, null, null, true, null, null);
 
         verify(taskService).getOverdueTasks();
@@ -83,6 +85,7 @@ class TaskControllerUnitTest {
         when(taskService.getTasksByProjectId("proj-1")).thenReturn(List.of(
                 new Task("p-1", "Proj Task", "Desc")));
 
+        // Cover the projectId filter branch
         final List<TaskResponse> responses = controller.getAll(false, null, null, false, "proj-1", null);
 
         verify(taskService).getTasksByProjectId("proj-1");
@@ -94,6 +97,7 @@ class TaskControllerUnitTest {
         when(taskService.getTasksByAssigneeId(42L)).thenReturn(List.of(
                 new Task("a-1", "Assigned", "Desc")));
 
+        // Cover the assigneeId filter branch
         final List<TaskResponse> responses = controller.getAll(false, null, null, false, null, 42L);
 
         verify(taskService).getTasksByAssigneeId(42L);
@@ -105,6 +109,7 @@ class TaskControllerUnitTest {
         when(taskService.getAllTasks()).thenReturn(List.of(
                 new Task("def-1", "Default", "Desc")));
 
+        // Cover default branch (no filters, all=false)
         final List<TaskResponse> responses = controller.getAll(false, null, null, false, null, null);
 
         verify(taskService).getAllTasks();

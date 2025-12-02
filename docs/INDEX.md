@@ -94,9 +94,11 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/persistence/entity/TaskEntity.java`](../src/main/java/contactapp/persistence/entity/TaskEntity.java) | JPA entity for Task with id/name/description columns. |
 | [`../src/main/java/contactapp/persistence/entity/AppointmentEntity.java`](../src/main/java/contactapp/persistence/entity/AppointmentEntity.java) | JPA entity for Appointment with id/date/description columns. |
 | [`../src/main/java/contactapp/persistence/entity/ProjectEntity.java`](../src/main/java/contactapp/persistence/entity/ProjectEntity.java) | JPA entity for Project with id/name/description/status columns and @Version for optimistic locking. |
+| [`../src/main/java/contactapp/persistence/entity/ProjectContactId.java`](../src/main/java/contactapp/persistence/entity/ProjectContactId.java) | Composite key for project-contact links (Serializable, equals/hashCode, JPA ctor). |
 | [`../src/test/java/contactapp/persistence/entity/ContactEntityTest.java`](../src/test/java/contactapp/persistence/entity/ContactEntityTest.java) | Entity tests ensuring protected constructors/setters support Hibernate proxies and PIT coverage. |
 | [`../src/test/java/contactapp/persistence/entity/TaskEntityTest.java`](../src/test/java/contactapp/persistence/entity/TaskEntityTest.java) | TaskEntity tests for Hibernate proxy support and setter coverage. |
 | [`../src/test/java/contactapp/persistence/entity/AppointmentEntityTest.java`](../src/test/java/contactapp/persistence/entity/AppointmentEntityTest.java) | AppointmentEntity tests for Hibernate proxy support and setter coverage. |
+| [`../src/test/java/contactapp/persistence/entity/ProjectContactIdTest.java`](../src/test/java/contactapp/persistence/entity/ProjectContactIdTest.java) | Tests the composite key equals/hashCode/setters to keep project-contact links addressable. |
 
 #### Mapper Components (`persistence.mapper`)
 | Path | Description |

@@ -116,7 +116,7 @@ Flyway automatically creates the schema on first run. Stop the database with `do
    ```
    Open `http://localhost:8080` — Spring Boot serves both the React UI and REST API from the same origin.
 6. Open the folder in IntelliJ/VS Code if you want IDE assistance—the Maven project model is auto-detected.
-7. Planning note: Phases 0-7 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability, DAST, packaging/CI, UX polish). **1056 tests** cover the JPA path, legacy singleton fallbacks, JWT auth components, User entity validation, Project CRUD, and the validation helpers including the new `validateNotNull` enum helper (PIT mutation coverage 94%+ with 96%+ line coverage on stores, 95%+ on mappers). +84 mutation-focused tests added targeting boundary conditions, comparison operators, copy semantics, and helper adapters. ADR-0014..0046 capture the selected stack plus validation/Project evolution decisions. See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for the consolidated deliverables list.
+7. Planning note: Phases 0-7 complete (Spring Boot scaffold, REST API + DTOs, API fuzzing, persistence layer, React UI, security & observability, DAST, packaging/CI, UX polish). **1066 tests** cover the JPA path, legacy singleton fallbacks, JWT auth components, User entity validation, Project CRUD, and the validation helpers including the new `validateNotNull` enum helper (PIT mutation coverage 94%+ with 96%+ line coverage on stores, 95%+ on mappers). +84 mutation-focused tests added targeting boundary conditions, comparison operators, copy semantics, and helper adapters. ADR-0014..0046 capture the selected stack plus validation/Project evolution decisions. See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for the consolidated deliverables list.
 
 ## Phase Roadmap & Highlights
 
@@ -170,7 +170,7 @@ The phased plan in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) governs scope.
 
 **Database Schema**: 7 new migrations (V7-V13) add optimistic locking (V7), projects table (V8), task status/due dates (V9), task-project relationships (V10), appointment-task/project relationships (V11), task assignment (V12), and project-contact junction table (V13) with proper foreign keys and indexes.
 
-**Test Coverage**: 1056 total tests with comprehensive coverage across domain validation, persistence layers, service operations, and REST API endpoints for all implemented phases.
+**Test Coverage**: 1066 total tests with comprehensive coverage across domain validation, persistence layers, service operations, and REST API endpoints for all implemented phases.
 
 **Phase 6 Implementation**: Contact-Project Linking is fully implemented via V13 junction table with API endpoints for adding/removing contacts to projects (`POST /api/v1/projects/{id}/contacts`, `DELETE /api/v1/projects/{id}/contacts/{contactId}`) and retrieving project contacts (`GET /api/v1/projects/{id}/contacts`). See ADR-0045 for details.
 
@@ -576,7 +576,7 @@ graph TD
 - Mapper tests (`ContactMapperTest`, `TaskMapperTest`, `AppointmentMapperTest`) now assert the null-input short-circuit paths so PIT can mutate those guards without leaving uncovered lines.
 - New JPA entity tests (`ContactEntityTest`, `TaskEntityTest`, `AppointmentEntityTest`) exercise the protected constructors and setters to prove Hibernate proxies can hydrate every column even when instantiated via reflection.
 - Legacy `InMemory*Store` suites assert the `Optional.empty` branch of `findById` so both success and miss paths copy data defensively.
-- Combined with the existing controller/service suites and the security additions above, this brings the repo to **1056 tests** with **94%+ mutation kills** and **96%+ line coverage on stores, 95%+ on mappers**.
+- Combined with the existing controller/service suites and the security additions above, this brings the repo to **1066 tests** with **94%+ mutation kills** and **96%+ line coverage on stores, 95%+ on mappers**.
 
 #### Mutation-Focused Test Additions (+71 Tests)
 
@@ -1786,7 +1786,7 @@ graph TD
 ## QA Summary
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. The table now includes colored icons, ASCII bars, and severity breakdowns so drift stands out immediately. Open any workflow's "Summary" tab and look for the "QA Metrics" section for the latest numbers.
 
-**Current Test Metrics (1056 tests):**
+**Current Test Metrics (1066 tests):**
 - +44 TaskService tests covering query methods, user isolation, and defensive copies
 - +71 mutation-focused tests targeting boundary conditions and comparison operators
 - 94%+ mutation kill rate (PIT)

@@ -45,6 +45,7 @@
 - Custom error controller (`CustomErrorController`) ensures ALL errors return JSON, including container-level errors, and `RequestLoggingFilter` logs masked IP/query data + user agents whenever request logging is enabled.
 - Persistence implemented via Spring Data repositories + mapper components; schema managed by Flyway migrations targeting Postgres (dev/prod) and H2/Testcontainers (tests). The default (no profile) run uses in-memory H2 in PostgreSQL compatibility mode so `mvn spring-boot:run` works out of the box; `dev`/`integration`/`prod` profiles point at Postgres. Shared migrations now live under `db/migration/common`, with profile-specific overrides under `db/migration/h2` and `db/migration/postgresql`.
 - Testcontainers-based integration suites cover Contact/Task/Appointment services against real Postgres, while new JWT/config/filter/unit tests push total coverage to 949 tests.
+- Additional unit coverage for composite keys (ProjectContactId) and controller/filter DTOs brings the suite to **1066 tests**.
 - Mapper/unit suites now include null-guard coverage plus JPA entity accessor tests to keep persistence mutation-safe even when Hibernate instantiates proxies through the protected constructors.
 - OpenAPI/Swagger UI available at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi).
 - Health/info actuator endpoints available; other actuator endpoints locked down.

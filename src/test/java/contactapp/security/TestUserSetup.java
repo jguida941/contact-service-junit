@@ -1,7 +1,9 @@
 package contactapp.security;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,12 +69,17 @@ public class TestUserSetup {
         }
 
         // Set up SecurityContext with this user
+        final SecurityContext context = SecurityContextHolder.createEmptyContext();
         final var authentication = new UsernamePasswordAuthenticationToken(
                 user,
                 null,
                 user.getAuthorities()
         );
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+        // Keep MockMvc's TestSecurityContextHolder in sync so controller requests
+        // and direct service calls share the same authenticated principal.
+        TestSecurityContextHolder.setContext(context);
 
         return user;
     }

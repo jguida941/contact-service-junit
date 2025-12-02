@@ -34,7 +34,7 @@ Test fixtures now reset stale SecurityContext entries and recreate the seed user
 - **Phase 5 (Task Assignment)**: Team collaboration with task assignment and access control, migration V12
 - **Phase 6 (Contact-Project Linking)**: Deferred to future (stakeholder management via V13 junction table)
 
-Total test count: 1,026, PIT mutation 94%+, store coverage 96%+, mapper coverage 95%+.
+Total test count: 1,066, PIT mutation 94%+, store coverage 96%+, mapper coverage 95%+.
 
 **Key Features Now Available**:
 - Create and organize projects with status tracking (ACTIVE/ON_HOLD/COMPLETED/ARCHIVED)

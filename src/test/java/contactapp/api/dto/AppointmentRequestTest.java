@@ -5,6 +5,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Verifies {@link AppointmentRequest} defensively copies mutable {@link Date} values
+ * (line 83) so callers cannot mutate internal state after construction.
+ */
 class AppointmentRequestTest {
 
     @Test
@@ -21,6 +25,7 @@ class AppointmentRequestTest {
         assertThat(stored).isNotSameAs(original);
         assertThat(stored).isEqualTo(original);
 
+        // Mutating the original should not affect the stored copy
         original.setTime(original.getTime() + 10_000);
         assertThat(request.appointmentDate()).isNotEqualTo(original);
         assertThat(request.appointmentDate()).isNotSameAs(stored);
@@ -35,6 +40,7 @@ class AppointmentRequestTest {
                 null,
                 null);
 
+        // Null date remains null when accessed
         assertThat(request.appointmentDate()).isNull();
     }
 }

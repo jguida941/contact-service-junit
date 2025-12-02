@@ -10,7 +10,7 @@ All notable changes to this project will be documented here. Follow the
   - Disabled JUnit Platform parallel execution to prevent singleton state collisions in @Isolated tests
   - Added `junit.jupiter.execution.parallel.enabled=false` to junit-platform.properties
   - Eliminates race conditions where parallel execution attempted to share singleton state across test classes despite @Isolated annotations
-  - Total test count now at **1056** tests
+  - Total test count now at **1066** tests
 
 ### Added
 - **TaskService Test Coverage Improvements (2025-12-02)**:
@@ -41,6 +41,9 @@ All notable changes to this project will be documented here. Follow the
   - Fixed RateLimitingFilterTest.doFilterInternal_logsSanitizedClientIp: Updated assertion to verify CR/LF is stripped rather than expecting `[unsafe-value]` (the implementation correctly sanitizes by removing CR/LF characters)
   - Fixed RequestLoggingFilterTest: Removed broken test for getSafeLogValue method which was refactored out in a previous change
   - Fixed ProjectService.java checkstyle error: Shortened SuppressFBWarnings justification to stay within 120-character line limit
+- **ID Composite Key Coverage (2025-12-02)**:
+  - Added ProjectContactId tests to cover equals/hashCode, setters, and Serializable contract for the composite key used by project-contact links
+  - Incremented total test count to **1066** tests (up from 1056)
 
 - **Project/Task Tracker Evolution Phases 1-5 Complete (ADR-0045) (2025-12-01)**:
   - **Phase 1 - Project Entity**: Project domain with CRUD API at `/api/v1/projects`, status tracking (ACTIVE/ON_HOLD/COMPLETED/ARCHIVED), migration V7
