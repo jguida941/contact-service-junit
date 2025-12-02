@@ -21,6 +21,12 @@ All notable changes to this project will be documented here. Follow the
   - User isolation tests verifying query methods only return current user's tasks
   - Test count updated to **1056** tests (up from 951)
 
+### Changed
+- **SpringBootTests now use Postgres via Testcontainers (2025-12-02)**:
+  - Switched all Spring Boot service/controller/MockMvc suites to the `integration` profile backed by Postgres Testcontainers; H2 remains only for unit/slice tests.
+  - Shared `PostgresContainerSupport` base class introduced to standardize container startup and `@ServiceConnection`.
+  - Local/CI runs now require Docker for `mvn test`; use `-DskipITs=true -Dspring.profiles.active=test` for H2-only slices if Docker is unavailable.
+
 ### Fixed
 - **Entity setVersion Methods (2025-12-02)**:
   - Added setVersion(Long) to AppointmentEntity, ContactEntity, ProjectEntity for test determinism

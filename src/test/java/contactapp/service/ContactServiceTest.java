@@ -7,6 +7,7 @@ import contactapp.security.TestUserSetup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
+import contactapp.support.PostgresContainerSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,9 +24,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * to access package-private helpers like {@link ContactService#clearAllContacts()}.
  */
 @SpringBootTest
-@ActiveProfiles("test")
+@ActiveProfiles("integration")
 @Isolated
-public class ContactServiceTest {
+public class ContactServiceTest extends PostgresContainerSupport {
 
     @Autowired
     private ContactService service;

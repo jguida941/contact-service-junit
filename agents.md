@@ -26,9 +26,9 @@ Quick links and context for automation/assistant workflows implementing this pla
 - Health/info actuator endpoints available; other actuator endpoints locked down; Prometheus/metrics, correlation IDs, and security headers enabled per ADR-0039
 - Local dev can persist data via `docker-compose.dev.yml` (Postgres 16) + `dev` Spring profile (`SPRING_DATASOURCE_*` env vars)
 - Latest CI run: **642 tests passing** (648 with ITs; unit + slice + MockMvc + Testcontainers + security + config filters), **94% mutation score** (615/656 mutants killed), **96%+ line coverage on stores, 95%+ on mappers**, SpotBugs clean; total tests now **1066** with added controller/filter/composite-key coverage
-- Local `mvn verify` skips the Testcontainers suite by default (`skipITs=true`) to avoid a Docker dependency; run `mvn verify -DskipITs=false` with Docker Desktop/Colima to mirror the CI setup.
+- Local `mvn verify` skips the Testcontainers suite by default (`skipITs=true`) to avoid a Docker dependency; run `mvn verify -DskipITs=false` with Docker Desktop/Colima to mirror the CI setup. SpringBootTest/MockMvc/service suites now default to the `integration` profile (Postgres via Testcontainers), so Docker must be running.
 - All Schemathesis API fuzzing phases pass (Coverage, Fuzzing, Stateful: 30,668 test cases, 0 failures)
-- Persistence implemented via Spring Data JPA repositories + Flyway migrations (Postgres dev/prod, H2/Testcontainers tests)
+- Persistence implemented via Spring Data JPA repositories + Flyway migrations (Postgres dev/prod, Postgres Testcontainers for SpringBootTests, H2 slices for targeted unit tests)
 - Mapper and JPA entity tests cover null guards plus the protected constructors so Hibernate proxies and legacy in-memory stores stay mutation-proof.
 - Domain validation in `Validation.java` is the **source of truth** for all field rules
 - Controllers use service-level lookup methods (`getAllXxx()`, `getXxxById()`) for better encapsulation
@@ -58,7 +58,7 @@ Quick links and context for automation/assistant workflows implementing this pla
 | Scaffold              | Spring Boot 3.4.12 + layered packages                       | ADR-0020 |
 | ORM                   | Spring Data JPA/Hibernate                                   | ADR-0014 |
 | Migrations            | Flyway                                                      | ADR-0014 |
-| Database              | Postgres (prod), H2/Testcontainers (test)                   | ADR-0015 |
+| Database              | Postgres (prod), Postgres Testcontainers (integration), H2 (test slices) | ADR-0015 |
 | API                   | REST `/api/v1`, OpenAPI via springdoc                       | ADR-0016 |
 | Frontend              | React + Vite + TypeScript, TanStack Query                   | ADR-0017 |
 | Auth                  | JWT, Spring Security, @PreAuthorize                         | ADR-0018 |

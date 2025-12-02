@@ -28,7 +28,7 @@
 
 ## Current State
 
-- **Phases 0-7 complete**: Spring Boot 4.0.0 foundation with layered packages, REST API with OpenAPI/Swagger, Spring Data JPA persistence (Postgres/H2/Testcontainers), React 19 SPA with search/pagination/sorting/admin dashboard/accessibility, JWT authentication with per-user data isolation, rate limiting, CSRF protection, structured logging with PII masking, Prometheus metrics, Docker packaging with CI/CD, and comprehensive security testing (ZAP DAST, Schemathesis API fuzzing).
+- **Phases 0-7 complete**: Spring Boot 4.0.0 foundation with layered packages, REST API with OpenAPI/Swagger, Spring Data JPA persistence (Postgres in dev/prod; Postgres via Testcontainers for SpringBootTests; H2 for targeted slices), React 19 SPA with search/pagination/sorting/admin dashboard/accessibility, JWT authentication with per-user data isolation, rate limiting, CSRF protection, structured logging with PII masking, Prometheus metrics, Docker packaging with CI/CD, and comprehensive security testing (ZAP DAST, Schemathesis API fuzzing).
 - **Project/Task Tracker Evolution implemented (ADR-0045 Phases 1-5)**: Complete implementation of project organization and team collaboration features:
   - Phase 1: Project entity with full CRUD operations, status tracking (ACTIVE/ON_HOLD/COMPLETED/ARCHIVED), migration V7
   - Phase 2: Task enhancements with status (TODO/IN_PROGRESS/DONE), dueDate, timestamps, migration V8
@@ -43,7 +43,7 @@
 - DTOs with Bean Validation (`@NotBlank`, `@Size`, `@Pattern`, `@FutureOrPresent`) mapped to domain objects.
 - Global exception handler (`GlobalExceptionHandler`) maps exceptions to JSON error responses (400, 401, 403, 404, 409 including optimistic locking conflicts).
 - Custom error controller (`CustomErrorController`) ensures ALL errors return JSON, including container-level errors, and `RequestLoggingFilter` logs masked IP/query data + user agents whenever request logging is enabled.
-- Persistence implemented via Spring Data repositories + mapper components; schema managed by Flyway migrations targeting Postgres (dev/prod) and H2/Testcontainers (tests). The default (no profile) run uses in-memory H2 in PostgreSQL compatibility mode so `mvn spring-boot:run` works out of the box; `dev`/`integration`/`prod` profiles point at Postgres. Shared migrations now live under `db/migration/common`, with profile-specific overrides under `db/migration/h2` and `db/migration/postgresql`.
+- Persistence implemented via Spring Data repositories + mapper components; schema managed by Flyway migrations targeting Postgres (dev/prod) and Postgres Testcontainers (SpringBootTests) with H2 reserved for targeted slices. The default (no profile) run uses in-memory H2 in PostgreSQL compatibility mode so `mvn spring-boot:run` works out of the box; `dev`/`integration`/`prod` profiles point at Postgres. Shared migrations now live under `db/migration/common`, with profile-specific overrides under `db/migration/h2` and `db/migration/postgresql`.
 - Testcontainers-based integration suites cover Contact/Task/Appointment services against real Postgres, while new JWT/config/filter/unit tests push total coverage to 949 tests.
 - Additional unit coverage for composite keys (ProjectContactId) and controller/filter DTOs brings the suite to **1066 tests**.
 - Mapper/unit suites now include null-guard coverage plus JPA entity accessor tests to keep persistence mutation-safe even when Hibernate instantiates proxies through the protected constructors.
@@ -65,7 +65,7 @@
 ## Architecture Direction
 
 - **Backend**: Spring Boot REST service layered as controller → application/service → domain → persistence; keep domain validation as the single source of truth.
-- **Persistence**: JPA/Hibernate with Flyway migrations; Postgres in prod, H2/Testcontainers for tests.
+- **Persistence**: JPA/Hibernate with Flyway migrations; Postgres in prod, Postgres via Testcontainers for SpringBootTests, H2 for targeted slice/unit tests.
 - **API contract**: JSON REST with request/response DTOs, Bean Validation, and OpenAPI/Swagger UI for consumers.
 - **Frontend**: React + Vite SPA (TypeScript) in `ui/contact-app` (separate from QA dashboard) with router, form validation, and API client abstraction.
 - **Security**: JWT auth, CORS policy for the SPA, input/output sanitization, security headers, and rate limiting in front of the API.
@@ -81,7 +81,7 @@
 | Scaffold   | Spring Boot 4.0.0 + layered packages        | ADR-0020 |
 | ORM        | Spring Data JPA/Hibernate                   | ADR-0014 |
 | Migrations | Flyway                                      | ADR-0014 |
-| Database   | Postgres (prod), H2/Testcontainers (test)   | ADR-0015 |
+| Database   | Postgres (prod), Postgres Testcontainers (integration), H2 (test slices) | ADR-0015 |
 | API        | REST `/api/v1`, OpenAPI via springdoc       | ADR-0016 |
 | Frontend   | React + Vite + TypeScript, TanStack Query   | ADR-0017 |
 | Auth       | JWT, Spring Security, @PreAuthorize         | ADR-0018 |
@@ -180,10 +180,10 @@ Implementation details:
 - Added Flyway migrations (`db/migration/V1__create_contacts_table.sql`, `V2__create_tasks_table.sql`, `V3__create_appointments_table.sql`) mirroring constraints defined in `Validation.java`.
 - Rebuilt `application.yml` as a multi-document file with dev/test/integration/prod profiles:
   - Dev/prod use Postgres (configurable via env vars).
-  - Test profile uses in-memory H2 in PostgreSQL mode with Flyway enabled for schema parity.
-  - Integration profile works with Testcontainers via `@ServiceConnection`.
+  - Test profile uses in-memory H2 in PostgreSQL mode with Flyway enabled for schema parity (unit/slice-only).
+  - Integration profile works with Postgres via Testcontainers (`@ServiceConnection`) for SpringBootTests/MockMvc suites.
 - Expanded test suite:
-  - Spring Boot service tests (H2 + Flyway) for each aggregate.
+  - Spring Boot service/controller tests on the `integration` profile (Postgres + Flyway via Testcontainers) for each aggregate.
   - Legacy singleton tests ensuring `getInstance()` still works outside Spring.
   - Mapper unit tests and `@DataJpaTest` slices running Flyway migrations.
   - Testcontainers-based Postgres integration tests verifying persistence wiring and DB constraints.

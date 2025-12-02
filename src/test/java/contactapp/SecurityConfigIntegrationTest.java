@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import contactapp.support.PostgresContainerSupport;
 
 /**
  * Integration tests focused on {@link contactapp.security.SecurityConfig}.
@@ -32,8 +33,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
  */
 @SpringBootTest(properties = "cors.allowed-origins=https://app.example.com,https://admin.example.com")
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
-class SecurityConfigIntegrationTest {
+@ActiveProfiles("integration")
+class SecurityConfigIntegrationTest extends PostgresContainerSupport {
 
     @Autowired
     private FilterChainProxy filterChainProxy;

@@ -30,12 +30,12 @@ constraint to retain `ContactService.getInstance()` (and peers) for backward com
    implementations while `getInstance()` lazily creates in-memory stores so legacy callers
    continue working.
 3. **Flyway + Profiles** – Add Flyway SQL migrations (`db/migration/V1__...` etc.) and
-   multi-document `application.yml` that configures Postgres for `dev`/`prod`, H2 for `test`,
-   and Testcontainers (`integration`). Hibernate runs in `ddl-auto=validate` so schema drifts
-   are caught by migrations.
-4. **Testing Strategy** – Convert service tests to Spring slices (H2 + Flyway) for fast
-   persistence coverage, add repository slice tests, mapper unit tests, legacy `getInstance()`
-   tests, and reserve Testcontainers-backed integration tests for future expansion.
+   multi-document `application.yml` that configures Postgres for `dev`/`prod`, H2 for
+   unit/slice `test`, and Testcontainers-backed Postgres for `integration`. Hibernate runs
+   in `ddl-auto=validate` so schema drifts are caught by migrations.
+4. **Testing Strategy** – SpringBootTests/MockMvc/service suites run on the `integration`
+   profile with Postgres + Flyway via Testcontainers; repository slices stay on H2 + Flyway
+   for speed; mapper unit tests and legacy `getInstance()` tests remain alongside.
 
 ## Consequences
 

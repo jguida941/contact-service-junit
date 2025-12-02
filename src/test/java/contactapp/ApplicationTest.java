@@ -3,6 +3,7 @@ package contactapp;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import contactapp.support.PostgresContainerSupport;
 
 /**
  * Smoke test verifying the Spring application context loads successfully.
@@ -23,8 +24,8 @@ import org.springframework.test.context.ActiveProfiles;
  * full HTTP stack is exercised by the controller tests.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@ActiveProfiles("test")
-class ApplicationTest {
+@ActiveProfiles("integration")
+class ApplicationTest extends PostgresContainerSupport {
 
     /**
      * Verifies the application context loads without throwing exceptions.

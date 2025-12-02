@@ -31,8 +31,8 @@ import org.junit.jupiter.api.BeforeEach;
  * }</pre>
  */
 @SpringBootTest
-@ActiveProfiles("test")
-public abstract class SecuredMockMvcTest {
+@ActiveProfiles("integration")
+public abstract class SecuredMockMvcTest extends PostgresContainerSupport {
 
     @Autowired
     private WebApplicationContext context;

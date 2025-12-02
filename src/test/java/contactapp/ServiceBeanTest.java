@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
+import contactapp.support.PostgresContainerSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,8 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * "NoSuchBeanDefinitionException" errors.
  */
 @SpringBootTest
-@ActiveProfiles("test")
-class ServiceBeanTest {
+@ActiveProfiles("integration")
+class ServiceBeanTest extends PostgresContainerSupport {
 
     @Autowired
     private ApplicationContext context;

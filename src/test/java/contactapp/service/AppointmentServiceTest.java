@@ -8,6 +8,7 @@ import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
+import contactapp.support.PostgresContainerSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,9 +24,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Tests {@link AppointmentService} behavior against the Spring context (H2 + Flyway).
  */
 @SpringBootTest
-@ActiveProfiles("test")
+@ActiveProfiles("integration")
 @Isolated
-public class AppointmentServiceTest {
+public class AppointmentServiceTest extends PostgresContainerSupport {
 
     @Autowired
     private AppointmentService service;

@@ -8,6 +8,7 @@ import contactapp.security.TestUserSetup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
+import contactapp.support.PostgresContainerSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.access.AccessDeniedException;
@@ -28,9 +29,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>Remaining in the same package allows direct access to {@link TaskService#clearAllTasks()}.
  */
 @SpringBootTest
-@ActiveProfiles("test")
+@ActiveProfiles("integration")
 @Isolated
-public class TaskServiceTest {
+public class TaskServiceTest extends PostgresContainerSupport {
 
     @Autowired
     private TaskService service;

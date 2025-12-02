@@ -17,6 +17,6 @@
 
 ## Consequences
 - Postgres provides strong consistency, rich SQL, and wide tool support.
-- Dual test strategy (H2 + Testcontainers) balances speed with fidelity.
-- Requires containerized local setup (docker-compose) and CI services.
+- Dual test strategy (SpringBootTests/MockMvc on Postgres via Testcontainers; H2 reserved for unit/slice tests) balances speed with fidelity.
+- Requires containerized local setup (docker-compose/Testcontainers) and CI services.
 - Adds migration discipline; breaking changes must ship with Flyway scripts.

@@ -12,7 +12,7 @@ Started as the simple CS320 contact-service milestone and grew into a multi-enti
 1. Build the `Contact` and `ContactService` classes exactly as described in the requirements.
 2. Prove every rule with unit tests (length limits, null checks, unique IDs, and add/update/delete behavior) using the shared `Validation` helper so exceptions surface clear messages.
 3. Mirror the same patterns for the `Task` entity/service (ID/name/description) and `Appointment` (ID/date/description) so all domains share validation, atomic updates, and singleton storage.
-4. Persist all aggregates through Spring Data JPA repositories + Flyway migrations (Postgres in dev/prod, H2/Testcontainers in tests) while keeping the legacy `getInstance()` singletons alive for backward compatibility.
+4. Persist all aggregates through Spring Data JPA repositories + Flyway migrations (Postgres in dev/prod, Postgres via Testcontainers for SpringBootTests, H2 for targeted slices) while keeping the legacy `getInstance()` singletons alive for backward compatibility.
 5. Add comprehensive security (JWT auth, per-user data isolation, rate limiting, CSRF protection) and observability (structured logging, Prometheus metrics, PII masking).
 6. Build a production-ready React 19 SPA with TanStack Query, search/pagination/sorting, admin dashboard, and full accessibility support.
 7. Implement Project/Task Tracker Evolution (ADR-0045 Phases 1-5): Project entity with CRUD operations and status tracking, Task enhancements (status/due dates), task-project linking, appointment-task/project linking, and team collaboration via task assignment with access control.
@@ -128,7 +128,7 @@ The phased plan in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) governs scope.
 | 1 | Complete | Spring Boot foundation | Services promoted to `@Service` beans; actuator health/info endpoints |
 | 2 | Complete | REST API + DTOs | CRUD controllers at `/api/v1/**`; Bean Validation DTOs; 71 controller tests |
 | 2.5 | Complete | OpenAPI fuzzing | Schemathesis workflows with spec validation/hardening |
-| 3 | Complete | Persistence & storage | Spring Data JPA + Flyway migrations; Postgres dev/prod; H2/Testcontainers parity |
+| 3 | Complete | Persistence & storage | Spring Data JPA + Flyway; Postgres dev/prod; H2 slices + Testcontainers-backed SpringBootTests |
 | 4 | Complete | React SPA | CRUD UI with TanStack Query + Vite/Tailwind stack; Vitest + Playwright suites |
 | 5 | Complete | Security & observability | JWT auth, per-user tenancy, rate limiting, sanitized logging, Prometheus |
 | 5.5 | Complete | CI security gates | ZAP DAST scans, password strength validation, CSP/Permissions-Policy headers |
@@ -215,10 +215,10 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`src/test/java/contactapp/domain/ProjectTest.java`](src/test/java/contactapp/domain/ProjectTest.java)                               | Unit tests for `Project` class (+19 mutation tests: boundaries, empty description handling, status enum, trimming logic).         |
 | [`src/test/java/contactapp/domain/ProjectStatusTest.java`](src/test/java/contactapp/domain/ProjectStatusTest.java)                   | Unit tests for `ProjectStatus` enum (all status values, display names).                                                           |
 | [`src/test/java/contactapp/domain/ValidationTest.java`](src/test/java/contactapp/domain/ValidationTest.java)                         | Validation helpers (+14 mutation tests: length boundaries, digit validation, date millisecond precision, email max length).       |
-| [`src/test/java/contactapp/service/ContactServiceTest.java`](src/test/java/contactapp/service/ContactServiceTest.java)               | SpringBootTest exercising ContactService against H2 + Flyway schema.                                                              |
-| [`src/test/java/contactapp/service/TaskServiceTest.java`](src/test/java/contactapp/service/TaskServiceTest.java)                     | SpringBootTest coverage for TaskService persistence flows.                                                                        |
-| [`src/test/java/contactapp/service/AppointmentServiceTest.java`](src/test/java/contactapp/service/AppointmentServiceTest.java)       | SpringBootTest coverage for AppointmentService persistence flows.                                                                 |
-| [`src/test/java/contactapp/service/ProjectServiceTest.java`](src/test/java/contactapp/service/ProjectServiceTest.java)               | SpringBootTest coverage for ProjectService (28 tests: CRUD, status filtering, contact linking, per-user isolation).              |
+| [`src/test/java/contactapp/service/ContactServiceTest.java`](src/test/java/contactapp/service/ContactServiceTest.java)               | SpringBootTest on the `integration` profile using Postgres via Testcontainers (Flyway applied).                                   |
+| [`src/test/java/contactapp/service/TaskServiceTest.java`](src/test/java/contactapp/service/TaskServiceTest.java)                     | SpringBootTest coverage for TaskService persistence flows on Postgres via Testcontainers.                                         |
+| [`src/test/java/contactapp/service/AppointmentServiceTest.java`](src/test/java/contactapp/service/AppointmentServiceTest.java)       | SpringBootTest coverage for AppointmentService persistence flows on Postgres via Testcontainers.                                  |
+| [`src/test/java/contactapp/service/ProjectServiceTest.java`](src/test/java/contactapp/service/ProjectServiceTest.java)               | SpringBootTest coverage for ProjectService (28 tests: CRUD, status filtering, contact linking, per-user isolation) on Postgres via Testcontainers. |
 | [`src/test/java/contactapp/service/*LegacyTest.java`](src/test/java/contactapp/service)                                              | Verifies the legacy `getInstance()` singletons still work outside Spring.                                                         |
 | [`src/test/java/contactapp/persistence/entity`](src/test/java/contactapp/persistence/entity)                                         | JPA entity tests (protected constructor/setter coverage for Hibernate proxies).                                                   |
 | [`src/test/java/contactapp/persistence/mapper`](src/test/java/contactapp/persistence/mapper)                                         | Mapper unit tests (Contact/Task/Appointment conversions + validation).                                                            |
@@ -332,7 +332,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 - Integration tests only exercised map behavior and proved nothing about persistence.
 
 **Current design (JPA + Flyway + stores):**
-- Postgres (or H2/Testcontainers in tests) is the single source of truth.
+- Postgres is the single source of truth (Testcontainers for SpringBootTests; H2 only for targeted slice/unit tests).
 - Schema versions are tracked by Flyway and validated by Hibernate on startup.
 - Services run inside transactions instead of ad hoc map updates.
 - Tests hit the same persistence stack used in development and production.
@@ -535,7 +535,7 @@ graph TD
 - Duplicate IDs or missing rows return `false`, letting controllers return 409/404 without extra exception types.
 
 #### Testing Strategy
-- `ContactServiceTest` is now a `@SpringBootTest` running against the `test` profile (H2 + Flyway) so every service method hits the real repositories/mappers.
+- `ContactServiceTest` is now a `@SpringBootTest` running against the `integration` profile (Postgres + Flyway via Testcontainers) so every service method hits the real repositories/mappers.
 - `ContactServiceLegacyTest` cold-starts the singleton without Spring, proving the fallback still works for older callers (and that state remains isolated between tests via reflection resets).
 - Slice tests live next door for mappers (`ContactMapperTest`) and repositories (`ContactRepositoryTest`), catching schema or mapping regressions without booting the full application context.
 - Boolean outcomes are asserted explicitly (`isTrue()/isFalse()`) so duplicate and missing-ID branches stay verified.
@@ -706,7 +706,7 @@ graph TD
 - Mapper conversions ensure persisted data always flows back through the domain constructor/update path for validation.
 
 #### Testing Strategy
-- `TaskServiceTest` is a Spring Boot test running on the `test` profile (H2 + Flyway), so every operation exercises the real repositories/mappers instead of in-memory maps.
+- `TaskServiceTest` is a Spring Boot test running on the `integration` profile (Postgres + Flyway via Testcontainers), so every operation exercises the real repositories/mappers instead of in-memory maps.
 - `TaskServiceLegacyTest` cold-starts `getInstance()` outside Spring, proving the fallback still works and that legacy callers stay isolated.
 - `TaskService` exposes a package-private `setClock(Clock)` hook used exclusively by tests so overdue calculations can be validated deterministically without mutating the domain validation rules.
 - Mapper/repository tests sit alongside the service tests for faster feedback on schema or conversion issues.
@@ -798,7 +798,7 @@ graph TD
 - Mapper conversions preserve the Instant/Date handling so persisted timestamps match domain expectations.
 
 #### Testing Strategy
-- `AppointmentServiceTest` runs against H2 + Flyway (`test` profile) and covers add/delete/update/defensive-copy behaviors end-to-end.
+- `AppointmentServiceTest` runs against Postgres + Flyway (`integration` profile via Testcontainers) and covers add/delete/update/defensive-copy behaviors end-to-end.
 - `AppointmentServiceLegacyTest` validates the non-Spring fallback and uses reflection resets to isolate state between runs.
 - Mapper/repository tests verify Instant↔Date conversion plus schema-level guarantees (e.g., NOT NULL/length constraints).
 
@@ -891,7 +891,7 @@ graph TD
 - All operations scope to the authenticated user via `getCurrentUser()`.
 
 #### Testing Strategy
-- `ProjectServiceTest` (28 tests) is a Spring Boot test running on the `test` profile (H2 + Flyway).
+- `ProjectServiceTest` (28 tests) is a Spring Boot test running on the `integration` profile (Postgres + Flyway via Testcontainers).
 - `InMemoryProjectStoreTest` validates the non-Spring fallback store.
 - Mapper/repository tests sit alongside for faster feedback on schema or conversion issues.
 
@@ -1432,6 +1432,7 @@ export const contactSchema = z.object({
 - **Production**: Maven's `frontend-maven-plugin` runs `npm ci && npm run build` during `prepare-package` phase.
 - **Single JAR**: Built UI assets copy to `target/classes/static/` so Spring Boot serves them at `/`.
 - **Fast feedback**: `mvn test` runs backend tests only; `mvn package` includes full UI build.
+- **Docker required for backend tests**: SpringBootTest/MockMvc/service suites now use Postgres via Testcontainers (`integration` profile). Start Docker before running `mvn test`; without Docker, limit to unit/slice suites or use `-DskipITs=true -Dspring.profiles.active=test` for H2-only slices.
 
 ### Frontend Testing ✅
 - [x] **Vitest + React Testing Library** - 22 component tests (schemas, forms, pages)

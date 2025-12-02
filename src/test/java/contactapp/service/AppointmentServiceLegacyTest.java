@@ -18,6 +18,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
+import contactapp.support.PostgresContainerSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -31,9 +32,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>Note: These tests run with Spring context to get the TestUserSetup bean.
  */
 @SpringBootTest
-@ActiveProfiles("test")
+@ActiveProfiles("integration")
 @Isolated
-class AppointmentServiceLegacyTest {
+class AppointmentServiceLegacyTest extends PostgresContainerSupport {
 
     @Autowired
     private TestUserSetup testUserSetup;
