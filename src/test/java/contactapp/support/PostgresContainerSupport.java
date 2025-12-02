@@ -18,8 +18,7 @@ public abstract class PostgresContainerSupport {
     protected static final PostgreSQLContainer<?> postgres;
 
     static {
-        postgres = new PostgreSQLContainer<>("postgres:16-alpine")
-                .withReuse(true);
+        postgres = new PostgreSQLContainer<>("postgres:16-alpine");
         postgres.start();
     }
 
