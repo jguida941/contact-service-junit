@@ -18,7 +18,7 @@ This project is a **full-stack contact management application** built with enter
 
 ---
 
-## 🎯 Why This Project Matters (For Recruiters)
+## Why This Project Matters
 
 **What you're looking at:** A production-grade full-stack application built with enterprise patterns, not a tutorial project.
 
@@ -439,7 +439,7 @@ Custom Logback converter masks sensitive data:
 
 ---
 
-## For Recruiters: Technical Talking Points
+## Technical Talking Points
 
 ### Architecture & Design
 - Layered architecture with clear separation of concerns
