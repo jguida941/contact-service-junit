@@ -70,3 +70,6 @@ docs/IMPLEMENTATION_PLAN_OPTION_C.md
 # Security review reports (may contain sensitive vulnerability details)
 docs/security-reviews/
 
+
+# Test artifacts
+cookies.txt
