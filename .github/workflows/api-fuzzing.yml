@@ -131,10 +131,15 @@ jobs:
           # Tomcat's connector level BEFORE reaching JsonErrorReportValve, returning HTML.
           # JsonErrorReportValve now sets explicit Content-Length to avoid chunked encoding
           # issues with malformed URLs. See ADR-0022 for details.
+          #
+          # Request timeout set to 10s to handle slow auth endpoints (BCrypt hashing is
+          # intentionally slow). Without this, rapid fuzz requests cause "Read timed out"
+          # network errors that fail the job even though the API is working correctly.
           schemathesis run \
             http://localhost:8080/v3/api-docs \
             --checks not_a_server_error \
             --checks response_schema_conformance \
+            --request-timeout 10000 \
             2>&1 | tee target/schemathesis-output.txt
 
           FUZZING_EXIT_CODE=${PIPESTATUS[0]}
