@@ -317,9 +317,15 @@ jobs:
       contents: read
       packages: write
     env:
-      POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+      POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD || 'ci-test-password-not-for-prod' }}
       JWT_SECRET: ${{ secrets.CI_JWT_SECRET }}
     steps:
+      - name: Generate fallback JWT secret if not configured
+        run: |
+          if [ -z "${JWT_SECRET}" ]; then
+            echo "CI_JWT_SECRET not configured, generating random secret for CI testing"
+            echo "JWT_SECRET=$(openssl rand -base64 32)" >> $GITHUB_ENV
+          fi
       - name: Checkout repository
         uses: actions/checkout@v4
 
