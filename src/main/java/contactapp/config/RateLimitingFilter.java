@@ -310,15 +310,21 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     /**
      * Sanitizes a client IP for use as a rate limit key and debug log value.
      *
-     * <p>Strips CR/LF to prevent log injection while preserving the concatenated
-     * value expected by tests (e.g., "10.0.0.1\r\n10.0.0.2" becomes "10.0.0.110.0.0.2").
+     * <p>Handles X-Forwarded-For format (comma-separated IP chain) by extracting
+     * the first IP (original client). Strips CR/LF to prevent log injection.
+     *
+     * @param clientIp raw IP string, possibly from X-Forwarded-For header
+     * @return the first valid IP, sanitized for logging
      */
     private String sanitizeClientIp(final String clientIp) {
         if (clientIp == null) {
             return "[null]";
         }
-        final String sanitized = clientIp.replace("\r", "").replace("\n", "").trim();
-        return sanitized.isEmpty() ? "[empty]" : sanitized;
+        // Strip CR/LF first to prevent log injection
+        final String noNewlines = clientIp.replace("\r", "").replace("\n", "");
+        // X-Forwarded-For format: "client, proxy1, proxy2" - take first IP
+        final String firstIp = noNewlines.split(",")[0].trim();
+        return firstIp.isEmpty() ? "[empty]" : firstIp;
     }
 
     /**

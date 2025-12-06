@@ -343,7 +343,16 @@ Security hardening introduced specialized test utilities:
 - JPA entity tests (`ContactEntityTest`, `TaskEntityTest`, `AppointmentEntityTest`) exercise protected constructors and setters for Hibernate proxies.
 - Legacy `InMemory*Store` suites assert the `Optional.empty` branch of `findById`.
 
-**Current metrics**: 1109 tests with 85% mutation kills and 90% line coverage (higher on stores/mappers).
+**Current metrics**: 1109 tests with 84% mutation kills and 90% line coverage (higher on stores/mappers).
+
+---
+
+## Known Tech Debt
+
+| Item | Description | Rationale |
+|------|-------------|-----------|
+| **Date API Mixing** | `Appointment` uses `java.util.Date` while `Task` uses `java.time.LocalDate` | Original assignment specs required `Date` for Appointment; changing would break backward compatibility |
+| **Field Length Limits** | 10-char limits on Contact ID/Name are strict for real-world use | Per CS320 assignment requirements; production systems would need migration |
 
 ---
 

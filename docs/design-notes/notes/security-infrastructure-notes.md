@@ -126,6 +126,11 @@ public List<Contact> getAllContacts() {
 
 **Response**: HTTP 429 with `Retry-After` header and JSON error body.
 
+**X-Forwarded-For Handling**: When behind a proxy, the `X-Forwarded-For` header contains a comma-separated chain (`client, proxy1, proxy2`). The rate limiter extracts the **first IP** (original client) to prevent:
+- Invalid keys from concatenated IPs
+- Rate limit bypass via header manipulation
+- Log injection via CR/LF characters
+
 ## Request Tracing (ADR-0040)
 
 ### Filter Chain Order
