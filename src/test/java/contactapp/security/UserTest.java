@@ -2,6 +2,7 @@ package contactapp.security;
 
 import contactapp.domain.Validation;
 import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -224,9 +225,10 @@ class UserTest {
     @Test
     void testIdGetterReturnsAssignedValue() {
         User user = new User(VALID_USERNAME, VALID_EMAIL, VALID_PASSWORD, Role.USER);
-        user.setId(42L);
+        UUID testId = UUID.randomUUID();
+        user.setId(testId);
 
-        assertThat(user.getId()).isEqualTo(42L);
+        assertThat(user.getId()).isEqualTo(testId);
     }
 
     @Test

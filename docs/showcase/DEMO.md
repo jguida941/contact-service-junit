@@ -7,13 +7,19 @@ Quick reference for showcasing the project to recruiters.
 ## Quick Start
 
 ```bash
-# Start everything (backend + frontend)
-python scripts/dev_stack.py
+# Start everything (backend + frontend) - ONE COMMAND
+./cs dev
+
+# Or with persistent Postgres database
+./cs dev --db postgres
 
 # Access points:
 # - API: http://localhost:8080
 # - Swagger UI: http://localhost:8080/swagger-ui.html
 # - React UI: http://localhost:5173
+
+# Check service health
+./cs health
 ```
 
 ---
@@ -22,19 +28,15 @@ python scripts/dev_stack.py
 
 ```bash
 # Run full build with all quality gates
-mvn verify
+./cs test
 
-# View coverage report (90%+ coverage)
-open target/site/jacoco/index.html
+# Launch QA Dashboard (React app with all metrics)
+./cs qa-dashboard
 
-# View mutation report (84% mutation score)
-open target/pit-reports/index.html
-
-# View SpotBugs report
-open target/spotbugs.html
-
-# Launch QA Dashboard (React app)
-python scripts/serve_quality_dashboard.py
+# Or view individual reports:
+open target/site/jacoco/index.html      # 90% coverage
+open target/pit-reports/index.html      # 84% mutation score
+open target/spotbugs.html               # Static analysis
 ```
 
 ---
@@ -42,17 +44,17 @@ python scripts/serve_quality_dashboard.py
 ## Show Testing
 
 ```bash
-# Run all unit tests (930+ tests)
-mvn test
+# Run all quality checks (1109 tests)
+./cs test
 
-# Run integration tests with real PostgreSQL
-mvn verify -DskipITs=false
+# Quick tests only (skip mutation/fuzzing)
+./cs test --fast
 
-# Run mutation testing (proves test effectiveness)
-mvn pitest:mutationCoverage
-
-# Run API fuzzing (30,000+ generated requests)
-python scripts/api_fuzzing.py --start-app
+# Individual test types:
+./cs test --unit           # JUnit unit tests
+./cs test --integration    # Real PostgreSQL via Testcontainers
+./cs test --mutation       # PITest mutation testing
+./cs test --security       # API fuzzing (30,000+ requests)
 ```
 
 ---
@@ -86,20 +88,22 @@ curl -s http://localhost:8080/api/auth/csrf-token | jq
 ## Show Docker Deployment
 
 ```bash
-# Build and start full stack
-docker-compose up -d
+# Database management via CLI
+./cs db start      # Start Postgres container
+./cs db status     # Check database status
+./cs db logs       # View database logs
+./cs db stop       # Stop container (data persists)
+./cs db reset      # Reset database (destructive)
 
-# Check status
-docker-compose ps
+# Full production simulation
+./cs prod-local    # Build JAR + run with prod settings
 
-# View logs
-docker-compose logs -f app
-
-# Access pgAdmin (admin@contactapp.local / admin)
-open http://localhost:5050
+# Access pgAdmin (if using docker-compose directly)
+docker-compose up -d pgadmin
+open http://localhost:5050  # admin@contactapp.local / admin
 
 # Cleanup
-docker-compose down -v
+./cs db stop
 ```
 
 ---
@@ -123,12 +127,12 @@ git push origin main
 
 | Metric | Value |
 |--------|-------|
-| Test Classes | 89 |
-| Test Executions | 930+ |
-| Line Coverage | ~90% (80% enforced) |
-| Mutation Coverage | ~84% (70% enforced) |
-| ADRs | 49 |
-| Flyway Migrations | 11 |
+| Test Classes | 91 |
+| Test Executions | 1109 |
+| Line Coverage | 90% (80% enforced) |
+| Mutation Coverage | 84% (70% enforced) |
+| ADRs | 54 |
+| Flyway Migrations | 17 |
 | Quality Gates | 7 enforced |
 
 ---
@@ -137,7 +141,7 @@ git push origin main
 
 | What | File |
 |------|------|
-| Architecture Decisions | `docs/adrs/` (49 files) |
+| Architecture Decisions | `docs/adrs/` (54 ADRs) |
 | Security Config | `src/main/java/contactapp/security/SecurityConfig.java` |
 | Rate Limiting | `src/main/java/contactapp/config/RateLimitingFilter.java` |
 | Domain Validation | `src/main/java/contactapp/domain/Validation.java` |
@@ -155,7 +159,7 @@ git push origin main
 2. **Two-Layer Validation** - Bean validation at API, constructor validation in domain
 3. **Mutation Testing** - Proves tests catch bugs, not just execute code
 4. **Multi-tenant Security** - Per-user data isolation, JWT in httpOnly cookies
-5. **49 ADRs** - Every major decision documented with rationale
+5. **54 ADRs** - Every major decision documented with rationale
 6. **7 Quality Gates** - Enforced in CI, no exceptions
 
 ### "What security measures are implemented?"

@@ -26,7 +26,7 @@
 
 **API Endpoints**: Full CRUD at `/api/v1/projects`, enhanced `/api/v1/tasks` and `/api/v1/appointments` with query parameters for filtering by project, task, status, assignee, and due dates.
 
-**Test Coverage**: 1,026 total tests with comprehensive coverage across domain, persistence, service, and API layers for all implemented phases.
+**Test Coverage**: 1109 total tests with comprehensive coverage across domain, persistence, service, and API layers for all implemented phases.
 
 ## Context
 
@@ -272,8 +272,13 @@ CREATE INDEX idx_appointments_project_id ON appointments(project_id);
 
 **Domain Update**: `Task.java` - add field:
 ```java
-private Long assigneeId;  // FK to User (nullable = unassigned)
+private UUID assigneeId;  // FK to User (nullable = unassigned) - UUID per ADR-0052 Batch 2
 ```
+
+**Note on UUID Storage**: The domain uses `UUID` type for type safety, but the database column
+`assigned_to_user_id` is `BIGINT` (FK to users.id). The V16 migration adds a `uuid` column to
+the users table, and the mapper translates between the domain UUID and the database BIGINT FK.
+This allows existing user PKs to remain as auto-increment BIGINTs while exposing UUIDs in the API.
 
 **Migration V12**: `V12__add_assignee_to_tasks.sql`
 ```sql
@@ -286,10 +291,10 @@ CREATE INDEX idx_tasks_assigned_to_user_id ON tasks(assigned_to_user_id);
 ```
 
 **Service Updates**: `TaskService.java`
-- `assignTask(String taskId, Long userId)`
+- `assignTask(String taskId, UUID userId)` - UUID per ADR-0052 Batch 2
 - `unassignTask(String taskId)`
 - `getTasksAssignedToMe()` - current user
-- `getTasksAssignedTo(Long userId)` - for project owners/admins
+- `getTasksAssignedTo(UUID userId)` - for project owners/admins (UUID per ADR-0052 Batch 2)
 - `getTasksCreatedByMeAssignedToOthers()`
 
 **Access Control** - Visibility Rules:
@@ -456,12 +461,16 @@ All migrations use **additive-only changes**:
 | V11       | ALTER appointments ADD task_id, project_id FKs | No - nullable          | ✅ Complete |
 | V12       | ALTER tasks ADD assigned_to_user_id FK         | No - nullable          | ✅ Complete |
 | V13       | CREATE project_contacts junction table         | No - new table         | ✅ Complete |
+| V14       | ALTER appointments ADD archived column         | No - defaults to false | ✅ Complete |
+| V16       | Migrate users.id from BIGINT to UUID           | Yes - per ADR-0052     | ✅ Complete |
+| V17       | CREATE refresh_tokens table                    | No - new table         | ✅ Complete |
 
 **Key Points**:
 - All new columns are nullable or have sensible defaults (status='TODO', etc.)
 - Foreign keys use `ON DELETE SET NULL` to prevent cascading deletes of tasks/appointments
 - Existing records remain valid after each migration
-- No data transformations required
+- No data transformations required (except V16 UUID migration)
+- V16 is a breaking change (see ADR-0052) - forces re-authentication for all users
 
 ## Backward Compatibility
 
@@ -640,4 +649,5 @@ Phase 6: Contact-Project Linking           [✅ Complete 2025-12-02]
 - [ADR-0024](ADR-0024-persistence-implementation.md) - Persistence patterns
 - [ADR-0037](ADR-0037-user-entity-validation-and-tests.md) - User entity and validation
 - [ADR-0044](ADR-0044-optimistic-locking.md) - Optimistic locking with @Version
+- [ADR-0052](ADR-0052-production-auth-system.md) - User UUID standardization (referenced in Phase 5)
 - [Validation.java](../../src/main/java/contactapp/domain/Validation.java) - Centralized validation constants

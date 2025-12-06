@@ -21,11 +21,32 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`cs320-requirements/`](cs320-requirements/) | Original CS320 assignment requirements (contact, task, appointment specs). |
 | [`showcase/`](showcase/) | Project showcase materials for recruiters and portfolio. |
 | [`architecture/`](architecture/) | Feature design briefs (e.g., Task entity/service plan with Definition of Done). |
-| [`adrs/`](adrs/) | Architecture Decision Records: CS320 Foundation (ADR-0001-0049) + Jira Evolution (ADR-0050+). |
+| [`adrs/`](adrs/) | Architecture Decision Records: CS320 Foundation + Production Auth + Frontend fixes (ADR-0001-0053) + Jira Evolution (ADR-0054+). |
 | [`design-notes/`](design-notes/) | Personal design note hub with supporting explanations under `design-notes/notes/`. |
-| [`logs/`](logs/) | Changelog and backlog. |
+| [`logs/`](logs/) | Changelog, backlog, and code review reports. |
+| [`test-plan-sdlc-audit-v2.1.0.md`](test-plan-sdlc-audit-v2.1.0.md) | Comprehensive test plan and SDLC audit report (1109 tests, 90% coverage analysis). |
 | [`operations/`](operations/) | Operations documentation (Docker setup, Actuator endpoints, deployment guides). |
 | [`security-reviews/`](security-reviews/) | Security audit reports and vulnerability assessments. |
+
+## CLI Tool
+
+| Path | Purpose |
+|------|---------|
+| [`../cs`](../cs) | Shell shim entry point |
+| [`../scripts/cs_cli.py`](../scripts/cs_cli.py) | Main CLI implementation (typer-based) |
+| [`../scripts/runtime_env.py`](../scripts/runtime_env.py) | Environment configuration helpers |
+| [`design-notes/notes/clitool.md`](design-notes/notes/clitool.md) | CLI design document |
+
+> See [README CLI Tool section](../README.md#cli-tool) for usage.
+
+## Security
+
+| Path | Purpose |
+|------|---------|
+| [`adrs/ADR-0052-production-auth-system.md`](adrs/ADR-0052-production-auth-system.md) | Production-grade auth system (ADR) |
+| [`agents.md`](agents.md) | AI implementation runbook for ADR-0052 (batch execution guidance) |
+| [`security-reviews/`](security-reviews/) | Security audit reports |
+| [`../src/main/java/contactapp/security/`](../src/main/java/contactapp/security/) | JWT auth, User entity, SecurityConfig |
 
 ## Key Files
 
@@ -55,14 +76,17 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/domain/Task.java`](../src/main/java/contactapp/domain/Task.java) | Task domain object mirroring Contact-style validation (id/name/description). |
 | [`../src/main/java/contactapp/domain/Appointment.java`](../src/main/java/contactapp/domain/Appointment.java) | Appointment entity (id/date/description) with date-not-past validation. |
 | [`../src/main/java/contactapp/domain/Project.java`](../src/main/java/contactapp/domain/Project.java) | Project entity (id/name/description/status) with optional empty description (ADR-0045). |
-| [`../src/main/java/contactapp/domain/ProjectStatus.java`](../src/main/java/contactapp/domain/ProjectStatus.java) | ProjectStatus enum (ACTIVE, ON_HOLD, COMPLETED, CANCELLED) with display names. |
+| [`../src/main/java/contactapp/domain/ProjectStatus.java`](../src/main/java/contactapp/domain/ProjectStatus.java) | ProjectStatus enum (ACTIVE, ON_HOLD, COMPLETED, ARCHIVED) with display names. |
+| [`../src/main/java/contactapp/domain/TaskStatus.java`](../src/main/java/contactapp/domain/TaskStatus.java) | TaskStatus enum (TODO, IN_PROGRESS, DONE) for task workflow tracking. |
+| [`../src/main/java/contactapp/domain/ProjectContactConstraints.java`](../src/main/java/contactapp/domain/ProjectContactConstraints.java) | Constants defining project-contact relationship constraints (MAX_CONTACTS_PER_PROJECT, MAX_PROJECTS_PER_CONTACT). |
 | [`../src/main/java/contactapp/domain/Validation.java`](../src/main/java/contactapp/domain/Validation.java) | Shared helper with not-blank, length, 10-digit, and date-not-past checks. |
-| [`../src/test/java/contactapp/domain/ContactTest.java`](../src/test/java/contactapp/domain/ContactTest.java) | JUnit tests for Contact (+16 mutation tests: boundaries, copy independence). |
-| [`../src/test/java/contactapp/domain/TaskTest.java`](../src/test/java/contactapp/domain/TaskTest.java) | JUnit tests for Task (+13 mutation tests: boundaries, atomic updates). |
+| [`../src/test/java/contactapp/domain/ContactTest.java`](../src/test/java/contactapp/domain/ContactTest.java) | JUnit tests for Contact covering boundary validation and copy behavior. |
+| [`../src/test/java/contactapp/domain/TaskTest.java`](../src/test/java/contactapp/domain/TaskTest.java) | JUnit tests for Task covering validation and atomic updates. |
 | [`../src/test/java/contactapp/domain/AppointmentTest.java`](../src/test/java/contactapp/domain/AppointmentTest.java) | JUnit tests for Appointment entity validation and date rules. |
-| [`../src/test/java/contactapp/domain/ProjectTest.java`](../src/test/java/contactapp/domain/ProjectTest.java) | JUnit tests for Project (+19 mutation tests: empty description, status enum). |
+| [`../src/test/java/contactapp/domain/ProjectTest.java`](../src/test/java/contactapp/domain/ProjectTest.java) | JUnit tests for Project covering optional description and status validation. |
 | [`../src/test/java/contactapp/domain/ProjectStatusTest.java`](../src/test/java/contactapp/domain/ProjectStatusTest.java) | JUnit tests for ProjectStatus enum values and display names. |
-| [`../src/test/java/contactapp/domain/ValidationTest.java`](../src/test/java/contactapp/domain/ValidationTest.java) | Tests for validation helper (+14 mutation tests: boundaries, millisecond precision). |
+| [`../src/test/java/contactapp/domain/TaskStatusTest.java`](../src/test/java/contactapp/domain/TaskStatusTest.java) | JUnit tests for TaskStatus enum values (TODO, IN_PROGRESS, DONE). |
+| [`../src/test/java/contactapp/domain/ValidationTest.java`](../src/test/java/contactapp/domain/ValidationTest.java) | Tests for the shared validation helper (length, digits, date constraints). |
 
 ### Service Layer (`contactapp.service`)
 | Path | Description |
@@ -70,6 +94,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/service/ContactService.java`](../src/main/java/contactapp/service/ContactService.java) | @Service bean backed by the `ContactStore` abstraction (JPA + legacy fallback). |
 | [`../src/main/java/contactapp/service/TaskService.java`](../src/main/java/contactapp/service/TaskService.java) | Task service wired through `TaskStore`, retaining `getInstance()` compatibility. |
 | [`../src/main/java/contactapp/service/AppointmentService.java`](../src/main/java/contactapp/service/AppointmentService.java) | Appointment service using `AppointmentStore` with transactional CRUD methods. |
+| [`../src/main/java/contactapp/service/ProjectService.java`](../src/main/java/contactapp/service/ProjectService.java) | Project service with status filtering, contact linking, and per-user isolation (ADR-0045). |
 | [`../src/test/java/contactapp/service/ContactServiceTest.java`](../src/test/java/contactapp/service/ContactServiceTest.java) | Spring Boot test on the `integration` profile using Postgres via Testcontainers (Flyway applied), proving legacy `getInstance()` shares state with DI callers; annotated with `@Isolated` so Surefire doesn’t parallelize its singleton mutations. Tagged `legacy-singleton` for optional profile-based runs. |
 | [`../src/test/java/contactapp/service/TaskServiceTest.java`](../src/test/java/contactapp/service/TaskServiceTest.java) | Spring Boot test for TaskService on the `integration` profile (Postgres + Flyway via Testcontainers) including singleton-vs-DI behavior coverage; also marked `@Isolated` to avoid static collisions. Tagged `legacy-singleton` for optional profile-based runs. |
 | [`../src/test/java/contactapp/service/AppointmentServiceTest.java`](../src/test/java/contactapp/service/AppointmentServiceTest.java) | Spring Boot test for AppointmentService on the `integration` profile (Postgres + Flyway via Testcontainers) validating shared state with legacy singleton access, running in isolation for the same reason. Tagged `legacy-singleton` for optional profile-based runs. |
@@ -85,6 +110,12 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/test/java/contactapp/service/ContactServiceMutationTest.java`](../src/test/java/contactapp/service/ContactServiceMutationTest.java) | PIT mutation test kill coverage for ContactService (see ADR-0031). |
 | [`../src/test/java/contactapp/service/TaskServiceMutationTest.java`](../src/test/java/contactapp/service/TaskServiceMutationTest.java) | PIT mutation test kill coverage for TaskService. |
 | [`../src/test/java/contactapp/service/AppointmentServiceMutationTest.java`](../src/test/java/contactapp/service/AppointmentServiceMutationTest.java) | PIT mutation test kill coverage for AppointmentService. |
+| [`../src/test/java/contactapp/service/ProjectServiceTest.java`](../src/test/java/contactapp/service/ProjectServiceTest.java) | Spring Boot test for ProjectService (28 tests: CRUD, status filtering, contact linking) on Postgres via Testcontainers. |
+| [`../src/test/java/contactapp/service/ContactServiceValidationTest.java`](../src/test/java/contactapp/service/ContactServiceValidationTest.java) | Validation tests for ContactService boundary conditions and error messages. |
+| [`../src/test/java/contactapp/service/ProjectServiceValidationTest.java`](../src/test/java/contactapp/service/ProjectServiceValidationTest.java) | Validation tests for ProjectService boundary conditions and status constraints. |
+| [`../src/test/java/contactapp/service/TaskServiceValidationTest.java`](../src/test/java/contactapp/service/TaskServiceValidationTest.java) | Validation tests for TaskService boundary conditions and assignee constraints. |
+| [`../src/test/java/contactapp/service/TaskServiceFallbackTest.java`](../src/test/java/contactapp/service/TaskServiceFallbackTest.java) | Tests for TaskService fallback behavior when repositories are unavailable. |
+| [`../src/test/java/contactapp/service/TestCleanupUtility.java`](../src/test/java/contactapp/service/TestCleanupUtility.java) | Test utility for cleaning up test data between test runs. |
 
 ### Persistence Layer (`contactapp.persistence`)
 
@@ -96,10 +127,13 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/persistence/entity/AppointmentEntity.java`](../src/main/java/contactapp/persistence/entity/AppointmentEntity.java) | JPA entity for Appointment with id/date/description columns. |
 | [`../src/main/java/contactapp/persistence/entity/ProjectEntity.java`](../src/main/java/contactapp/persistence/entity/ProjectEntity.java) | JPA entity for Project with id/name/description/status columns and @Version for optimistic locking. |
 | [`../src/main/java/contactapp/persistence/entity/ProjectContactId.java`](../src/main/java/contactapp/persistence/entity/ProjectContactId.java) | Composite key for project-contact links (Serializable, equals/hashCode, JPA ctor). |
+| [`../src/main/java/contactapp/persistence/entity/ProjectContactEntity.java`](../src/main/java/contactapp/persistence/entity/ProjectContactEntity.java) | JPA entity for project-contact junction table with composite key and cascade. |
 | [`../src/test/java/contactapp/persistence/entity/ContactEntityTest.java`](../src/test/java/contactapp/persistence/entity/ContactEntityTest.java) | Entity tests ensuring protected constructors/setters support Hibernate proxies and PIT coverage. |
 | [`../src/test/java/contactapp/persistence/entity/TaskEntityTest.java`](../src/test/java/contactapp/persistence/entity/TaskEntityTest.java) | TaskEntity tests for Hibernate proxy support and setter coverage. |
 | [`../src/test/java/contactapp/persistence/entity/AppointmentEntityTest.java`](../src/test/java/contactapp/persistence/entity/AppointmentEntityTest.java) | AppointmentEntity tests for Hibernate proxy support and setter coverage. |
 | [`../src/test/java/contactapp/persistence/entity/ProjectContactIdTest.java`](../src/test/java/contactapp/persistence/entity/ProjectContactIdTest.java) | Tests the composite key equals/hashCode/setters to keep project-contact links addressable. |
+| [`../src/test/java/contactapp/persistence/entity/ProjectEntityTest.java`](../src/test/java/contactapp/persistence/entity/ProjectEntityTest.java) | ProjectEntity tests for Hibernate proxy support, setters, and status enum coverage. |
+| [`../src/test/java/contactapp/persistence/entity/ProjectContactEntityTest.java`](../src/test/java/contactapp/persistence/entity/ProjectContactEntityTest.java) | Tests for project-contact junction entity relationships and cascade behavior. |
 
 #### Mapper Components (`persistence.mapper`)
 | Path | Description |
@@ -111,6 +145,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/test/java/contactapp/persistence/mapper/ContactMapperTest.java`](../src/test/java/contactapp/persistence/mapper/ContactMapperTest.java) | Mapper unit tests ensuring conversions re-use domain validation. |
 | [`../src/test/java/contactapp/persistence/mapper/TaskMapperTest.java`](../src/test/java/contactapp/persistence/mapper/TaskMapperTest.java) | TaskMapper unit tests for domain-entity conversions. |
 | [`../src/test/java/contactapp/persistence/mapper/AppointmentMapperTest.java`](../src/test/java/contactapp/persistence/mapper/AppointmentMapperTest.java) | AppointmentMapper unit tests for domain-entity conversions. |
+| [`../src/test/java/contactapp/persistence/mapper/ProjectMapperTest.java`](../src/test/java/contactapp/persistence/mapper/ProjectMapperTest.java) | ProjectMapper unit tests for domain-entity conversions with status enum handling. |
 
 #### Repositories (`persistence.repository`)
 | Path | Description |
@@ -119,9 +154,12 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/persistence/repository/TaskRepository.java`](../src/main/java/contactapp/persistence/repository/TaskRepository.java) | Spring Data `JpaRepository<TaskEntity, Long>` with per-user query helpers and deprecated unscoped accessors. |
 | [`../src/main/java/contactapp/persistence/repository/AppointmentRepository.java`](../src/main/java/contactapp/persistence/repository/AppointmentRepository.java) | Spring Data `JpaRepository<AppointmentEntity, Long>` with `(appointment_id,user_id)` uniqueness helpers. |
 | [`../src/main/java/contactapp/persistence/repository/ProjectRepository.java`](../src/main/java/contactapp/persistence/repository/ProjectRepository.java) | Spring Data `JpaRepository<ProjectEntity, Long>` with per-user and status filtering query helpers. |
+| [`../src/main/java/contactapp/persistence/repository/ProjectContactRepository.java`](../src/main/java/contactapp/persistence/repository/ProjectContactRepository.java) | Spring Data repository for project-contact junction with find/delete by project or contact queries. |
 | [`../src/test/java/contactapp/persistence/repository/ContactRepositoryTest.java`](../src/test/java/contactapp/persistence/repository/ContactRepositoryTest.java) | `@DataJpaTest` slice for ContactRepository (H2 + Flyway). |
 | [`../src/test/java/contactapp/persistence/repository/TaskRepositoryTest.java`](../src/test/java/contactapp/persistence/repository/TaskRepositoryTest.java) | `@DataJpaTest` slice for TaskRepository (H2 + Flyway). |
 | [`../src/test/java/contactapp/persistence/repository/AppointmentRepositoryTest.java`](../src/test/java/contactapp/persistence/repository/AppointmentRepositoryTest.java) | `@DataJpaTest` slice for AppointmentRepository (H2 + Flyway). |
+| [`../src/test/java/contactapp/persistence/repository/ProjectRepositoryTest.java`](../src/test/java/contactapp/persistence/repository/ProjectRepositoryTest.java) | `@DataJpaTest` slice for ProjectRepository with status filtering tests. |
+| [`../src/test/java/contactapp/persistence/repository/ProjectContactRepositoryTest.java`](../src/test/java/contactapp/persistence/repository/ProjectContactRepositoryTest.java) | `@DataJpaTest` slice for ProjectContactRepository junction table operations. |
 
 #### Store Abstraction (`persistence.store`)
 | Path | Description |
@@ -130,18 +168,23 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/persistence/store/ContactStore.java`](../src/main/java/contactapp/persistence/store/ContactStore.java) | `DomainDataStore<Contact>` specialization for Contact persistence. |
 | [`../src/main/java/contactapp/persistence/store/TaskStore.java`](../src/main/java/contactapp/persistence/store/TaskStore.java) | `DomainDataStore<Task>` specialization for Task persistence. |
 | [`../src/main/java/contactapp/persistence/store/AppointmentStore.java`](../src/main/java/contactapp/persistence/store/AppointmentStore.java) | `DomainDataStore<Appointment>` specialization for Appointment persistence. |
+| [`../src/main/java/contactapp/persistence/store/ProjectStore.java`](../src/main/java/contactapp/persistence/store/ProjectStore.java) | `DomainDataStore<Project>` specialization for Project persistence with status filtering. |
 | [`../src/main/java/contactapp/persistence/store/JpaContactStore.java`](../src/main/java/contactapp/persistence/store/JpaContactStore.java) | JPA-backed `ContactStore` implementation using repository + mapper. |
 | [`../src/main/java/contactapp/persistence/store/JpaTaskStore.java`](../src/main/java/contactapp/persistence/store/JpaTaskStore.java) | JPA-backed `TaskStore` implementation using repository + mapper. |
 | [`../src/main/java/contactapp/persistence/store/JpaAppointmentStore.java`](../src/main/java/contactapp/persistence/store/JpaAppointmentStore.java) | JPA-backed `AppointmentStore` implementation using repository + mapper. |
 | [`../src/main/java/contactapp/persistence/store/InMemoryContactStore.java`](../src/main/java/contactapp/persistence/store/InMemoryContactStore.java) | In-memory `ContactStore` fallback for legacy/test scenarios. |
 | [`../src/main/java/contactapp/persistence/store/InMemoryTaskStore.java`](../src/main/java/contactapp/persistence/store/InMemoryTaskStore.java) | In-memory `TaskStore` fallback for legacy/test scenarios. |
 | [`../src/main/java/contactapp/persistence/store/InMemoryAppointmentStore.java`](../src/main/java/contactapp/persistence/store/InMemoryAppointmentStore.java) | In-memory `AppointmentStore` fallback for legacy/test scenarios. |
+| [`../src/main/java/contactapp/persistence/store/JpaProjectStore.java`](../src/main/java/contactapp/persistence/store/JpaProjectStore.java) | JPA-backed `ProjectStore` implementation with status filtering and contact linking. |
+| [`../src/main/java/contactapp/persistence/store/InMemoryProjectStore.java`](../src/main/java/contactapp/persistence/store/InMemoryProjectStore.java) | In-memory `ProjectStore` fallback for legacy/test scenarios. |
 | [`../src/test/java/contactapp/persistence/store/JpaContactStoreTest.java`](../src/test/java/contactapp/persistence/store/JpaContactStoreTest.java) | JpaContactStore unit tests verifying repository delegations and UnsupportedOperation guards. |
 | [`../src/test/java/contactapp/persistence/store/JpaTaskStoreTest.java`](../src/test/java/contactapp/persistence/store/JpaTaskStoreTest.java) | JpaTaskStore unit tests verifying repository delegations and UnsupportedOperation guards. |
 | [`../src/test/java/contactapp/persistence/store/JpaAppointmentStoreTest.java`](../src/test/java/contactapp/persistence/store/JpaAppointmentStoreTest.java) | JpaAppointmentStore unit tests verifying repository delegations and UnsupportedOperation guards. |
 | [`../src/test/java/contactapp/persistence/store/InMemoryContactStoreTest.java`](../src/test/java/contactapp/persistence/store/InMemoryContactStoreTest.java) | Regression tests proving the in-memory fallback stores keep defensive copies and delete semantics. |
 | [`../src/test/java/contactapp/persistence/store/InMemoryTaskStoreTest.java`](../src/test/java/contactapp/persistence/store/InMemoryTaskStoreTest.java) | InMemoryTaskStore tests for defensive copies and delete semantics. |
 | [`../src/test/java/contactapp/persistence/store/InMemoryAppointmentStoreTest.java`](../src/test/java/contactapp/persistence/store/InMemoryAppointmentStoreTest.java) | InMemoryAppointmentStore tests for defensive copies and delete semantics. |
+| [`../src/test/java/contactapp/persistence/store/JpaProjectStoreTest.java`](../src/test/java/contactapp/persistence/store/JpaProjectStoreTest.java) | JpaProjectStore unit tests (24 tests: CRUD, status filtering, per-user isolation). |
+| [`../src/test/java/contactapp/persistence/store/InMemoryProjectStoreTest.java`](../src/test/java/contactapp/persistence/store/InMemoryProjectStoreTest.java) | InMemoryProjectStore tests for non-Spring fallback scenarios. |
 
 ### API Layer (`contactapp.api`)
 | Path | Description |
@@ -161,21 +204,23 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/api/dto/AppointmentResponse.java`](../src/main/java/contactapp/api/dto/AppointmentResponse.java) | Appointment response DTO. |
 | [`../src/main/java/contactapp/api/dto/ProjectRequest.java`](../src/main/java/contactapp/api/dto/ProjectRequest.java) | Project request DTO with Bean Validation (name required, description optional). |
 | [`../src/main/java/contactapp/api/dto/ProjectResponse.java`](../src/main/java/contactapp/api/dto/ProjectResponse.java) | Project response DTO with status enum. |
+| [`../src/main/java/contactapp/api/dto/ProjectContactRequest.java`](../src/main/java/contactapp/api/dto/ProjectContactRequest.java) | Request DTO for linking contacts to projects with validation. |
 | [`../src/main/java/contactapp/api/dto/ErrorResponse.java`](../src/main/java/contactapp/api/dto/ErrorResponse.java) | Standard error response DTO. |
 | [`../src/main/java/contactapp/api/dto/LoginRequest.java`](../src/main/java/contactapp/api/dto/LoginRequest.java) | Login request DTO (username, password) with Bean Validation. |
 | [`../src/main/java/contactapp/api/dto/RegisterRequest.java`](../src/main/java/contactapp/api/dto/RegisterRequest.java) | Registration request DTO (username, email, password) with Bean Validation. |
 | [`../src/main/java/contactapp/api/dto/AuthResponse.java`](../src/main/java/contactapp/api/dto/AuthResponse.java) | Authentication response DTO (token, username, email, role, expiresIn). |
 | [`../src/main/java/contactapp/api/exception/ResourceNotFoundException.java`](../src/main/java/contactapp/api/exception/ResourceNotFoundException.java) | Exception for 404 Not Found responses. |
 | [`../src/main/java/contactapp/api/exception/DuplicateResourceException.java`](../src/main/java/contactapp/api/exception/DuplicateResourceException.java) | Exception for 409 Conflict responses. |
-| [`../src/test/java/contactapp/ContactControllerTest.java`](../src/test/java/contactapp/ContactControllerTest.java) | MockMvc integration tests for Contact API (30 tests). |
+| [`../src/test/java/contactapp/ContactControllerTest.java`](../src/test/java/contactapp/ContactControllerTest.java) | MockMvc integration tests for Contact API (CRUD/auth/validation). |
 | [`../src/test/java/contactapp/ContactControllerUnitTest.java`](../src/test/java/contactapp/ContactControllerUnitTest.java) | Unit tests verifying the `?all=true` ADMIN guard before delegating to the service. |
-| [`../src/test/java/contactapp/TaskControllerTest.java`](../src/test/java/contactapp/TaskControllerTest.java) | MockMvc integration tests for Task API (21 tests). |
-| [`../src/test/java/contactapp/AppointmentControllerTest.java`](../src/test/java/contactapp/AppointmentControllerTest.java) | MockMvc integration tests for Appointment API (20 tests). |
+| [`../src/test/java/contactapp/TaskControllerTest.java`](../src/test/java/contactapp/TaskControllerTest.java) | MockMvc integration tests for Task API (CRUD/auth/validation). |
+| [`../src/test/java/contactapp/AppointmentControllerTest.java`](../src/test/java/contactapp/AppointmentControllerTest.java) | MockMvc integration tests for Appointment API (CRUD/auth/validation). |
 | [`../src/test/java/contactapp/ProjectControllerUnitTest.java`](../src/test/java/contactapp/ProjectControllerUnitTest.java) | Unit tests proving the controller-level ADMIN guard blocks non-admin users before calling the service. |
 | [`../src/test/java/contactapp/AuthControllerTest.java`](../src/test/java/contactapp/AuthControllerTest.java) | MockMvc integration tests for Auth API (login, register, validation). |
 | [`../src/test/java/contactapp/AuthControllerUnitTest.java`](../src/test/java/contactapp/AuthControllerUnitTest.java) | Unit tests covering cookie extraction and helper logic that PIT flagged previously. |
-| [`../src/test/java/contactapp/GlobalExceptionHandlerTest.java`](../src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods (5 tests). |
-| [`../src/test/java/contactapp/CustomErrorControllerTest.java`](../src/test/java/contactapp/CustomErrorControllerTest.java) | Unit tests for CustomErrorController (17 tests). |
+| [`../src/test/java/contactapp/GlobalExceptionHandlerTest.java`](../src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods. |
+| [`../src/test/java/contactapp/CustomErrorControllerTest.java`](../src/test/java/contactapp/CustomErrorControllerTest.java) | Unit tests for CustomErrorController JSON responses. |
+| [`../src/test/java/contactapp/api/dto/AppointmentRequestTest.java`](../src/test/java/contactapp/api/dto/AppointmentRequestTest.java) | Bean validation tests for AppointmentRequest DTO (@FutureOrPresent, required fields). |
 
 ### Test Support Layer (`contactapp.support`)
 | Path | Description |
@@ -200,7 +245,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/main/java/contactapp/config/PiiMaskingConverter.java`](../src/main/java/contactapp/config/PiiMaskingConverter.java) | Logback converter that masks PII patterns in log output. |
 | [`../src/test/java/contactapp/config/JacksonConfigTest.java`](../src/test/java/contactapp/config/JacksonConfigTest.java) | Verifies the ObjectMapper bean rejects boolean/numeric coercion per ADR-0023. |
 | [`../src/test/java/contactapp/config/TomcatConfigTest.java`](../src/test/java/contactapp/config/TomcatConfigTest.java) | Ensures Tomcat customizer installs the JSON error valve and guards non-host parents. |
-| [`../src/test/java/contactapp/config/JsonErrorReportValveTest.java`](../src/test/java/contactapp/config/JsonErrorReportValveTest.java) | Unit tests for JsonErrorReportValve (17 tests). |
+| [`../src/test/java/contactapp/config/JsonErrorReportValveTest.java`](../src/test/java/contactapp/config/JsonErrorReportValveTest.java) | Unit tests for JsonErrorReportValve error wrapping. |
 | [`../src/test/java/contactapp/config/RateLimitingFilterTest.java`](../src/test/java/contactapp/config/RateLimitingFilterTest.java) | Unit tests for RateLimitingFilter (rate limit enforcement, retry-after headers, log sanitization, bucket reset paths). |
 | [`../src/test/java/contactapp/config/RequestLoggingFilterTest.java`](../src/test/java/contactapp/config/RequestLoggingFilterTest.java) | Tests covering masked IP/query logging, sanitization helpers, duration math, and enable/disable toggles. |
 | [`../src/test/java/contactapp/config/CorrelationIdFilterTest.java`](../src/test/java/contactapp/config/CorrelationIdFilterTest.java) | Ensures correlation IDs propagate across requests and MDC cleanup. |
@@ -208,20 +253,33 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/test/java/contactapp/config/PiiMaskingConverterTest.java`](../src/test/java/contactapp/config/PiiMaskingConverterTest.java) | Tests verifying log converter redacts phone/email patterns. |
 
 ### Security Layer (`contactapp.security`)
+
+> **ADR-0052 Complete (2025-12-06):** All phases implemented - UUID migration, JWT hardening, HTTPS setup, refresh tokens, token fingerprinting. 1109 tests pass.
+
 | Path | Description |
 |------|-------------|
-| [`../src/main/java/contactapp/security/User.java`](../src/main/java/contactapp/security/User.java) | User entity implementing `UserDetails` for Spring Security (see ADR-0037). |
+| [`../src/main/java/contactapp/security/User.java`](../src/main/java/contactapp/security/User.java) | User entity implementing `UserDetails` for Spring Security (UUID id, @JsonIgnore on password; see ADR-0037, ADR-0052). |
 | [`../src/main/java/contactapp/security/Role.java`](../src/main/java/contactapp/security/Role.java) | Role enum (`USER`, `ADMIN`) for authorization. |
-| [`../src/main/java/contactapp/security/UserRepository.java`](../src/main/java/contactapp/security/UserRepository.java) | Spring Data repository for User persistence with lookup methods. |
-| [`../src/main/java/contactapp/security/JwtService.java`](../src/main/java/contactapp/security/JwtService.java) | JWT token generation and validation service (HMAC-SHA256). |
-| [`../src/main/java/contactapp/security/JwtAuthenticationFilter.java`](../src/main/java/contactapp/security/JwtAuthenticationFilter.java) | Filter that validates JWT tokens from HttpOnly cookie first, then Authorization header fallback. |
-| [`../src/main/java/contactapp/security/SecurityConfig.java`](../src/main/java/contactapp/security/SecurityConfig.java) | Spring Security configuration (JWT auth, CookieCsrfTokenRepository for SPA routes with `SameSite=Lax`/secure inheritance, CORS, security headers). |
+| [`../src/main/java/contactapp/security/UserRepository.java`](../src/main/java/contactapp/security/UserRepository.java) | Spring Data repository for User persistence with UUID-based lookup methods. |
+| [`../src/main/java/contactapp/security/RefreshToken.java`](../src/main/java/contactapp/security/RefreshToken.java) | Refresh token entity with UUID PK, opaque token, expiry, revoked flag (ADR-0052 Phase B). |
+| [`../src/main/java/contactapp/security/RefreshTokenRepository.java`](../src/main/java/contactapp/security/RefreshTokenRepository.java) | Spring Data repository for refresh tokens with find/revoke/delete queries. |
+| [`../src/main/java/contactapp/security/RefreshTokenService.java`](../src/main/java/contactapp/security/RefreshTokenService.java) | Refresh token lifecycle: single-session model, token rotation, scheduled cleanup (ADR-0052 Phase B). |
+| [`../src/main/java/contactapp/security/TokenFingerprintService.java`](../src/main/java/contactapp/security/TokenFingerprintService.java) | Token fingerprinting: 50-byte generation, SHA-256 hashing, constant-time verification (ADR-0052 Phase C). |
+| [`../src/main/java/contactapp/security/JwtService.java`](../src/main/java/contactapp/security/JwtService.java) | JWT token generation and validation service (HMAC-SHA256, issuer/audience claims, 60s clock skew tolerance, fingerprint binding per ADR-0052). |
+| [`../src/main/java/contactapp/security/JwtAuthenticationFilter.java`](../src/main/java/contactapp/security/JwtAuthenticationFilter.java) | Filter that validates JWT tokens from HttpOnly cookie first, then Authorization header fallback. Verifies fingerprints when present (ADR-0052 Phase C). |
+| [`../src/main/java/contactapp/security/SpaCsrfTokenRequestHandler.java`](../src/main/java/contactapp/security/SpaCsrfTokenRequestHandler.java) | CSRF token handler for SPA double-submit cookie pattern with BREACH protection via XOR masking. |
+| [`../src/main/java/contactapp/security/CsrfCookieFilter.java`](../src/main/java/contactapp/security/CsrfCookieFilter.java) | Filter ensuring CSRF token cookie is set on every response for SPA clients. |
+| [`../src/main/java/contactapp/security/SecurityConfig.java`](../src/main/java/contactapp/security/SecurityConfig.java) | Spring Security configuration (JWT auth, CookieCsrfTokenRepository for SPA routes with `SameSite=Lax`/secure inheritance, CORS, security headers, AuthenticationEntryPoint for 401, AccessDeniedHandler for 403). |
 | [`../src/main/java/contactapp/security/CustomUserDetailsService.java`](../src/main/java/contactapp/security/CustomUserDetailsService.java) | `UserDetailsService` implementation loading users from repository. |
+| [`../src/main/java/contactapp/config/SchedulingConfig.java`](../src/main/java/contactapp/config/SchedulingConfig.java) | `@EnableScheduling` configuration for refresh token cleanup job. |
 | [`../src/test/java/contactapp/security/UserTest.java`](../src/test/java/contactapp/security/UserTest.java) | Unit tests for User entity validation (boundary, null/blank, role tests). |
-| [`../src/test/java/contactapp/security/JwtServiceTest.java`](../src/test/java/contactapp/security/JwtServiceTest.java) | Unit tests for JWT lifecycle (+9 mutation tests: expiration boundaries, refresh window, case sensitivity). |
-| [`../src/test/java/contactapp/security/JwtAuthenticationFilterTest.java`](../src/test/java/contactapp/security/JwtAuthenticationFilterTest.java) | Unit tests for JWT filter (missing cookie/header, invalid token, valid token). |
+| [`../src/test/java/contactapp/security/JwtServiceTest.java`](../src/test/java/contactapp/security/JwtServiceTest.java) | Unit tests for JWT lifecycle (+9 mutation tests: expiration boundaries, refresh window, case sensitivity, fingerprinting). |
+| [`../src/test/java/contactapp/security/JwtAuthenticationFilterTest.java`](../src/test/java/contactapp/security/JwtAuthenticationFilterTest.java) | Unit tests for JWT filter (missing cookie/header, invalid token, valid token, fingerprint verification). |
+| [`../src/test/java/contactapp/security/RefreshTokenServiceTest.java`](../src/test/java/contactapp/security/RefreshTokenServiceTest.java) | Unit tests for refresh token lifecycle (17 tests: creation, rotation, revocation, cleanup). |
 | [`../src/test/java/contactapp/security/CustomUserDetailsServiceTest.java`](../src/test/java/contactapp/security/CustomUserDetailsServiceTest.java) | Unit tests for user lookup and exception handling. |
-| [`../src/test/java/contactapp/security/WithMockAppUser.java`](../src/test/java/contactapp/security/WithMockAppUser.java) | Custom annotation for populating SecurityContext with real User instances in tests. |
+| [`../src/test/java/contactapp/security/SpaCsrfTokenRequestHandlerTest.java`](../src/test/java/contactapp/security/SpaCsrfTokenRequestHandlerTest.java) | Unit tests for SPA CSRF handler (cookie persistence, SameSite attribute, parameter resolution). |
+| [`../src/test/java/contactapp/security/TokenFingerprintServiceTest.java`](../src/test/java/contactapp/security/TokenFingerprintServiceTest.java) | Unit tests for token fingerprinting (generation, hashing, constant-time verification). |
+| [`../src/test/java/contactapp/security/WithMockAppUser.java`](../src/test/java/contactapp/security/WithMockAppUser.java) | Custom annotation for populating SecurityContext with real User instances in tests. Uses UUID string for `id` parameter. |
 | [`../src/test/java/contactapp/security/WithMockAppUserSecurityContextFactory.java`](../src/test/java/contactapp/security/WithMockAppUserSecurityContextFactory.java) | SecurityContextFactory creating concrete User entities for @WithMockAppUser annotation. |
 | [`../src/test/java/contactapp/security/TestUserSetup.java`](../src/test/java/contactapp/security/TestUserSetup.java) | Test utility component for database persistence and SecurityContext setup of authenticated users; clears stale auth and recreates the seed user if missing to keep FK-backed tests stable. |
 
@@ -280,6 +338,8 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../ui/contact-app/src/lib/api.ts`](../ui/contact-app/src/lib/api.ts) | Typed fetch wrapper handling HttpOnly cookie auth, credentialed CORS/CSRF headers, and sessionStorage-backed user/profile caching. |
 | [`../ui/contact-app/src/lib/schemas.ts`](../ui/contact-app/src/lib/schemas.ts) | Zod schemas matching backend Validation.java constants. |
 | [`../ui/contact-app/src/lib/utils.ts`](../ui/contact-app/src/lib/utils.ts) | `cn()` utility for class name merging. |
+| [`../ui/contact-app/src/lib/dateUtils.ts`](../ui/contact-app/src/lib/dateUtils.ts) | Timezone-safe date formatting using date-fns `parseISO()` to prevent date shift bugs in negative UTC offsets (see ADR-0053). |
+| [`../ui/contact-app/src/lib/dateUtils.test.ts`](../ui/contact-app/src/lib/dateUtils.test.ts) | Timezone regression tests ensuring dates don't shift backwards by one day. |
 
 #### Configuration
 | Path | Description |
@@ -296,10 +356,10 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 |------|-------------|
 | [`../ui/contact-app/src/test/setup.ts`](../ui/contact-app/src/test/setup.ts) | Test setup for Vitest (jest-dom, mocks). |
 | [`../ui/contact-app/src/test/test-utils.tsx`](../ui/contact-app/src/test/test-utils.tsx) | Custom render with providers (QueryClient, Router). |
-| [`../ui/contact-app/src/lib/schemas.test.ts`](../ui/contact-app/src/lib/schemas.test.ts) | Zod schema validation tests (10 tests). |
-| [`../ui/contact-app/src/components/forms/ContactForm.test.tsx`](../ui/contact-app/src/components/forms/ContactForm.test.tsx) | ContactForm component tests (6 tests). |
-| [`../ui/contact-app/src/pages/ContactsPage.test.tsx`](../ui/contact-app/src/pages/ContactsPage.test.tsx) | ContactsPage component tests (6 tests). |
-| [`../ui/contact-app/e2e/contacts.spec.ts`](../ui/contact-app/e2e/contacts.spec.ts) | Playwright E2E tests for Contacts CRUD (5 tests). |
+| [`../ui/contact-app/src/lib/schemas.test.ts`](../ui/contact-app/src/lib/schemas.test.ts) | Zod schema validation tests. |
+| [`../ui/contact-app/src/components/forms/ContactForm.test.tsx`](../ui/contact-app/src/components/forms/ContactForm.test.tsx) | ContactForm component tests. |
+| [`../ui/contact-app/src/pages/ContactsPage.test.tsx`](../ui/contact-app/src/pages/ContactsPage.test.tsx) | ContactsPage component tests. |
+| [`../ui/contact-app/e2e/contacts.spec.ts`](../ui/contact-app/e2e/contacts.spec.ts) | Playwright E2E tests for Contacts CRUD. |
 
 ### Build & Configuration
 | Path | Description |
@@ -313,7 +373,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`architecture/2025-11-19-task-entity-and-service.md`](architecture/2025-11-19-task-entity-and-service.md) | Task entity/service plan with Definition of Done and phase breakdown. |
 | [`architecture/2025-11-24-appointment-entity-and-service.md`](architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record. |
 | [`architecture/threat-model.md`](architecture/threat-model.md) | End-to-end threat model (assets, trust zones, mitigations, residual risks). |
-| [`adrs/README.md`](adrs/README.md) | ADR index: CS320 Foundation (ADR-0001-0049) complete + Jira Evolution (ADR-0050+) planned phases. |
+| [`adrs/README.md`](adrs/README.md) | ADR index: CS320 Foundation + Production Auth + Frontend fixes (ADR-0001-0053) complete + Jira Evolution (ADR-0054+) planned phases. |
 | [`design-notes/README.md`](design-notes/README.md) | Landing page for informal design notes (individual topics in `design-notes/notes/`). |
 | [`logs/backlog.md`](logs/backlog.md) | Backlog for reporting and domain enhancements. |
 | [`logs/CHANGELOG.md`](logs/CHANGELOG.md) | Project changelog. |

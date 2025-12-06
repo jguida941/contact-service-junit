@@ -50,7 +50,17 @@ public class InMemoryContactStore implements ContactStore {
         return contact == null ? Optional.empty() : Optional.of(contact.copy());
     }
 
+    /**
+     * Returns all contacts without user filtering.
+     *
+     * @deprecated Since 1.0, will be removed in 2.0. This method bypasses user isolation
+     *             and returns all records regardless of ownership. Use
+     *             {@link #findAllByUserId(Long)} for user-scoped queries instead.
+     *             See ADR-0054 M-8 for security rationale.
+     * @return all contacts in the store
+     */
     @Override
+    @Deprecated(since = "1.0", forRemoval = true)
     public List<Contact> findAll() {
         final List<Contact> contacts = new ArrayList<>();
         database.values().forEach(contact -> contacts.add(contact.copy()));

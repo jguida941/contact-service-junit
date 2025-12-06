@@ -50,7 +50,17 @@ public class InMemoryProjectStore implements ProjectStore {
         return project == null ? Optional.empty() : Optional.of(project.copy());
     }
 
+    /**
+     * Returns all projects without user filtering.
+     *
+     * @deprecated Since 1.0, will be removed in 2.0. This method bypasses user isolation
+     *             and returns all records regardless of ownership. Use
+     *             {@link #findAllByUserId(Long)} for user-scoped queries instead.
+     *             See ADR-0054 M-8 for security rationale.
+     * @return all projects in the store
+     */
     @Override
+    @Deprecated(since = "1.0", forRemoval = true)
     public List<Project> findAll() {
         final List<Project> projects = new ArrayList<>();
         database.values().forEach(project -> projects.add(project.copy()));

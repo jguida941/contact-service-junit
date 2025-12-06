@@ -337,6 +337,9 @@ public class AppointmentService {
     /**
      * Returns all appointments associated with the specified project for the authenticated user.
      *
+     * <p>Uses database-level filtering via {@code findByProjectId(projectId, user)} query for optimal
+     * performance instead of in-memory filtering.
+     *
      * @param projectId the project ID to filter by
      * @return list of appointments for the specified project
      * @throws IllegalArgumentException if projectId is null or blank
@@ -349,12 +352,12 @@ public class AppointmentService {
         if (store instanceof JpaAppointmentStore) {
             final JpaAppointmentStore jpaStore = (JpaAppointmentStore) store;
             final User currentUser = getCurrentUser();
-            return jpaStore.findAll(currentUser).stream()
-                    .filter(appointment -> trimmedProjectId.equals(appointment.getProjectId()))
+            return jpaStore.findByProjectId(trimmedProjectId, currentUser).stream()
                     .map(Appointment::copy)
                     .toList();
         }
 
+        // Fallback for legacy in-memory store (uses in-memory filtering)
         return store.findAll().stream()
                 .filter(appointment -> trimmedProjectId.equals(appointment.getProjectId()))
                 .map(Appointment::copy)
@@ -363,6 +366,9 @@ public class AppointmentService {
 
     /**
      * Returns all appointments associated with the specified task for the authenticated user.
+     *
+     * <p>Uses database-level filtering via {@code findByTaskId(taskId, user)} query for optimal
+     * performance instead of in-memory filtering.
      *
      * @param taskId the task ID to filter by
      * @return list of appointments for the specified task
@@ -376,16 +382,86 @@ public class AppointmentService {
         if (store instanceof JpaAppointmentStore) {
             final JpaAppointmentStore jpaStore = (JpaAppointmentStore) store;
             final User currentUser = getCurrentUser();
-            return jpaStore.findAll(currentUser).stream()
-                    .filter(appointment -> trimmedTaskId.equals(appointment.getTaskId()))
+            return jpaStore.findByTaskId(trimmedTaskId, currentUser).stream()
                     .map(Appointment::copy)
                     .toList();
         }
 
+        // Fallback for legacy in-memory store (uses in-memory filtering)
         return store.findAll().stream()
                 .filter(appointment -> trimmedTaskId.equals(appointment.getTaskId()))
                 .map(Appointment::copy)
                 .toList();
+    }
+
+    /**
+     * Archives an appointment by setting its archived flag to true.
+     *
+     * @param appointmentId the id of the appointment to archive
+     * @return true if the appointment exists and was archived, false if not found
+     * @throws IllegalArgumentException if appointmentId is null or blank
+     */
+    public boolean archiveAppointment(final String appointmentId) {
+        final String normalizedId = normalizeAndValidateId(appointmentId);
+
+        if (store instanceof JpaAppointmentStore) {
+            final JpaAppointmentStore jpaStore = (JpaAppointmentStore) store;
+            final User currentUser = getCurrentUser();
+
+            final Optional<Appointment> appointment = jpaStore.findById(normalizedId, currentUser);
+            if (appointment.isEmpty()) {
+                return false;
+            }
+            final Appointment existing = appointment.get();
+            existing.setArchived(true);
+            jpaStore.save(existing, currentUser);
+            return true;
+        }
+
+        // Fallback for legacy in-memory store
+        final Optional<Appointment> appointment = store.findById(normalizedId);
+        if (appointment.isEmpty()) {
+            return false;
+        }
+        final Appointment existing = appointment.get();
+        existing.setArchived(true);
+        store.save(existing);
+        return true;
+    }
+
+    /**
+     * Unarchives an appointment by setting its archived flag to false.
+     *
+     * @param appointmentId the id of the appointment to unarchive
+     * @return true if the appointment exists and was unarchived, false if not found
+     * @throws IllegalArgumentException if appointmentId is null or blank
+     */
+    public boolean unarchiveAppointment(final String appointmentId) {
+        final String normalizedId = normalizeAndValidateId(appointmentId);
+
+        if (store instanceof JpaAppointmentStore) {
+            final JpaAppointmentStore jpaStore = (JpaAppointmentStore) store;
+            final User currentUser = getCurrentUser();
+
+            final Optional<Appointment> appointment = jpaStore.findById(normalizedId, currentUser);
+            if (appointment.isEmpty()) {
+                return false;
+            }
+            final Appointment existing = appointment.get();
+            existing.setArchived(false);
+            jpaStore.save(existing, currentUser);
+            return true;
+        }
+
+        // Fallback for legacy in-memory store
+        final Optional<Appointment> appointment = store.findById(normalizedId);
+        if (appointment.isEmpty()) {
+            return false;
+        }
+        final Appointment existing = appointment.get();
+        existing.setArchived(false);
+        store.save(existing);
+        return true;
     }
 
     void clearAllAppointments() {

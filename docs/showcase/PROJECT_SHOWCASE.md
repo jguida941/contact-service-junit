@@ -6,14 +6,14 @@
 
 ## Executive Summary
 
-This project is a **full-stack contact management application** built with enterprise-grade architecture patterns. It demonstrates professional software engineering practices including layered architecture, comprehensive testing (88% coverage, 84% mutation score), security hardening, and automated CI/CD pipelines.
+This project is a **full-stack contact management application** built with enterprise-grade architecture patterns. It demonstrates professional software engineering practices including layered architecture, comprehensive testing (90% coverage, 84% mutation score), security hardening, and automated CI/CD pipelines.
 
 **Key Metrics:**
-- **49 Architecture Decision Records** documenting engineering choices
-- **930+ test executions** across 83 test classes (79 unit + 4 integration)
-- **88% code coverage** (JaCoCo) with **84% mutation coverage** (PITest)
+- **54 Architecture Decision Records** documenting engineering choices
+- **1109 test executions** across the current unit and integration suites
+- **90% code coverage** (JaCoCo) with **84% mutation coverage** (PITest)
 - **7 enforced quality gates** in CI/CD pipeline
-- **13 Flyway migrations** with multi-tenant schema evolution
+- **17 Flyway migrations** (V1-V14, V16-V18) with multi-tenant schema evolution
 - **Multi-tenant security** with JWT authentication and per-user data isolation
 
 ---
@@ -25,8 +25,8 @@ This project is a **full-stack contact management application** built with enter
 ### Quick Wins to Discuss
 | What | Proof | Why It Matters |
 |------|-------|----------------|
-| **Architecture** | 49 ADRs, layered design | Shows system thinking, not just coding |
-| **Testing** | 88% coverage, 84% mutation score | Tests that actually catch bugs |
+| **Architecture** | 54 ADRs, layered design | Shows system thinking, not just coding |
+| **Testing** | 90% coverage, 84% mutation score | Tests that actually catch bugs |
 | **Security** | Rate limiting, JWT, CSRF, PII masking | Production-ready security mindset |
 | **DevOps** | 7 CI gates, 4-way build matrix | Automation and quality enforcement |
 
@@ -39,7 +39,7 @@ The result:
 2. **Week 3-4**: JWT auth with HttpOnly cookies after researching XSS prevention
 3. **Week 5-6**: Rate limiting when I realized auth endpoints could be brute-forced
 4. **Week 7-8**: Mutation testing to prove my tests actually work, not just execute
-5. **Ongoing**: 49 ADRs documenting every major decision with rationale
+5. **Ongoing**: 54 ADRs documenting every major decision with rationale
 
 **Key decision that shows engineering maturity**: When adding JWT authentication, I chose HttpOnly cookies over localStorage tokens. Why? ADR-0043 explains: localStorage is accessible to any JavaScript, making it vulnerable to XSS. HttpOnly cookies can't be read by scripts, adding defense-in-depth.
 
@@ -54,7 +54,7 @@ The result:
 | Language | **Java 17+** | Backend runtime |
 | Database | **PostgreSQL 16** | Production persistence |
 | ORM | **Spring Data JPA + Hibernate** | Object-relational mapping |
-| Migrations | **Flyway** | Schema versioning (13 migrations) |
+| Migrations | **Flyway** | Schema versioning (17 migrations) |
 | Security | **Spring Security 7** | Authentication & authorization |
 | Auth Tokens | **JWT (JJWT 0.13.0)** | Stateless authentication |
 | Rate Limiting | **Bucket4j + Caffeine** | API abuse prevention |
@@ -196,13 +196,21 @@ PITest injects faults (mutants) into the code and verifies tests fail. Current m
 
 ### Run Everything Locally
 
-```bash
-# Single command - starts backend + frontend
-python scripts/dev_stack.py
+**Prerequisites:** Docker Desktop must be running for PostgreSQL mode.
 
-# Or with PostgreSQL database
-python scripts/dev_stack.py --database postgres
+```bash
+# Recommended: PostgreSQL database (data persists across restarts)
+python3 scripts/dev_stack.py --database postgres
+
+# Quick demo mode: H2 in-memory (data lost on restart)
+python3 scripts/dev_stack.py
 ```
+
+This starts:
+- **Backend:** http://localhost:8080 (Spring Boot API)
+- **Frontend:** http://localhost:5173 (Vite dev server with hot reload)
+
+Press `Ctrl+C` to stop both servers.
 
 ### Build & Test
 
@@ -281,13 +289,13 @@ npm run dev
 
 ## Architecture Decision Records (ADRs)
 
-The project documents **49 ADRs** covering all major engineering decisions:
+The project documents **54 ADRs** covering all major engineering decisions:
 
 ### Categories
 
 | Category | ADRs | Examples |
 |----------|------|----------|
-| **Domain & Validation** | 3 | Centralized validation, atomic updates |
+| **Domain & Validation** | 4 | Centralized validation, atomic updates, reconstitution pattern |
 | **Quality Gates** | 6 | CI gates, mutation testing, test strategy |
 | **Backend Framework** | 7 | Spring Boot 4.0, JPA, Flyway |
 | **API Design** | 5 | REST conventions, error handling, fuzzing |
@@ -303,12 +311,13 @@ The project documents **49 ADRs** covering all major engineering decisions:
 - **ADR-0031**: Mutation Testing - PITest to validate test effectiveness
 - **ADR-0043**: HttpOnly Cookies - Migrate from localStorage to prevent XSS
 - **ADR-0048**: Testcontainers Optimization - Single container lifecycle (48x faster)
+- **ADR-0050**: Domain Reconstitution Pattern - Load past appointments/tasks without validation failures
 
 ---
 
 ## Database Schema
 
-### Flyway Migrations (13 total)
+### Flyway Migrations (17 total)
 
 | Version | Purpose |
 |---------|---------|
@@ -316,6 +325,9 @@ The project documents **49 ADRs** covering all major engineering decisions:
 | V4-V5 | Add users table and multi-tenant isolation |
 | V6-V7 | Surrogate keys and optimistic locking |
 | V8-V13 | Projects, task status, relationships |
+| V14 | Add archived flag to appointments |
+| V16-V17 | User UUID migration, refresh tokens |
+| V18 | Add archived flag to tasks |
 
 ### Entity Relationships
 
@@ -385,7 +397,7 @@ push/PR to main
 |----------|-----------|---------------|
 | Contacts | CRUD at `/contacts` | USER, ADMIN |
 | Tasks | CRUD at `/tasks` | USER, ADMIN |
-| Appointments | CRUD at `/appointments` | USER, ADMIN |
+| Appointments | CRUD at `/appointments` + archive/unarchive | USER, ADMIN |
 | Projects | CRUD at `/projects` | USER, ADMIN |
 
 ### Health & Monitoring
@@ -402,6 +414,7 @@ push/PR to main
 ### 1. Two-Layer Validation
 - **API Layer**: Bean Validation (`@NotBlank`, `@Size`) for fast feedback
 - **Domain Layer**: Constructor validation ensures objects are ALWAYS valid
+- **Reconstitution Pattern**: Separate code path for loading past appointments/tasks from database without validation failures
 
 ### 2. Atomic Updates
 ```java
@@ -437,6 +450,14 @@ Custom Logback converter masks sensitive data:
 - Phone: `555-123-4567` → `***-***-4567`
 - Address: `123 Main St, Boston MA` → `*** Boston MA`
 
+### 6. Temporal Data Handling
+Built-in lifecycle management for time-sensitive entities:
+- **Appointment.isPast()**: Detect appointments that have passed
+- **Appointment.archived**: Flag for organizing past appointments
+- **Task.isOverdue()**: Identify tasks past their due date
+- **Archive/Unarchive API**: Endpoints for managing appointment lifecycle
+- **Reconstitution Pattern**: Load past records from database without validation failures
+
 ---
 
 ## Technical Talking Points
@@ -445,10 +466,11 @@ Custom Logback converter masks sensitive data:
 - Layered architecture with clear separation of concerns
 - Domain-Driven Design principles (immutable entities, validation in constructors)
 - Repository pattern with Store abstraction for testability
-- Comprehensive ADR documentation (49 records)
+- Reconstitution pattern for loading temporal data from persistence
+- Comprehensive ADR documentation (53 records)
 
 ### Testing Excellence
-- 930+ test executions with 88% line coverage
+- 1109 test executions with 90% line coverage
 - Mutation testing validates test effectiveness (84% kill rate)
 - Integration tests with real PostgreSQL via Testcontainers
 - API fuzzing with 30,000+ generated requests
@@ -471,17 +493,20 @@ Custom Logback converter masks sensitive data:
 
 ### Demo 1: Quick Start (2 minutes)
 
+**Prerequisite:** Docker Desktop must be running.
+
 ```bash
-# Start backend + frontend with one command
-python scripts/dev_stack.py
+# Start backend + frontend with PostgreSQL (recommended)
+python3 scripts/dev_stack.py --database postgres
 ```
 
 **Access Points:**
-| Service | URL |
-|---------|-----|
-| REST API | http://localhost:8080 |
-| Swagger UI | http://localhost:8080/swagger-ui.html |
-| React UI | http://localhost:5173 |
+
+| Service      | URL                                   |
+|--------------|---------------------------------------|
+| REST API     | http://localhost:8080                 |
+| Swagger UI   | http://localhost:8080/swagger-ui.html |
+| React UI     | http://localhost:5173                 |
 | Health Check | http://localhost:8080/actuator/health |
 
 ---
@@ -508,7 +533,7 @@ python scripts/serve_quality_dashboard.py
 [INFO] All coverage checks have been met.
 [INFO] --- pitest:1.22.0:mutationCoverage (default) @ contact-suite ---
 >> Mutation score: 84%
->> Mutations killed: 160, Survived: 24
+>> Mutations killed: ~1100, Survived: ~210
 [INFO] BUILD SUCCESS
 ```
 
@@ -593,13 +618,13 @@ gh workflow run "Java CI"
 ### Demo 6: Run All Tests
 
 ```bash
-# Run unit tests (930+ tests)
+# Run unit tests (1109 tests)
 mvn test
 ```
 
 **Expected Output:**
 ```
-[INFO] Tests run: 930, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 1109, Failures: 0, Errors: 0, Skipped: 0
 [INFO] BUILD SUCCESS
 ```
 
@@ -812,14 +837,14 @@ API: http://localhost:8080/v3/api-docs
 
 ## Key Files to Reference
 
-| What | File Path |
-|------|-----------|
-| Security Config | `src/main/java/contactapp/security/SecurityConfig.java` |
-| Rate Limiting | `src/main/java/contactapp/config/RateLimitingFilter.java` |
-| Domain Validation | `src/main/java/contactapp/domain/Validation.java` |
-| CI Pipeline | `.github/workflows/java-ci.yml` |
-| API Fuzzing | `.github/workflows/api-fuzzing.yml` |
-| All 49 ADRs | `docs/adrs/` |
+| What              | File Path                                                 |
+|-------------------|-----------------------------------------------------------|
+| Security Config   | `src/main/java/contactapp/security/SecurityConfig.java`   |
+| Rate Limiting     | `src/main/java/contactapp/config/RateLimitingFilter.java` |
+| Domain Validation | `src/main/java/contactapp/domain/Validation.java`         |
+| CI Pipeline       | `.github/workflows/java-ci.yml`                           |
+| API Fuzzing       | `.github/workflows/api-fuzzing.yml`                       |
+| All 54 ADRs       | `docs/adrs/`                                              |
 
 ---
 
@@ -831,8 +856,9 @@ API: http://localhost:8080/v3/api-docs
 2. **Two-Layer Validation** - Bean validation at API, constructor validation in domain
 3. **Mutation Testing** - Proves tests catch bugs, not just execute code (84% kill rate)
 4. **Multi-tenant Security** - Per-user data isolation with JWT in httpOnly cookies
-5. **49 ADRs** - Every major decision documented with rationale
-6. **7 Quality Gates** - Enforced in CI, no exceptions allowed
+5. **Temporal Data Handling** - Reconstitution pattern manages past appointments/tasks gracefully
+6. **54 ADRs** - Every major decision documented with rationale
+7. **7 Quality Gates** - Enforced in CI, no exceptions allowed
 
 ### "What security measures are implemented?"
 
@@ -846,7 +872,7 @@ API: http://localhost:8080/v3/api-docs
 
 ### "How do you ensure code quality?"
 
-1. **88% line coverage** (JaCoCo, 80% enforced)
+1. **90% line coverage** (JaCoCo, 80% enforced)
 2. **84% mutation score** (PITest, 70% enforced)
 3. **SpotBugs** static analysis (zero findings required)
 4. **Checkstyle** (zero violations required)

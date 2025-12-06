@@ -1,6 +1,6 @@
 # Contact Suite - Project Summary
 
-> **Last Updated:** December 3, 2025
+> **Last Updated:** December 6, 2025
 
 ## Overview
 
@@ -10,15 +10,15 @@ Full-stack contact management application built with Spring Boot 4.0.0 and React
 
 | Metric | Value |
 |--------|-------|
-| Java Files | 170 |
-| Test Files | 79 |
-| Test Executions | 930 |
-| Line Coverage | ~90% |
-| Mutation Coverage | ~84% |
+| Java Files | 178 |
+| Test Files | 91 |
+| Test Executions | 1109 |
+| Line Coverage | 90% |
+| Mutation Coverage | 84% |
 | TypeScript Files | 56 |
-| ADRs | 48 |
-| Flyway Migrations | 11 (V1-V13) |
-| Design Notes | 23 |
+| ADRs | 54 |
+| Flyway Migrations | 17 (V1-V14, V16-V18) |
+| Design Notes | 26 |
 
 ## Tech Stack
 
@@ -67,6 +67,8 @@ src/main/java/contactapp/
 | V2 | Create tasks table |
 | V3 | Create appointments table |
 | V4 | Create users table |
+| V5 | Add user_id foreign keys to contacts/tasks/appointments |
+| V6 | Add surrogate numeric keys and uniqueness constraints |
 | V7 | Add version columns (optimistic locking) |
 | V8 | Create projects table |
 | V9 | Enhance tasks with status and due date |
@@ -74,6 +76,10 @@ src/main/java/contactapp/
 | V11 | Add project/task links to appointments |
 | V12 | Add assignee to tasks |
 | V13 | Create project_contacts junction table |
+| V14 | Add archived flag to appointments |
+| V16 | Migrate users to UUID identifiers |
+| V17 | Create refresh tokens table |
+| V18 | Add archived flag to tasks |
 
 ## Quality Gates
 
@@ -138,7 +144,7 @@ mvn -Ddependency.check.skip=true -Dpit.skip=true verify
 
 ## Recent Changes
 
-- README cleanup: fixed stale metrics (930 tests, 84% mutation, 90% coverage)
+- Updated metrics to latest reports (1109 tests, 90% line coverage, 85% mutation)
 - Removed duplicate sections (React UI, Testcontainers Strategy)
 - Added 7 design-notes reference docs
 - Fixed docs/CI-CD link case sensitivity (git tracked as CI-CD, not ci-cd)

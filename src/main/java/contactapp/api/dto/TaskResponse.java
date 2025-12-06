@@ -5,6 +5,7 @@ import contactapp.domain.TaskStatus;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Response DTO for Task data returned by the API.
@@ -21,6 +22,8 @@ import java.util.Objects;
  * @param assigneeId  the assignee user ID (nullable)
  * @param createdAt   timestamp when the task was created
  * @param updatedAt   timestamp when the task was last updated
+ * @param isOverdue   true if the task has a due date that is in the past
+ * @param archived    true if the task is archived
  */
 public record TaskResponse(
         String id,
@@ -29,9 +32,11 @@ public record TaskResponse(
         TaskStatus status,
         LocalDate dueDate,
         String projectId,
-        Long assigneeId,
+        UUID assigneeId,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        boolean isOverdue,
+        boolean archived
 ) {
     /**
      * Creates a TaskResponse from a Task domain object.
@@ -51,7 +56,9 @@ public record TaskResponse(
                 task.getProjectId(),
                 task.getAssigneeId(),
                 task.getCreatedAt(),
-                task.getUpdatedAt()
+                task.getUpdatedAt(),
+                task.isOverdue(),
+                task.isArchived()
         );
     }
 }

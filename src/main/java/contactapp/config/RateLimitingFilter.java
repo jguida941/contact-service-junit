@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
@@ -57,7 +58,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * @see RateLimitConfig
  */
 @Component
+@Order(RateLimitingFilter.FILTER_ORDER)
 public class RateLimitingFilter extends OncePerRequestFilter {
+
+    /** Filter order: after CorrelationIdFilter (1), before RequestLoggingFilter (10). */
+    public static final int FILTER_ORDER = 5;
 
     private static final Logger logger = LoggerFactory.getLogger(RateLimitingFilter.class);
 
@@ -69,6 +74,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     private static final String LOGIN_KEY_PREFIX = "LOGIN:";
     private static final String REGISTER_KEY_PREFIX = "REGISTER:";
+    private static final String API_KEY_PREFIX = "API:";
 
     /**
      * Maximum number of unique IPs/users to track. Prevents memory exhaustion
@@ -134,13 +140,14 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                     createBucket(rateLimitConfig.getRegister()));
             logSafeValue("Rate limiting register request from IP: {}", clientIp);
         } else if (path.startsWith("/api/v1/")) {
-            // For authenticated endpoints, use username as key
+            // For authenticated endpoints, use prefixed username as key
             final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication != null && authentication.isAuthenticated()) {
-                rateLimitKey = authentication.getName();
+                final String username = authentication.getName();
+                rateLimitKey = API_KEY_PREFIX + username;
                 bucket = userBuckets.get(rateLimitKey, k ->
                         createBucket(rateLimitConfig.getApi()));
-                logSafeValue("Rate limiting API request from user: {}", rateLimitKey);
+                logSafeValue("Rate limiting API request from user: {}", username);
             }
         }
 

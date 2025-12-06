@@ -20,13 +20,13 @@ import org.springframework.security.test.context.support.WithSecurityContext;
  * @Test
  * @WithMockAppUser
  * void myTest() {
- *     // SecurityContext now has a real User with id=1, username="testuser"
+ *     // SecurityContext now has a real User with random UUID, username="testuser"
  * }
  *
  * @Test
- * @WithMockAppUser(username = "admin", role = Role.ADMIN)
+ * @WithMockAppUser(id = "550e8400-e29b-41d4-a716-446655440000", username = "admin", role = Role.ADMIN)
  * void adminTest() {
- *     // SecurityContext has an ADMIN user
+ *     // SecurityContext has an ADMIN user with specific UUID
  * }
  * }</pre>
  *
@@ -40,11 +40,11 @@ import org.springframework.security.test.context.support.WithSecurityContext;
 public @interface WithMockAppUser {
 
     /**
-     * The user ID for the mock user.
+     * The user ID for the mock user (UUID string format).
      *
-     * @return user ID (default 1L)
+     * @return user ID as UUID string (default random UUID per test)
      */
-    long id() default 1L;
+    String id() default "";
 
     /**
      * The username for the mock user.

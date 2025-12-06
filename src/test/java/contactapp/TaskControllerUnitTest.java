@@ -5,6 +5,7 @@ import contactapp.api.dto.TaskResponse;
 import contactapp.domain.Task;
 import contactapp.service.TaskService;
 import java.util.List;
+import java.util.UUID;
 import java.time.LocalDate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -94,13 +95,14 @@ class TaskControllerUnitTest {
 
     @Test
     void getAll_filtersByAssigneeId() {
-        when(taskService.getTasksByAssigneeId(42L)).thenReturn(List.of(
+        UUID testAssigneeId = UUID.randomUUID();
+        when(taskService.getTasksByAssigneeId(testAssigneeId)).thenReturn(List.of(
                 new Task("a-1", "Assigned", "Desc")));
 
         // Cover the assigneeId filter branch
-        final List<TaskResponse> responses = controller.getAll(false, null, null, false, null, 42L);
+        final List<TaskResponse> responses = controller.getAll(false, null, null, false, null, testAssigneeId);
 
-        verify(taskService).getTasksByAssigneeId(42L);
+        verify(taskService).getTasksByAssigneeId(testAssigneeId);
         assertThat(responses).singleElement().extracting(TaskResponse::id).isEqualTo("a-1");
     }
 

@@ -35,6 +35,7 @@ public final class Appointment {
     private String description;
     private String projectId;
     private String taskId;
+    private boolean archived;
 
 
     /**
@@ -203,22 +204,124 @@ public final class Appointment {
     }
 
     /**
+     * Returns whether this appointment is archived.
+     *
+     * @return true if archived, false otherwise
+     */
+    public boolean isArchived() {
+        return archived;
+    }
+
+    /**
+     * Sets the archived status of this appointment.
+     *
+     * @param archived true to archive, false to unarchive
+     */
+    public void setArchived(final boolean archived) {
+        this.archived = archived;
+    }
+
+    /**
+     * Returns whether this appointment's date is in the past.
+     *
+     * <p>Useful for UI to display visual indicators for past appointments.
+     *
+     * @return true if the appointment date is before the current time
+     */
+    public boolean isPast() {
+        return appointmentDate.before(new Date());
+    }
+
+    /**
      * Creates a defensive copy of this Appointment.
      *
-     * <p>Validates the source state, then reuses the public constructor so
-     * defensive copies and validation stay aligned.
+     * <p>Uses reconstitution to preserve existing appointments that may have past
+     * dates (appointments naturally become "past" over time).
      *
      * @return a new Appointment with the same field values
      * @throws IllegalArgumentException if internal state is corrupted
      */
     public Appointment copy() {
         validateCopySource(this);
-        return new Appointment(
+        return reconstitute(
                 this.appointmentId,
                 new Date(this.appointmentDate.getTime()),
                 this.description,
                 this.projectId,
-                this.taskId);
+                this.taskId,
+                this.archived);
+    }
+
+    /**
+     * Reconstitutes an Appointment from persistence without applying the "not in past" rule.
+     *
+     * <p>This factory method is used when loading existing appointments from the database.
+     * The "appointmentDate must not be in the past" rule only applies to NEW appointments;
+     * existing appointments naturally become "past" over time and should still be readable,
+     * archivable, and deletable.
+     *
+     * @param appointmentId   unique identifier (required, length 1-10)
+     * @param appointmentDate the appointment date (required, may be in the past for existing records)
+     * @param description     required description (length 1-50)
+     * @param projectId       associated project ID (optional, nullable)
+     * @param taskId          associated task ID (optional, nullable)
+     * @param archived        whether the appointment is archived
+     * @return the reconstituted Appointment
+     * @throws IllegalArgumentException if required fields are null or violate length constraints
+     */
+    public static Appointment reconstitute(
+            final String appointmentId,
+            final Date appointmentDate,
+            final String description,
+            final String projectId,
+            final String taskId,
+            final boolean archived) {
+        // Validate ID and description lengths, but NOT the past-date rule
+        final String validatedId = Validation.validateTrimmedLength(
+                appointmentId, "appointmentId", MIN_LENGTH, ID_MAX_LENGTH);
+        if (appointmentDate == null) {
+            throw new IllegalArgumentException("appointmentDate must not be null");
+        }
+        final String validatedDesc = Validation.validateTrimmedLength(
+                description, "description", MIN_LENGTH, DESCRIPTION_MAX_LENGTH);
+
+        // Use private constructor that bypasses past-date validation
+        return new Appointment(
+                validatedId,
+                new Date(appointmentDate.getTime()),
+                validatedDesc,
+                projectId != null ? projectId.trim() : null,
+                taskId != null ? taskId.trim() : null,
+                archived);
+    }
+
+    /**
+     * Private constructor for reconstitution that bypasses date validation.
+     *
+     * <p>This constructor is only called from {@link #reconstitute}, which handles
+     * loading existing appointments from the database. Since appointments naturally
+     * become "past" over time, we skip the "not in past" validation here.
+     *
+     * @param appointmentId   validated ID
+     * @param appointmentDate date (defensive copy already made by caller)
+     * @param description     validated description
+     * @param projectId       optional project ID
+     * @param taskId          optional task ID
+     * @param archived        archived status
+     */
+    private Appointment(
+            final String appointmentId,
+            final Date appointmentDate,
+            final String description,
+            final String projectId,
+            final String taskId,
+            final boolean archived) {
+        this.appointmentId = appointmentId;
+        this.appointmentDate = appointmentDate;
+        this.description = description;
+        this.projectId = projectId;
+        this.taskId = taskId;
+        this.archived = archived;
     }
 
     /**

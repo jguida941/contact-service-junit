@@ -14,6 +14,7 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -303,7 +304,7 @@ public class TaskService {
             final contactapp.domain.TaskStatus status,
             final java.time.LocalDate dueDate,
             final String projectId,
-            final Long assigneeId) {
+            final UUID assigneeId) {
         Validation.validateNotBlank(taskId, "taskId");
         final String normalizedId = taskId.trim();
 
@@ -512,6 +513,29 @@ public class TaskService {
     }
 
     /**
+     * Returns all tasks that have no project assigned for the authenticated user.
+     *
+     * <p>This corresponds to the query parameter {@code ?projectId=none} per ADR-0045.
+     *
+     * @return list of tasks with null projectId (unassigned to any project)
+     */
+    @Transactional(readOnly = true)
+    public List<Task> getUnassignedTasks() {
+        if (store instanceof JpaTaskStore) {
+            final JpaTaskStore jpaStore = (JpaTaskStore) store;
+            final User currentUser = getCurrentUser();
+            return jpaStore.findByProjectIdIsNull(currentUser).stream()
+                    .map(Task::copy)
+                    .toList();
+        }
+
+        return store.findAll().stream()
+                .filter(task -> task.getProjectId() == null)
+                .map(Task::copy)
+                .toList();
+    }
+
+    /**
      * Returns all tasks assigned to the specified user for the authenticated user.
      *
      * @param assigneeId the user ID to filter by
@@ -519,7 +543,7 @@ public class TaskService {
      * @throws IllegalArgumentException if assigneeId is null
      */
     @Transactional(readOnly = true)
-    public List<Task> getTasksByAssigneeId(final Long assigneeId) {
+    public List<Task> getTasksByAssigneeId(final UUID assigneeId) {
         if (assigneeId == null) {
             throw new IllegalArgumentException("assigneeId must not be null");
         }
@@ -568,6 +592,74 @@ public class TaskService {
                         && task.getStatus() != contactapp.domain.TaskStatus.DONE)
                 .map(Task::copy)
                 .toList();
+    }
+
+    /**
+     * Archives a task by ID for the authenticated user.
+     *
+     * @param taskId the ID of the task to archive
+     * @return Optional containing the archived task, or empty if not found
+     * @throws IllegalArgumentException if taskId is null or blank
+     */
+    public Optional<Task> archiveTask(final String taskId) {
+        Validation.validateNotBlank(taskId, "taskId");
+        final String trimmedId = taskId.trim();
+
+        if (store instanceof JpaTaskStore) {
+            final JpaTaskStore jpaStore = (JpaTaskStore) store;
+            final User currentUser = getCurrentUser();
+            final Optional<Task> task = jpaStore.findById(trimmedId, currentUser);
+            if (task.isEmpty()) {
+                return Optional.empty();
+            }
+            final Task existing = task.get();
+            existing.setArchived(true);
+            jpaStore.save(existing, currentUser);
+            return Optional.of(existing.copy());
+        }
+
+        final Optional<Task> task = store.findById(trimmedId);
+        if (task.isEmpty()) {
+            return Optional.empty();
+        }
+        final Task existing = task.get();
+        existing.setArchived(true);
+        store.save(existing);
+        return Optional.of(existing.copy());
+    }
+
+    /**
+     * Unarchives a task by ID for the authenticated user.
+     *
+     * @param taskId the ID of the task to unarchive
+     * @return Optional containing the unarchived task, or empty if not found
+     * @throws IllegalArgumentException if taskId is null or blank
+     */
+    public Optional<Task> unarchiveTask(final String taskId) {
+        Validation.validateNotBlank(taskId, "taskId");
+        final String trimmedId = taskId.trim();
+
+        if (store instanceof JpaTaskStore) {
+            final JpaTaskStore jpaStore = (JpaTaskStore) store;
+            final User currentUser = getCurrentUser();
+            final Optional<Task> task = jpaStore.findById(trimmedId, currentUser);
+            if (task.isEmpty()) {
+                return Optional.empty();
+            }
+            final Task existing = task.get();
+            existing.setArchived(false);
+            jpaStore.save(existing, currentUser);
+            return Optional.of(existing.copy());
+        }
+
+        final Optional<Task> task = store.findById(trimmedId);
+        if (task.isEmpty()) {
+            return Optional.empty();
+        }
+        final Task existing = task.get();
+        existing.setArchived(false);
+        store.save(existing);
+        return Optional.of(existing.copy());
     }
 
     void clearAllTasks() {

@@ -36,6 +36,7 @@ public class AppointmentMapper {
                 user);
         entity.setProjectId(domain.getProjectId());
         entity.setTaskId(domain.getTaskId());
+        entity.setArchived(domain.isArchived());
         return entity;
     }
 
@@ -55,6 +56,15 @@ public class AppointmentMapper {
                 "Use toEntity(Appointment, User) instead. This method requires a User parameter.");
     }
 
+    /**
+     * Converts an entity to a domain Appointment using reconstitution.
+     *
+     * <p>Uses {@link Appointment#reconstitute} to bypass the "not in past" validation,
+     * allowing existing appointments with past dates to be loaded successfully.
+     *
+     * @param entity the entity to convert
+     * @return the domain appointment, or null if entity is null
+     */
     public Appointment toDomain(final AppointmentEntity entity) {
         if (entity == null) {
             return null;
@@ -64,12 +74,13 @@ public class AppointmentMapper {
             throw new IllegalStateException("appointmentDate column must not be null");
         }
         final Date date = Date.from(persistedInstant);
-        return new Appointment(
+        return Appointment.reconstitute(
                 entity.getAppointmentId(),
                 date,
                 entity.getDescription(),
                 entity.getProjectId(),
-                entity.getTaskId());
+                entity.getTaskId(),
+                entity.isArchived());
     }
 
     /**
@@ -93,5 +104,6 @@ public class AppointmentMapper {
         target.setDescription(source.getDescription());
         target.setProjectId(source.getProjectId());
         target.setTaskId(source.getTaskId());
+        target.setArchived(source.isArchived());
     }
 }

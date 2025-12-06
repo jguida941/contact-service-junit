@@ -6,7 +6,11 @@
 [UserTest.java](../../src/test/java/contactapp/security/UserTest.java),
 [Validation.java](../../src/main/java/contactapp/domain/Validation.java),
 [ADR-0018](ADR-0018-authentication-and-authorization-model.md),
-[V4__create_users_table.sql](../../src/main/resources/db/migration/common/V4__create_users_table.sql)
+[ADR-0052](ADR-0052-production-auth-system.md) (User.id UUID migration),
+[V4__create_users_table.sql](../../src/main/resources/db/migration/common/V4__create_users_table.sql),
+[V16__users_uuid_id.sql](../../src/main/resources/db/migration/common/) (Postgres/H2 UUID migration)
+
+> **Update (2025-12-03):** User.id type changed from Long to UUID per ADR-0052 Phase 0.5. See V16 migration for data-preserving UUID conversion.
 
 ## Context
 - Phase 5 (Security + Observability) requires user authentication per ADR-0018.
@@ -53,7 +57,7 @@
 ```mermaid
 classDiagram
     class User {
-        -Long id
+        -UUID id
         -String username
         -String email
         -String password

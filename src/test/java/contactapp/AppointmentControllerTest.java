@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -383,6 +384,150 @@ class AppointmentControllerTest extends SecuredMockMvcTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
                         org.hamcrest.Matchers.containsString("description")));
+    }
+
+    // ==================== Archive/Unarchive Tests ====================
+
+    @Test
+    void archiveAppointment_exists_returns200() throws Exception {
+        createTestAppointment("arch-1", "Archive me");
+
+        mockMvc.perform(patch("/api/v1/appointments/arch-1/archive")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("arch-1"))
+                .andExpect(jsonPath("$.archived").value(true));
+    }
+
+    @Test
+    void archiveAppointment_notFound_returns404() throws Exception {
+        mockMvc.perform(patch("/api/v1/appointments/missing/archive")
+                        .with(csrf()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Appointment not found: missing"));
+    }
+
+    @Test
+    void unarchiveAppointment_exists_returns200() throws Exception {
+        createTestAppointment("unarch-1", "Archive then unarchive me");
+
+        // First archive
+        mockMvc.perform(patch("/api/v1/appointments/unarch-1/archive")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.archived").value(true));
+
+        // Then unarchive
+        mockMvc.perform(patch("/api/v1/appointments/unarch-1/unarchive")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("unarch-1"))
+                .andExpect(jsonPath("$.archived").value(false));
+    }
+
+    @Test
+    void unarchiveAppointment_notFound_returns404() throws Exception {
+        mockMvc.perform(patch("/api/v1/appointments/missing/unarchive")
+                        .with(csrf()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Appointment not found: missing"));
+    }
+
+    @Test
+    void archiveAppointment_alreadyArchived_remainsArchived() throws Exception {
+        createTestAppointment("dbl-arch", "Archive twice");
+
+        // Archive first time
+        mockMvc.perform(patch("/api/v1/appointments/dbl-arch/archive")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.archived").value(true));
+
+        // Archive again - should still succeed and remain archived
+        mockMvc.perform(patch("/api/v1/appointments/dbl-arch/archive")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.archived").value(true));
+    }
+
+    @Test
+    void unarchiveAppointment_notArchived_remainsUnarchived() throws Exception {
+        createTestAppointment("not-arch", "Never archived");
+
+        // Unarchive without archiving first - should still succeed
+        mockMvc.perform(patch("/api/v1/appointments/not-arch/unarchive")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.archived").value(false));
+    }
+
+    @Test
+    void archivedAppointment_stillRetrievableById() throws Exception {
+        createTestAppointment("get-arch", "Get after archive");
+
+        mockMvc.perform(patch("/api/v1/appointments/get-arch/archive")
+                        .with(csrf()))
+                .andExpect(status().isOk());
+
+        // Should still be retrievable
+        mockMvc.perform(get("/api/v1/appointments/get-arch"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("get-arch"))
+                .andExpect(jsonPath("$.archived").value(true));
+    }
+
+    @Test
+    void archivedAppointment_includedInGetAll() throws Exception {
+        createTestAppointment("list-arch", "Show in list when archived");
+
+        mockMvc.perform(patch("/api/v1/appointments/list-arch/archive")
+                        .with(csrf()))
+                .andExpect(status().isOk());
+
+        // Should still appear in list
+        mockMvc.perform(get("/api/v1/appointments"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("list-arch"))
+                .andExpect(jsonPath("$[0].archived").value(true));
+    }
+
+    @Test
+    void archivedAppointment_canBeDeleted() throws Exception {
+        createTestAppointment("del-arch", "Delete after archive");
+
+        mockMvc.perform(patch("/api/v1/appointments/del-arch/archive")
+                        .with(csrf()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(delete("/api/v1/appointments/del-arch")
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/appointments/del-arch"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void archivedAppointment_canBeUpdated() throws Exception {
+        createTestAppointment("upd-arch", "Update after archive");
+
+        mockMvc.perform(patch("/api/v1/appointments/upd-arch/archive")
+                        .with(csrf()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put("/api/v1/appointments/upd-arch")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.format("""
+                            {
+                                "id": "upd-arch",
+                                "appointmentDate": "%s",
+                                "description": "Updated while archived"
+                            }
+                            """, futureDate)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.description").value("Updated while archived"))
+                .andExpect(jsonPath("$.archived").value(true));
     }
 
     // ==================== Malformed JSON Test ====================

@@ -7,7 +7,7 @@
 ```
 Phase 0   ✅ Pre-API fixes (defensive copies, date validation)
 Phase 1   ✅ Spring Boot scaffold (layered packages, actuator, smoke tests)
-Phase 2   ✅ REST API + DTOs + OpenAPI (949 tests; PIT mutation 94% / 96%+ store coverage)
+Phase 2   ✅ REST API + DTOs + OpenAPI (1109 tests; PIT mutation 84% / 96%+ store coverage)
 Phase 2.5 ✅ API fuzzing in CI (Schemathesis 30,668 tests, ZAP-ready artifacts)
 Phase 3   ✅ Persistence (Spring Data JPA, Flyway, Postgres, Testcontainers)
 Phase 4   ✅ React UI (Vite + React 19 + Tailwind v4 + shadcn/ui, full CRUD, Maven-integrated)
@@ -26,6 +26,13 @@ Phase 3 note: legacy `getInstance()` access now reuses the Spring-managed proxie
 Phase 5 focus: End-to-end authentication/authorization, per-tenant data isolation, Docker/compose deployment with health probes, structured logging/metrics, rate limiting, threat modeling, and a documented ZAP baseline scan. See `docs/REQUIREMENTS.md` for the full checklist (JWT login, SPA-only CORS, security headers, bucket4j throttling, Prometheus/Actuator exposure, CI health checks, and runbook updates). The most recent hardening explicitly sets `SameSite=Lax` (plus inherits the secure-cookie flag) on the SPA-visible `XSRF-TOKEN` cookie so ZAP rule 10054 no longer fails.
 Test fixtures now reset stale SecurityContext entries and recreate the seed user when missing to prevent FK/unique collisions during singleton-sharing service tests.
 
+**ADR-0052 Production Auth System (Implemented 2025-12-06).** Complete production-grade authentication:
+- **Phase A (UUID Migration)**: User.id migrated from Long to UUID via V16 migration, Task.assigneeId updated
+- **Phase B (Refresh Tokens)**: RefreshToken entity, single-session model, token rotation, V17 migration
+- **Phase C (Token Fingerprinting)**: TokenFingerprintService with SHA-256 binding, OWASP sidejacking prevention
+- **Phase D (HTTPS Setup)**: `./cs setup-ssl` command, self-signed cert generation for dev
+- **Additional**: JWT claim hardening (issuer/audience), 60s clock skew tolerance, proper 401/403 separation
+
 **Project/Task Tracker Evolution (Phases 1-6 Complete - 2025-12-02).** ADR-0045 documents the evolution plan. All phases are complete and production-ready:
 - **Phase 1 (Project Entity)**: Full CRUD operations, status tracking, migration V8
 - **Phase 2 (Task Status/Due Date)**: Task workflow management with status/due dates, migration V9
@@ -34,7 +41,7 @@ Test fixtures now reset stale SecurityContext entries and recreate the seed user
 - **Phase 5 (Task Assignment)**: Team collaboration with task assignment and access control, migration V12
 - **Phase 6 (Contact-Project Linking)**: ✅ Stakeholder management via V13 junction table (complete 2025-12-02)
 
-Total test count: 930, PIT mutation ~83%, store coverage 96%+, mapper coverage 95%+.
+Total test count: 1109, PIT mutation 84%, store coverage 96%+, mapper coverage 95%+.
 
 CI note: Linux job runs the full suite with Testcontainers/Postgres; Windows job uses the `skip-testcontainers` profile to exercise service/controller suites on H2 (no Docker) while still reporting JaCoCo. Legacy `getInstance()` suites are tagged `legacy-singleton` and can be run separately via `mvn test -Plegacy-singleton`.
 

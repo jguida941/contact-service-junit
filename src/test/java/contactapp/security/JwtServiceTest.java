@@ -14,11 +14,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link JwtService} so PIT covers token generation/validation logic.
+ *
+ * <p>All tests use the fingerprint-aware {@code generateToken(UserDetails, String)}
+ * signature per ADR-0052 Phase C requirements. A test fingerprint hash is used since
+ * the actual fingerprint generation/verification is tested in TokenFingerprintServiceTest.
  */
 class JwtServiceTest {
 
     private JwtService jwtService;
     private UserDetails userDetails;
+
+    /** SHA-256 hash for testing fingerprint binding (64 hex chars). */
+    private static final String TEST_FINGERPRINT_HASH =
+            "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
 
     @BeforeEach
     void setUp() {
@@ -35,21 +43,21 @@ class JwtServiceTest {
 
     @Test
     void generateTokenContainsUsernameClaim() {
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         assertThat(jwtService.extractUsername(token)).isEqualTo("tester");
     }
 
     @Test
     void isTokenValidReturnsTrueForValidToken() {
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         assertThat(jwtService.isTokenValid(token, userDetails)).isTrue();
     }
 
     @Test
     void isTokenValidReturnsFalseForDifferentUser() {
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
         UserDetails otherUser = User.withUsername("other").password("ignored").roles("USER").build();
 
         assertThat(jwtService.isTokenValid(token, otherUser)).isFalse();
@@ -57,8 +65,9 @@ class JwtServiceTest {
 
     @Test
     void extractUsernameThrowsWhenTokenExpired() {
-        ReflectionTestUtils.setField(jwtService, "jwtExpiration", -1000L);
-        String token = jwtService.generateToken(userDetails);
+        // Set expiration to -61 seconds (beyond the 60-second clock skew tolerance)
+        ReflectionTestUtils.setField(jwtService, "jwtExpiration", -61000L);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         assertThatThrownBy(() -> jwtService.extractUsername(token))
                 .isInstanceOf(io.jsonwebtoken.ExpiredJwtException.class);
@@ -66,7 +75,7 @@ class JwtServiceTest {
 
     @Test
     void extractClaimReturnsCustomClaim() {
-        String token = jwtService.generateToken(Map.of("role", "ADMIN"), userDetails);
+        String token = jwtService.generateToken(Map.of("role", "ADMIN"), userDetails, TEST_FINGERPRINT_HASH);
 
         Object role = jwtService.extractClaim(token, claims -> claims.get("role"));
         assertThat(role).isEqualTo("ADMIN");
@@ -78,7 +87,7 @@ class JwtServiceTest {
         ReflectionTestUtils.setField(service, "secretKey", "plain-secret-key-that-is-long-enough-1234567890");
         ReflectionTestUtils.setField(service, "jwtExpiration", 1000L);
 
-        String token = service.generateToken(userDetails);
+        String token = service.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         assertThat(service.extractUsername(token)).isEqualTo("tester");
     }
@@ -88,7 +97,7 @@ class JwtServiceTest {
      */
     @Test
     void isTokenExpiredReturnsFalseForFreshToken() {
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         boolean expired = ReflectionTestUtils.invokeMethod(jwtService, "isTokenExpired", token);
 
@@ -100,7 +109,7 @@ class JwtServiceTest {
     @Test
     void isTokenEligibleForRefresh_returnsTrueForValidToken() {
         ReflectionTestUtils.setField(jwtService, "refreshWindow", 300000L); // 5 min
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         assertThat(jwtService.isTokenEligibleForRefresh(token, userDetails)).isTrue();
     }
@@ -110,7 +119,7 @@ class JwtServiceTest {
         // Create a token that will expire immediately
         ReflectionTestUtils.setField(jwtService, "jwtExpiration", 1L); // 1ms
         ReflectionTestUtils.setField(jwtService, "refreshWindow", 300000L); // 5 min
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         // Wait a tiny bit for it to expire
         try {
@@ -126,7 +135,7 @@ class JwtServiceTest {
     @Test
     void isTokenEligibleForRefresh_returnsFalseForDifferentUser() {
         ReflectionTestUtils.setField(jwtService, "refreshWindow", 300000L);
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
         UserDetails otherUser = User.withUsername("other").password("ignored").roles("USER").build();
 
         assertThat(jwtService.isTokenEligibleForRefresh(token, otherUser)).isFalse();
@@ -159,7 +168,7 @@ class JwtServiceTest {
     void isTokenValid_returnsFalseWhenTokenExpiredByOneMillisecond() {
         // Create a token with 1ms expiration so it expires almost immediately
         ReflectionTestUtils.setField(jwtService, "jwtExpiration", 1L);
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         // Wait for token to expire
         try {
@@ -188,7 +197,7 @@ class JwtServiceTest {
     void isTokenValid_returnsTrueWhenTokenNotExpired() {
         // Create a token with long expiration
         ReflectionTestUtils.setField(jwtService, "jwtExpiration", 3600000L); // 1 hour
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         // Token should be valid
         assertThat(jwtService.isTokenValid(token, userDetails)).isTrue();
@@ -213,7 +222,7 @@ class JwtServiceTest {
         ReflectionTestUtils.setField(jwtService, "refreshWindow", 1000L);
         // Create a token that expires in 1ms
         ReflectionTestUtils.setField(jwtService, "jwtExpiration", 1L);
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         // Wait exactly 1ms for expiration
         try {
@@ -244,7 +253,7 @@ class JwtServiceTest {
         ReflectionTestUtils.setField(jwtService, "refreshWindow", 1L);
         // Create a token that expires immediately
         ReflectionTestUtils.setField(jwtService, "jwtExpiration", 1L);
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         // Wait well beyond the refresh window
         try {
@@ -271,7 +280,7 @@ class JwtServiceTest {
      */
     @Test
     void isTokenValid_usesEqualsForUsernameComparison() {
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         // Create new UserDetails with same username but different object
         UserDetails sameUser = User.withUsername(new String("tester")) // Force new String object
@@ -302,7 +311,7 @@ class JwtServiceTest {
                 .password("ignored")
                 .roles("USER")
                 .build();
-        String token = jwtService.generateToken(user);
+        String token = jwtService.generateToken(user, TEST_FINGERPRINT_HASH);
 
         String extracted = jwtService.extractUsername(token);
 
@@ -355,7 +364,7 @@ class JwtServiceTest {
                 .password("ignored")
                 .roles("USER")
                 .build();
-        String token = jwtService.generateToken(user);
+        String token = jwtService.generateToken(user, TEST_FINGERPRINT_HASH);
 
         UserDetails differentCase = User.withUsername("testuser") // Different case
                 .password("ignored")
@@ -381,7 +390,7 @@ class JwtServiceTest {
     @Test
     void isTokenEligibleForRefresh_returnsFalseWhenUsernameDoesNotMatch() {
         ReflectionTestUtils.setField(jwtService, "refreshWindow", 300000L);
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
 
         UserDetails wrongUser = User.withUsername("wronguser")
                 .password("ignored")
@@ -390,5 +399,218 @@ class JwtServiceTest {
 
         // Should return false when username doesn't match
         assertThat(jwtService.isTokenEligibleForRefresh(token, wrongUser)).isFalse();
+    }
+
+    // ==================== Fingerprint Claim Tests ====================
+
+    /**
+     * Tests that generateToken with fingerprint hash includes the fph claim.
+     */
+    @Test
+    void generateToken_includesFingerprintClaim() {
+        String token = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
+
+        String extractedHash = jwtService.extractFingerprintHash(token);
+        assertThat(extractedHash).isEqualTo(TEST_FINGERPRINT_HASH);
+    }
+
+    /**
+     * Tests that generateToken with null fingerprint produces token without fph claim.
+     */
+    @Test
+    void generateToken_withNullFingerprint_producesTokenWithoutFphClaim() {
+        String token = jwtService.generateToken(userDetails, null);
+
+        String extractedHash = jwtService.extractFingerprintHash(token);
+        assertThat(extractedHash).isNull();
+    }
+
+    // ==================== Configuration Validation Tests ====================
+
+    /**
+     * Tests that validateConfiguration rejects null secret.
+     *
+     * <p><b>Why this test exists:</b> Ensures the application fails fast at startup
+     * when JWT secret is not configured, rather than failing at runtime.
+     */
+    @Test
+    void validateConfiguration_throwsWhenSecretIsNull() {
+        JwtService service = new JwtService();
+        ReflectionTestUtils.setField(service, "secretKey", null);
+
+        assertThatThrownBy(service::validateConfiguration)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("jwt.secret must be configured");
+    }
+
+    /**
+     * Tests that validateConfiguration rejects blank secret.
+     */
+    @Test
+    void validateConfiguration_throwsWhenSecretIsBlank() {
+        JwtService service = new JwtService();
+        ReflectionTestUtils.setField(service, "secretKey", "   ");
+
+        assertThatThrownBy(service::validateConfiguration)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("jwt.secret must be configured");
+    }
+
+    /**
+     * Tests that validateConfiguration rejects test secrets in production profile.
+     *
+     * <p><b>Why this test exists:</b> Ensures developers cannot accidentally deploy
+     * with the default test secret. The known test secret prefix is rejected
+     * when spring.profiles.active contains "prod".
+     */
+    @Test
+    void validateConfiguration_throwsForTestSecretInProdProfile() {
+        String originalProfile = System.getProperty("spring.profiles.active");
+        try {
+            System.setProperty("spring.profiles.active", "prod");
+
+            JwtService service = new JwtService();
+            // The known test secret prefix that should be rejected in prod
+            String testSecret = "dGVzdC1zZWNyZXQta2V5LWZvci1kZXZlbG9wbWVudC1vbmx5";
+            ReflectionTestUtils.setField(service, "secretKey", testSecret);
+
+            assertThatThrownBy(service::validateConfiguration)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Test JWT secret detected in production");
+        } finally {
+            if (originalProfile != null) {
+                System.setProperty("spring.profiles.active", originalProfile);
+            } else {
+                System.clearProperty("spring.profiles.active");
+            }
+        }
+    }
+
+    /**
+     * Tests that validateConfiguration accepts test secrets in non-prod profiles.
+     */
+    @Test
+    void validateConfiguration_allowsTestSecretInDevProfile() {
+        String originalProfile = System.getProperty("spring.profiles.active");
+        try {
+            System.setProperty("spring.profiles.active", "dev");
+
+            JwtService service = new JwtService();
+            // Use a test secret that is long enough (>= 32 bytes when decoded)
+            String testSecret = "dGVzdC1zZWNyZXQta2V5LWZvci1kZXZlbG9wbWVudC1vbmx5LWRvLW5vdC11c2UtaW4tcHJvZA==";
+            ReflectionTestUtils.setField(service, "secretKey", testSecret);
+
+            // Should not throw - test secrets allowed in dev
+            service.validateConfiguration();
+        } finally {
+            if (originalProfile != null) {
+                System.setProperty("spring.profiles.active", originalProfile);
+            } else {
+                System.clearProperty("spring.profiles.active");
+            }
+        }
+    }
+
+    /**
+     * Tests that validateConfiguration rejects secrets shorter than 32 bytes.
+     *
+     * <p><b>Why this test exists:</b> HMAC-SHA256 requires 256-bit (32-byte) keys
+     * for full security. Shorter keys may be vulnerable to brute-force attacks.
+     */
+    @Test
+    void validateConfiguration_throwsForShortSecret() {
+        JwtService service = new JwtService();
+        // Base64 encode a 16-byte (too short) secret
+        String shortSecret = Base64.getEncoder().encodeToString("short-secret-123".getBytes(StandardCharsets.UTF_8));
+        ReflectionTestUtils.setField(service, "secretKey", shortSecret);
+
+        assertThatThrownBy(service::validateConfiguration)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("at least 256 bits (32 bytes)");
+    }
+
+    /**
+     * Tests that validateConfiguration accepts 32-byte or longer secrets.
+     */
+    @Test
+    void validateConfiguration_acceptsValidLengthSecret() {
+        JwtService service = new JwtService();
+        // Exactly 32 bytes - minimum valid length (count the chars: 32)
+        String validSecret = Base64.getEncoder().encodeToString(
+                "exactly-32-bytes-long-secret-123".getBytes(StandardCharsets.UTF_8));
+        ReflectionTestUtils.setField(service, "secretKey", validSecret);
+
+        // Should not throw
+        service.validateConfiguration();
+    }
+
+    // ==================== Token Security Tests ====================
+
+    /**
+     * Tests that tampering with a token's payload invalidates it.
+     *
+     * <p><b>Why this test exists:</b> Ensures tokens cannot be modified without
+     * invalidating the signature. Even small changes should cause rejection.
+     */
+    @Test
+    void extractUsername_throwsForTamperedToken() {
+        String validToken = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
+
+        // Tamper with the payload (middle part of JWT)
+        String[] parts = validToken.split("\\.");
+        // Decode payload, modify, re-encode
+        String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+        String tamperedPayload = payload.replace("tester", "hacker");
+        String tamperedPayloadEncoded = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(tamperedPayload.getBytes(StandardCharsets.UTF_8));
+        String tamperedToken = parts[0] + "." + tamperedPayloadEncoded + "." + parts[2];
+
+        assertThatThrownBy(() -> jwtService.extractUsername(tamperedToken))
+                .isInstanceOf(io.jsonwebtoken.security.SignatureException.class);
+    }
+
+    /**
+     * Tests that tokens with invalid signatures are rejected.
+     *
+     * <p><b>Why this test exists:</b> Ensures tokens signed with a different key
+     * cannot be validated, even if the format is correct.
+     */
+    @Test
+    void extractUsername_throwsForInvalidSignature() {
+        String validToken = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
+
+        // Replace signature with garbage
+        String[] parts = validToken.split("\\.");
+        String invalidSignature = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString("invalid-signature-data".getBytes(StandardCharsets.UTF_8));
+        String tokenWithBadSignature = parts[0] + "." + parts[1] + "." + invalidSignature;
+
+        assertThatThrownBy(() -> jwtService.extractUsername(tokenWithBadSignature))
+                .isInstanceOf(io.jsonwebtoken.security.SignatureException.class);
+    }
+
+    /**
+     * Tests that malformed tokens are rejected.
+     */
+    @Test
+    void extractUsername_throwsForMalformedToken() {
+        assertThatThrownBy(() -> jwtService.extractUsername("not.a.valid.jwt"))
+                .isInstanceOf(io.jsonwebtoken.MalformedJwtException.class);
+    }
+
+    /**
+     * Verifies that tokens with correct issuer are accepted.
+     *
+     * <p><b>Why this test exists:</b> Confirms issuer claim is set correctly
+     * and tokens from this service are valid. Testing wrong issuer rejection
+     * would require a second JwtService instance with different configuration.
+     */
+    @Test
+    void extractUsername_succeedsForValidIssuer() {
+        String validToken = jwtService.generateToken(userDetails, TEST_FINGERPRINT_HASH);
+
+        // Token should have correct issuer and be valid
+        String username = jwtService.extractUsername(validToken);
+        assertThat(username).isEqualTo("tester");
     }
 }

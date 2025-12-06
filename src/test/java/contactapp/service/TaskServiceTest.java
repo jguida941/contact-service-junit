@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -694,32 +695,34 @@ public class TaskServiceTest {
 
     @Test
     void testUpdateTaskWithAssigneeId() {
+        UUID testAssigneeId = UUID.randomUUID();
         Task task = new Task("upd-03", "Original", "Desc", TaskStatus.TODO, null);
         service.addTask(task);
 
         boolean updated = service.updateTask("upd-03", "Assigned", "To user",
-                TaskStatus.TODO, null, null, 42L);
+                TaskStatus.TODO, null, null, testAssigneeId);
 
         assertThat(updated).isTrue();
         Task stored = service.getTaskById("upd-03").orElseThrow();
-        assertThat(stored.getAssigneeId()).isEqualTo(42L);
+        assertThat(stored.getAssigneeId()).isEqualTo(testAssigneeId);
     }
 
     @Test
     void testUpdateTaskWithAssigneeIdNotFound() {
         boolean updated = service.updateTask("nonexistent", "Name", "Desc",
-                TaskStatus.TODO, null, null, 1L);
+                TaskStatus.TODO, null, null, UUID.randomUUID());
         assertThat(updated).isFalse();
     }
 
     @Test
     void testUpdateTaskWithAllFields() {
         LocalDate dueDate = LocalDate.now().plusDays(14);
+        UUID testAssigneeId = UUID.randomUUID();
         Task task = new Task("upd-04", "Original", "Desc", TaskStatus.TODO, null);
         service.addTask(task);
 
         boolean updated = service.updateTask("upd-04", "Full Update", "All fields",
-                TaskStatus.DONE, dueDate, "proj-002", 99L);
+                TaskStatus.DONE, dueDate, "proj-002", testAssigneeId);
 
         assertThat(updated).isTrue();
         Task stored = service.getTaskById("upd-04").orElseThrow();
@@ -728,13 +731,13 @@ public class TaskServiceTest {
         assertThat(stored.getStatus()).isEqualTo(TaskStatus.DONE);
         assertThat(stored.getDueDate()).isEqualTo(dueDate);
         assertThat(stored.getProjectId()).isEqualTo("proj-002");
-        assertThat(stored.getAssigneeId()).isEqualTo(99L);
+        assertThat(stored.getAssigneeId()).isEqualTo(testAssigneeId);
     }
 
     @Test
     void testUpdateTaskWithBlankIdThrows_ExtendedOverload() {
         assertThatThrownBy(() -> service.updateTask("  ", "Name", "Desc",
-                TaskStatus.TODO, null, null, 1L))
+                TaskStatus.TODO, null, null, UUID.randomUUID()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("taskId must not be null or blank");
     }
@@ -845,12 +848,15 @@ public class TaskServiceTest {
 
     @Test
     void testGetTasksByAssigneeId() {
+        UUID user1Id = UUID.randomUUID();
+        UUID user2Id = UUID.randomUUID();
+
         Task t1 = new Task("asgn-t1", "User1 Task1", "Desc", TaskStatus.TODO, null);
-        t1.setAssigneeId(100L);
+        t1.setAssigneeId(user1Id);
         Task t2 = new Task("asgn-t2", "User1 Task2", "Desc", TaskStatus.TODO, null);
-        t2.setAssigneeId(100L);
+        t2.setAssigneeId(user1Id);
         Task t3 = new Task("asgn-t3", "User2 Task", "Desc", TaskStatus.TODO, null);
-        t3.setAssigneeId(200L);
+        t3.setAssigneeId(user2Id);
         Task t4 = new Task("asgn-t4", "Unassigned", "Desc", TaskStatus.TODO, null);
 
         service.addTask(t1);
@@ -858,8 +864,8 @@ public class TaskServiceTest {
         service.addTask(t3);
         service.addTask(t4);
 
-        var user1Tasks = service.getTasksByAssigneeId(100L);
-        var user2Tasks = service.getTasksByAssigneeId(200L);
+        var user1Tasks = service.getTasksByAssigneeId(user1Id);
+        var user2Tasks = service.getTasksByAssigneeId(user2Id);
 
         assertThat(user1Tasks).hasSize(2);
         assertThat(user2Tasks).hasSize(1);
@@ -874,7 +880,7 @@ public class TaskServiceTest {
 
     @Test
     void testGetTasksByAssigneeIdReturnsEmptyWhenNoMatches() {
-        var result = service.getTasksByAssigneeId(999L);
+        var result = service.getTasksByAssigneeId(UUID.randomUUID());
         assertThat(result).isEmpty();
     }
 
@@ -965,11 +971,12 @@ public class TaskServiceTest {
 
     @Test
     void testGetTasksByAssigneeIdReturnsDefensiveCopies() {
+        UUID assigneeId = UUID.randomUUID();
         Task task = new Task("dc-05", "Original", "Desc", TaskStatus.TODO, null);
-        task.setAssigneeId(50L);
+        task.setAssigneeId(assigneeId);
         service.addTask(task);
 
-        var tasks = service.getTasksByAssigneeId(50L);
+        var tasks = service.getTasksByAssigneeId(assigneeId);
         tasks.get(0).setName("Mutated");
 
         Task stored = service.getTaskById("dc-05").orElseThrow();
@@ -1007,14 +1014,15 @@ public class TaskServiceTest {
 
     @Test
     void testGetTasksByAssigneeIdOnlyReturnsCurrentUsersTasks() {
+        UUID testAssigneeId = UUID.randomUUID();
         runAs("usr-asg-a", Role.USER, () -> {
             Task t = new Task("isoa-01", "UserA Task", "Desc", TaskStatus.TODO, null);
-            t.setAssigneeId(777L);
+            t.setAssigneeId(testAssigneeId);
             service.addTask(t);
         });
 
         runAs("usr-asg-b", Role.USER, () -> {
-            var tasks = service.getTasksByAssigneeId(777L);
+            var tasks = service.getTasksByAssigneeId(testAssigneeId);
             assertThat(tasks).isEmpty();
         });
     }

@@ -145,8 +145,8 @@ void toDomainWithNull() {
 **Overall Impact**:
 - Store coverage improved from **78%** to **96%** (instructions), **73%** to **97%** (branches)
 - Mapper coverage improved to **95%+** across all mappers, with ContactMapper and TaskMapper at **100%**
-- Total test count increased to **949 tests**
-- PITest mutation score maintained at **94%** (615/656 mutants killed)
+- Total test count increased to **1109 tests**
+- PITest mutation score was lifted to **94%** (615/656 mutants killed) on the scoped modules; the current expanded suite sits at 80% overall.
 
 ## Implementation Details
 
@@ -207,7 +207,7 @@ class ContactMapperTest {
 ### Positive
 
 1. **Improved Confidence**: 96%+ store coverage and 95%+ mapper coverage provide strong assurance that persistence layer behaves correctly
-2. **Mutation Testing Alignment**: PITest can now kill more mutants in stores/mappers, improving mutation score from 90% to 94%
+2. **Mutation Testing Alignment**: PITest can now kill more mutants in stores/mappers, improving mutation score from 90% to 94% on that scope (current full-suite mutation score is 80% after expanding coverage).
 3. **Regression Prevention**: Null parameter guards ensure NullPointerExceptions are caught at test time, not production
 4. **Branch Coverage**: Insert vs update paths are explicitly tested, catching logic errors in save operations
 5. **Documentation**: Tests serve as executable documentation of expected null-handling behavior
@@ -283,7 +283,7 @@ void saveCallsRepositorySave() {
 
 **Total New Tests**: 24 (stores) + 18 (mappers) + 4 (entities) + 4 (filters) = **50 new tests**
 
-**Total Test Count**: **949 tests** (baseline + store/mapper/entity/filter coverage + security + validation helper tests)
+**Total Test Count**: **1109 tests** (baseline + store/mapper/entity/filter coverage + security + validation helper tests)
 
 ## Mutation Testing Impact
 
@@ -295,9 +295,9 @@ void saveCallsRepositorySave() {
 4. **Entity accessor coverage**: getId() methods returned null in tests (EmptyObjectReturnValsMutator survived). New tests call getId() and assert non-null.
 
 ### Mutation Score Progression
-- **Before**: 90% mutation score (586/651 mutants killed)
-- **After**: 94% mutation score (615/656 mutants killed)
-- **Improvement**: +4% mutation score, +29 mutants killed
+- **Before**: 90% mutation score (586/651 mutants killed) on store/mapper scope
+- **After**: 94% mutation score (615/656 mutants killed) on store/mapper scope (full suite now 80% after expansion)
+- **Improvement**: +4% mutation score, +29 mutants killed for the scoped modules
 
 ## References
 

@@ -4,14 +4,14 @@ This directory contains all Architecture Decision Records (ADRs) for the project
 
 ## Organization
 
-- **ADR-0001 to ADR-0049**: CS320 Foundation (Complete)
-- **ADR-0050+**: Jira-like Evolution (Future phases from [FUTURE_ROADMAP.md](../roadmaps/FUTURE_ROADMAP.md))
+- **ADR-0001 to ADR-0054**: CS320 Foundation + Production Auth + Frontend Fixes + Security Audit (Complete)
+- **ADR-0055+**: Jira-like Evolution (Future phases from [FUTURE_ROADMAP.md](../roadmaps/FUTURE_ROADMAP.md))
 
 ---
 
-## CS320 Foundation (ADR-0001 to ADR-0049) ✅
+## CS320 Foundation (ADR-0001 to ADR-0054) ✅
 
-All 49 foundation ADRs are **complete** and document the journey from a simple contact manager to a production-grade full-stack application.
+All 54 foundation ADRs are **complete** and document the journey from a simple contact manager to a production-grade full-stack application with temporal data handling, production security, timezone-safe frontend, and comprehensive security hardening.
 
 ### Domain & Validation (ADR-0001 to ADR-0003)
 
@@ -102,9 +102,45 @@ All 49 foundation ADRs are **complete** and document the journey from a simple c
 | [ADR-0048](ADR-0048-testcontainers-single-container-lifecycle.md) | Testcontainers Single Container Lifecycle | Accepted |
 | [ADR-0049](ADR-0049-spring-security-7-spa-csrf.md) | Spring Security 7 SPA CSRF Configuration | Accepted |
 
+### Temporal Data Handling (ADR-0050)
+
+| ADR | Title | Status |
+|-----|-------|--------|
+| [ADR-0050](ADR-0050-domain-reconstitution-pattern.md) | Domain Reconstitution Pattern | Accepted |
+
+### Developer Tooling (ADR-0051)
+
+| ADR | Title | Status |
+|-----|-------|--------|
+| [ADR-0051](ADR-0051-unified-cli-tool.md) | Unified CLI Tool (`./cs`) | Accepted |
+
+### Production Security (ADR-0052)
+
+| ADR | Title | Status |
+|-----|-------|--------|
+| [ADR-0052](ADR-0052-production-auth-system.md) | Production-Grade Secure Authentication System | Implemented |
+
+> **Implementation Complete (2025-12-06):** All phases implemented - UUID migration, JWT hardening, HTTPS setup, refresh tokens, token fingerprinting. 1109 tests pass.
+
+### Frontend Improvements (ADR-0053)
+
+| ADR | Title | Status |
+|-----|-------|--------|
+| [ADR-0053](ADR-0053-timezone-safe-date-parsing.md) | Timezone-Safe Date Parsing in Frontend | Accepted |
+
+> **Bug Fix (2025-12-06):** Fixed critical date display bug where dates shifted backwards by one day in negative UTC offset timezones. Added `dateUtils.ts` with `parseISO()` for consistent timezone handling.
+
+### Security Audit (ADR-0054)
+
+| ADR | Title | Status |
+|-----|-------|--------|
+| [ADR-0054](ADR-0054-security-audit-december-2025.md) | Security Audit Findings - December 2025 | Accepted |
+
+> **Security Hardening (2025-12-06):** Comprehensive security audit implementing JWT token IDs (JTI), fingerprint enforcement config, rate limit key prefixing, and deprecation of user-isolation-bypassing methods. ADR-0054 includes detailed CSRF configuration documentation with trade-off analysis between explicit configuration, `.spa()`, and per-cookie SameSite approaches (all equally valid).
+
 ---
 
-## Jira-like Evolution (ADR-0050+) 📋
+## Jira-like Evolution (ADR-0055+) 📋
 
 Future ADRs for evolving the application into a full project management platform. See [FUTURE_ROADMAP.md](../roadmaps/FUTURE_ROADMAP.md) for the complete roadmap.
 
@@ -112,26 +148,26 @@ Future ADRs for evolving the application into a full project management platform
 
 | ADR | Title | Phase | Status |
 |-----|-------|-------|--------|
-| ADR-0050 | Task Types (Bug, Story, Epic, Subtask) | 8 | Planned |
-| ADR-0051 | Priority Levels (P0-P4) | 8 | Planned |
-| ADR-0052 | Story Points Implementation | 8 | Planned |
-| ADR-0053 | Labels and Tags System | 8 | Planned |
+| ADR-0055 | Task Types (Bug, Story, Epic, Subtask) | 8 | Planned |
+| ADR-0056 | Priority Levels (P0-P4) | 8 | Planned |
+| ADR-0057 | Story Points Implementation | 8 | Planned |
+| ADR-0058 | Labels and Tags System | 8 | Planned |
 
 ### Phase 9: Sprint Management (Planned)
 
 | ADR | Title | Phase | Status |
 |-----|-------|-------|--------|
-| ADR-0054 | Sprint Entity Design | 9 | Planned |
-| ADR-0055 | Sprint Board UI | 9 | Planned |
-| ADR-0056 | Velocity Tracking | 9 | Planned |
+| ADR-0059 | Sprint Entity Design | 9 | Planned |
+| ADR-0060 | Sprint Board UI | 9 | Planned |
+| ADR-0061 | Velocity Tracking | 9 | Planned |
 
 ### Phase 10: Activity & Comments (Planned)
 
 | ADR | Title | Phase | Status |
 |-----|-------|-------|--------|
-| ADR-0057 | Comment System Design | 10 | Planned |
-| ADR-0058 | Activity Feed Implementation | 10 | Planned |
-| ADR-0059 | @Mentions and Notifications | 10 | Planned |
+| ADR-0062 | Comment System Design | 10 | Planned |
+| ADR-0063 | Activity Feed Implementation | 10 | Planned |
+| ADR-0064 | @Mentions and Notifications | 10 | Planned |
 
 ### Future Phases (11-17)
 

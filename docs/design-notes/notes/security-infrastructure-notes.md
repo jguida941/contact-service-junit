@@ -1,6 +1,52 @@
 # Security Infrastructure
 
-> **Note**: This document consolidates security implementation details. For formal decisions, see ADR-0018, ADR-0038, ADR-0039, ADR-0040, ADR-0041, and ADR-0043.
+> **Note**: This document consolidates security implementation details. For formal decisions, see ADR-0018, ADR-0038, ADR-0039, ADR-0040, ADR-0041, ADR-0043, and [ADR-0052](../../adrs/ADR-0052-production-auth-system.md).
+
+---
+
+## ADR-0052 Production Auth System (Complete - 2025-12-06)
+
+All phases of ADR-0052 are now implemented. 1109 tests pass with 90% line coverage and 84% mutation score.
+
+### Phase A: Critical Fixes (Batch 1-2)
+
+| Enhancement | Description |
+|-------------|-------------|
+| **User.id UUID** | Migrated from sequential Long to UUID via V16 migration to prevent user enumeration attacks |
+| **@JsonIgnore on password** | Defense-in-depth to prevent BCrypt hash leakage in JSON serialization |
+| **JWT claim hardening** | Added issuer (`contact-service`), audience (`contact-service-api`), 60s clock skew tolerance |
+| **401 vs 403 separation** | `AuthenticationEntryPoint` for 401, `AccessDeniedHandler` for 403 with JSON responses |
+| **Frontend auth handling** | 403 no longer clears session (only 401 triggers logout) |
+| **Task.assigneeId UUID** | Changed from Long to UUID to match User.id migration |
+
+### Phase B: Refresh Tokens (Batches 6-9)
+
+| Component | Description |
+|-----------|-------------|
+| **RefreshToken entity** | UUID PK, opaque token, expiry timestamp, revoked flag, optimistic locking |
+| **RefreshTokenRepository** | Queries for find, revoke, delete with UUID user IDs |
+| **RefreshTokenService** | Single-session model, token rotation on refresh, scheduled cleanup |
+| **V17 migrations** | PostgreSQL and H2 migrations for `refresh_tokens` table |
+| **AuthController integration** | Login/register create refresh tokens, `/api/auth/refresh` rotates tokens |
+| **Cookie security** | Refresh token scoped to `/api/auth/refresh`, HttpOnly, SameSite=Lax |
+
+### Phase C: Token Fingerprinting (Batches 4-5)
+
+| Component | Description |
+|-----------|-------------|
+| **TokenFingerprintService** | Secure fingerprint generation (50 bytes), SHA-256 hashing, constant-time verification |
+| **JwtService integration** | `generateToken(UserDetails, String fingerprintHash)` with `fph` claim |
+| **JwtAuthenticationFilter** | Verifies fingerprint hash from JWT matches cookie value |
+| **Cookie names** | `__Secure-Fgp` (HTTPS) and `Fgp` (HTTP dev) per OWASP guidelines |
+| **Cookie attributes** | HttpOnly=true, Secure (HTTPS), SameSite=Lax, Path=/ |
+
+### Phase D: HTTPS Setup (Batch 3)
+
+| Component | Description |
+|-----------|-------------|
+| **./cs setup-ssl** | CLI command to generate self-signed SSL keystore |
+| **application.yml** | `server.ssl.*` configuration block (disabled by default) |
+| **SSL_ENABLED** | Environment variable to enable HTTPS on port 8080 |
 
 ## Authentication Stack
 
@@ -30,11 +76,27 @@
 
 ### CSRF Protection
 
-**Double-submit cookie pattern**:
-1. `SpaCsrfTokenRequestHandler` sets `XSRF-TOKEN` cookie
-2. Frontend reads cookie value via JavaScript
-3. Frontend sends value in `X-XSRF-TOKEN` header for state-changing requests
-4. Server validates header matches cookie
+**Double-submit cookie pattern** (one valid approach among several):
+
+1. `CookieCsrfTokenRepository.withHttpOnlyFalse()` creates XSRF-TOKEN cookie readable by JavaScript
+2. `XorCsrfTokenRequestAttributeHandler` provides BREACH protection via XOR masking of token values
+3. Frontend reads cookie value via JavaScript
+4. Frontend sends value in `X-XSRF-TOKEN` header for state-changing requests
+5. Server validates header matches cookie (accounting for XOR masking)
+
+**Cookie Configuration** (`SecurityConfig.java`):
+- SameSite=Lax set via cookie customizer
+- Secure flag controlled by `server.servlet.session.cookie.secure` property
+- HttpOnly=false (required for SPA to read token)
+
+**Container-Level SameSite** (`TomcatConfig.java`):
+- `Rfc6265CookieProcessor` with explicit `setSameSiteCookies()` call
+- Enforces SameSite=Lax on ALL cookies (defense-in-depth)
+- Note: This is optional; per-cookie SameSite is equally secure
+
+**Alternative Approaches** (equally valid):
+- `SpaCsrfTokenRequestHandler` - Spring's newer SPA-specific handler
+- `.spa()` convenience method with careful customizer ordering
 
 **Endpoint**: `GET /api/auth/csrf-token` for explicit token retrieval.
 
@@ -91,11 +153,13 @@ Request → CorrelationIdFilter(1) → RateLimitingFilter(5) → RequestLoggingF
 
 | Header | Value | Purpose |
 |--------|-------|---------|
-| Content-Security-Policy | script/style/img/font/connect/frame-ancestors/form-action/base-uri/object-src | XSS mitigation |
-| Permissions-Policy | Disables geolocation, camera, microphone | Feature restriction |
+| Content-Security-Policy | `frame-ancestors 'none'`, script/style/img/font/connect/form-action/base-uri/object-src | XSS and clickjacking mitigation |
+| Permissions-Policy | Disables geolocation, camera, microphone, payment, usb, sensors | Feature restriction |
 | X-Content-Type-Options | nosniff | MIME sniffing prevention |
-| X-Frame-Options | SAMEORIGIN | Clickjacking protection |
+| X-Frame-Options | DENY | Clickjacking protection (matches CSP frame-ancestors) |
 | Referrer-Policy | strict-origin-when-cross-origin | Referrer leakage prevention |
+
+**Note on frame-ancestors**: We use `'none'` (not `'self'`) because this application has no legitimate need to be embedded in iframes. This provides stronger clickjacking protection.
 
 ## CORS Configuration
 
@@ -122,9 +186,10 @@ cors:
 
 | Endpoint | Method | Description | Response |
 |----------|--------|-------------|----------|
-| `/api/auth/login` | POST | Authenticate user | 200 + HttpOnly JWT cookie |
-| `/api/auth/register` | POST | Register new user | 201 + HttpOnly JWT cookie |
-| `/api/auth/logout` | POST | Invalidate session | 204 No Content |
+| `/api/auth/login` | POST | Authenticate user | 200 + HttpOnly JWT cookie + refresh token cookie + fingerprint cookie |
+| `/api/auth/register` | POST | Register new user | 201 + HttpOnly JWT cookie + refresh token cookie + fingerprint cookie |
+| `/api/auth/refresh` | POST | Rotate tokens | 200 + new JWT + new refresh token (old revoked) |
+| `/api/auth/logout` | POST | Invalidate session | 204 No Content + revokes refresh token + clears all auth cookies |
 | `/api/auth/csrf-token` | GET | Get CSRF token | XSRF-TOKEN cookie value |
 
 ## Role-Based Access Control
@@ -141,3 +206,5 @@ cors:
 - [ADR-0040](../../adrs/ADR-0040-request-tracing-and-logging.md) - Request Tracing and Logging
 - [ADR-0041](../../adrs/ADR-0041-pii-masking-in-logs.md) - PII Masking in Log Output
 - [ADR-0043](../../adrs/ADR-0043-httponly-cookie-authentication.md) - HttpOnly Cookie Authentication
+- [ADR-0052](../../adrs/ADR-0052-production-auth-system.md) - Production-Grade Secure Authentication System
+- [ADR-0054](../../adrs/ADR-0054-security-audit-december-2025.md) - Security Audit December 2025 (CSRF configuration details)

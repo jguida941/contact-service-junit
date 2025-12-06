@@ -61,6 +61,9 @@ public class AppointmentEntity {
     @Column(name = "task_id", length = Validation.MAX_ID_LENGTH)
     private String taskId;
 
+    @Column(name = "archived", nullable = false)
+    private boolean archived;
+
     protected AppointmentEntity() {
         // JPA only
     }
@@ -137,5 +140,13 @@ public class AppointmentEntity {
 
     public void setTaskId(final String taskId) {
         this.taskId = taskId;
+    }
+
+    public boolean isArchived() {
+        return archived;
+    }
+
+    public void setArchived(final boolean archived) {
+        this.archived = archived;
     }
 }

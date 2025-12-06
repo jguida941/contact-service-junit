@@ -140,6 +140,7 @@ public class JpaProjectStore implements ProjectStore {
     }
 
     @Override
+    @Deprecated(since = "1.0", forRemoval = true)
     public List<Project> findAll() {
         return repository.findAll().stream()
                 .map(mapper::toDomain)

@@ -51,6 +51,7 @@ public class InMemoryAppointmentStore implements AppointmentStore {
     }
 
     @Override
+    @Deprecated(since = "1.0", forRemoval = true)
     public List<Appointment> findAll() {
         final List<Appointment> appointments = new ArrayList<>();
         database.values().forEach(appointment -> appointments.add(appointment.copy()));

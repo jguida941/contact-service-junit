@@ -5,6 +5,167 @@ All notable changes to this project will be documented here. Follow the
 
 ## [Unreleased]
 
+### Fixed
+- **CodeRabbit Audit Fixes (2025-12-06)**:
+  - ADR-0050: Changed status from "Implemented" to "Partially Implemented" (Task reconstitute() pending)
+  - Added JavaDoc to deprecated `findAll()` methods explaining user isolation bypass and ADR-0054 reference
+  - AuthControllerUnitTest: Added `@AfterEach` for SecurityContextHolder cleanup (prevents test pollution)
+  - cs script: Fixed to use SCRIPT_DIR for module resolution from any directory
+  - ProjectsPage: Added `isPending` guard to `handleQuickArchive` (prevents duplicate API calls)
+  - AppointmentsPage: Update `selectedAppointment` on archive/unarchive mutation success (prevents stale state)
+  - PROJECT_SHOWCASE.md: Standardized mutation score to 84% (was inconsistent 80%/85%)
+
+### Testing
+- **Mutation Testing Coverage Improvements (2025-12-06)**:
+  - Added 40+ targeted tests to TaskServiceValidationTest.java to kill mutations in InMemoryStore legacy paths
+  - Fixed InMemoryTaskStore.save() to support update operations (was only supporting inserts)
+  - TaskService mutation coverage improved from 39% to 77%
+  - Overall project mutation coverage improved from 80% to 84%
+  - Test strength improved to 94% (number of mutants killed / total mutants)
+
+### Documentation
+- **CSRF/SameSite Documentation Accuracy (2025-12-06)**:
+  - Updated ADR-0054 with nuanced CSRF configuration details (explicit config vs `.spa()`, both valid)
+  - Clarified that `Rfc6265CookieProcessor` requires explicit `setSameSiteCookies()` call for SameSite enforcement
+  - Documented alternative approaches: `SpaCsrfTokenRequestHandler`, `.spa()`, per-cookie SameSite (all equally valid)
+  - Updated security-infrastructure-notes.md with accurate CSRF section and `frame-ancestors 'none'` CSP
+  - Updated README Security Infrastructure: fixed year to 2025, X-Frame-Options to DENY, accurate CSRF description
+  - Added trade-off analysis: container-wide SameSite is defense-in-depth but adds complexity
+
+- **Documentation Consistency Update (2025-12-06)**:
+  - Updated ADR-0050, ADR-0051, ADR-0052 status from "Accepted" to "Implemented"
+  - Updated docs/INDEX.md with new security files (RefreshToken, TokenFingerprintService, SchedulingConfig)
+  - Updated security-infrastructure-notes.md with all ADR-0052 phases
+  - Updated ROADMAP.md with ADR-0052 production auth system completion
+  - Added ADR-0053 (Timezone-Safe Date Parsing) to ADR README
+  - All documentation now consistent with 1109 tests, 90% line coverage, 85% mutation score
+
+### Added
+- **Task Archive Functionality (2025-12-06)**:
+  - Added `archived` boolean field to Task domain, entity, and mapper
+  - Added `archiveTask()` and `unarchiveTask()` methods to TaskService
+  - Added `PATCH /api/v1/tasks/{id}/archive` and `/unarchive` endpoints to TaskController
+  - Added `archived` field to TaskResponse DTO
+  - Added V18 migration: `ALTER TABLE tasks ADD COLUMN archived BOOLEAN NOT NULL DEFAULT FALSE`
+  - Frontend API: Added `tasksApi.archive()` and `tasksApi.unarchive()` methods
+  - Table actions: Added archive icon button with ARCHIVED badge
+  - "Show Archived" toggle to display archived tasks
+
+- **Project Quick Archive Button (2025-12-06)**:
+  - Added one-click archive/unarchive button to Projects table row actions
+  - Clicking archive sets project status to ARCHIVED, unarchive sets to ACTIVE
+  - Added archive button to project detail view
+  - Uses existing ProjectStatus.ARCHIVED enum value
+
+- **Appointment Archive UI (2025-12-06)**:
+  - Added manual archive/unarchive functionality to Appointments page
+  - Frontend API: Added `appointmentsApi.archive()` and `appointmentsApi.unarchive()` methods
+  - Table actions: Added archive icon button (toggles between Archive/Unarchive)
+  - Detail view: Added "Archive" / "Unarchive" button
+  - Uses existing backend endpoints: `PATCH /api/v1/appointments/{id}/archive` and `/unarchive`
+  - Archive icon (📦) archives appointment, Unarchive icon (📤) restores it
+  - "Show Archived" toggle displays archived appointments with gray "ARCHIVED" badge
+
+### Fixed
+- **CORS Configuration Fix (2025-12-06)**:
+  - Added `PATCH` to allowed HTTP methods in SecurityConfig CORS configuration
+  - Fixed 403 Forbidden error on archive/unarchive PATCH requests from frontend
+  - Was missing from `configuration.setAllowedMethods()` list
+
+- **ADR-0053: Timezone-Safe Date Parsing (2025-12-06)**:
+  - Fixed critical bug where task due dates displayed one day earlier in negative UTC offset timezones
+  - Root cause: `new Date("2025-12-06")` parses as UTC midnight, shifts backwards when displayed in EST/PST
+  - Solution: Use `parseISO()` from date-fns which parses as local midnight
+  - Created `ui/contact-app/src/lib/dateUtils.ts` with centralized date utilities:
+    - `formatDateSafe()` - formats date-only strings correctly
+    - `formatDateTimeSafe()` - formats datetime strings correctly
+    - `parseDateSafe()` - parses dates for manipulation
+  - Added timezone regression tests in `dateUtils.test.ts`
+  - See ADR-0053 for full analysis and prevention guidelines
+
+### Security
+- **Comprehensive Security Audit (ADR-0054) (2025-12-06)**:
+  - **H-2 Fixed**: Added `jwt.require-fingerprint` config flag to enforce token fingerprint binding
+  - **M-1 Fixed**: Added JTI (JWT ID) claim to all tokens for revocation support
+  - **M-6 Fixed**: Added `API:` prefix to user-based rate limit bucket keys
+  - **M-8 Fixed**: Deprecated `findAll()` methods that bypass user isolation with `@Deprecated(since="1.0", forRemoval=true)`
+  - **L-1 Fixed**: Replaced `alert()` calls with toast notifications in TasksPage and AppointmentsPage
+  - Created ADR-0054 documenting all security audit findings and recommendations
+  - See ADR-0054 for complete security audit report
+
+- **CodeRabbit Security Audit Fixes (2025-12-06)**:
+  - **PII Logging**: Changed `RefreshTokenService` to log user ID instead of username in 4 locations (GDPR/CCPA compliance)
+  - **Null Safety**: Added null/empty parameter validation to 6 `RefreshTokenService` methods
+  - **Missing FK Constraint**: Added `fk_tasks_assignee_id` foreign key in V16 migrations (H2 and PostgreSQL)
+  - **Swagger in Production**: Disabled `springdoc.api-docs` and `springdoc.swagger-ui` in `application-prod.yml`
+  - **Log Files**: Added `logs/` directory to `.gitignore`
+  - **CSP frame-ancestors**: Fixed production CSP to use `frame-ancestors 'none'` (was `'self'`), now matches X-Frame-Options DENY
+  - **Debug Logging**: Removed debug `console.log` statements from `AppointmentsPage.tsx`
+  - **CLI Robustness**: Added error handling to `./cs db reset` and mutually exclusive flag validation to `./cs dev`
+  - **SameSite Test**: `SecurityConfigIntegrationTest` now properly asserts `SameSite=Lax` attribute on CSRF cookie
+  - **NaN Handling**: Added `parseInt` NaN validation in `api.ts` for corrupted sessionStorage values
+  - **SameSite Docs**: Fixed `production-auth-system-plan.md` code examples to use `SameSite=Lax` (was incorrectly `Strict`)
+  - **Migration Count**: Updated `PROJECT_SHOWCASE.md` migration count from 16 to 17, added V18 to table
+
+- **ADR-0052 Batches 6-9: Refresh Tokens - PRODUCTION COMPLETE (2025-12-03)**:
+  - Created `RefreshToken` entity with UUID PK, opaque token, expiry, revoked flag, optimistic locking
+  - Created `RefreshTokenRepository` with queries for find, revoke, delete with UUID user IDs
+  - Created `RefreshTokenService` with single-session model, token rotation, scheduled cleanup
+  - Added V17 migrations (PostgreSQL and H2) for `refresh_tokens` table with proper indexes
+  - Enabled `@EnableScheduling` via `SchedulingConfig` for hourly cleanup job
+  - **AuthController integration**: login/register create refresh tokens and set cookies
+  - **Token refresh**: validates refresh token, rotates both refresh and access tokens
+  - **Logout**: revokes refresh token and clears all auth cookies
+  - **Cookie security**: refresh token scoped to `/api/auth/refresh`, HttpOnly, SameSite=Lax
+  - **Frontend**: stores absolute expiration timestamp for precise session checks on page reload
+  - Added 17 unit tests for `RefreshTokenService` and 4 integration tests for logout/cookies
+  - Completes ADR-0052 Phase B refresh token implementation
+
+- **ADR-0052 Batch 4+5: Token Fingerprinting - PRODUCTION COMPLETE (2025-12-03)**:
+  - Created `TokenFingerprintService` with secure fingerprint generation (50 bytes), SHA-256 hashing, and constant-time verification
+  - Added `generateToken(UserDetails, String fingerprintHash)` overload to `JwtService`
+  - Added `extractFingerprintHash(String token)` method to `JwtService`
+  - Added fingerprint verification to `JwtAuthenticationFilter` with backwards compatibility
+  - **Cookie names per ADR-0052**: `__Secure-Fgp` (HTTPS) and `Fgp` (HTTP dev)
+  - **Cookie attributes per OWASP**: HttpOnly=true, Secure (HTTPS), SameSite=Lax, Path=/
+  - **AuthController integration**: login/register/refresh generate fingerprints, set hardened cookies
+  - **Logout**: clears both fingerprint cookie variants
+  - Implements OWASP sidejacking prevention per ADR-0052 Phase C
+
+- **ADR-0052 Batch 5: Fingerprint Call Site Migration (2025-12-03)**:
+  - Deleted old `generateToken(UserDetails)` and `generateToken(Map, UserDetails)` adapter overloads from `JwtService`
+  - Migrated `AuthController` login, register, and refresh endpoints to pass real fingerprint hashes
+  - Updated 18+ test calls in `JwtServiceTest` to fingerprint-aware signature
+  - Added fingerprint claim tests (`generateToken_includesFingerprintClaim`, `generateToken_withNullFingerprint_producesTokenWithoutFphClaim`)
+  - Fixed fingerprint cookie max-age alignment with JWT expiration
+  - Completes Phase C fingerprint implementation - all tokens now include fingerprint binding
+
+- **ADR-0052 Batch 3: HTTPS Setup (2025-12-03)**:
+  - Added `./cs setup-ssl` command to generate self-signed SSL keystore
+  - Added `server.ssl.*` configuration block to `application.yml`
+  - SSL disabled by default (`SSL_ENABLED=false`), opt-in for local HTTPS testing
+  - Updated `.gitignore` for SSL keystores and certificates
+  - Added HTTPS Development section to README with usage instructions
+
+- **ADR-0052 Batch 2: UUID Cascade Fixes (2025-12-03)**:
+  - Updated `UserRepository` methods to use `UUID` parameter types
+  - Changed `Task.assigneeId` from `Long` to `UUID` (domain, entity, DTO, service, controller)
+  - Updated `@WithMockAppUser` annotation from `long id()` to `String id()` (UUID string)
+  - Fixed H2 migration V16 to drop projects unique constraint before column drop
+  - Updated ActuatorEndpointsTest: 403 → 401 for unauthenticated requests
+  - Updated JwtServiceTest for 60-second clock skew tolerance
+  - All tests pass (949 tests)
+
+- **ADR-0052 Batch 1: Phase 0 Critical Fixes (2025-12-03)**:
+  - Migrated `users.id` from BIGINT to UUID via data-preserving V16 migration (PostgreSQL and H2)
+  - Added `@JsonIgnore` on `User.password` field and getter to prevent hash leakage
+  - Configured `AuthenticationEntryPoint` for 401 JSON responses with UTF-8 encoding
+  - Configured `AccessDeniedHandler` for 403 JSON responses with UTF-8 encoding
+  - Hardened JWT validation: 60-second clock skew, issuer (`contact-service`), audience (`contact-service-api`)
+  - Fixed frontend 401 vs 403 handling: 403 no longer clears session
+  - Changed UUID generation to portable `@PrePersist` pattern (CodeRabbit recommendation)
+  - V16 migration preserves unique constraints from V6/V8 (contacts, tasks, appointments, projects)
+
 ### Changed
 - **README Cleanup and Reorganization (2025-12-03)**:
   - Fixed stale metrics: 904→930 tests, ~83→84% mutation coverage, ~89.9→90% line coverage
@@ -19,6 +180,26 @@ All notable changes to this project will be documented here. Follow the
   - Git tracks directory as `CI-CD` (uppercase) but macOS shows `ci-cd` due to case-insensitive filesystem
 
 ### Added
+- **Unassigned Tasks Filter (2025-12-03)**:
+  - Added `GET /api/v1/tasks?projectId=none` to query tasks not linked to any project
+  - Added `findByUserAndProjectIdIsNull()` to `TaskRepository`
+  - Added `getUnassignedTasks()` to `TaskService`
+  - Added `@Order(5)` to `RateLimitingFilter` for deterministic filter chain ordering
+
+- **ADR-0050: Domain Reconstitution Pattern (2025-12-03)**:
+  - Static reconstitute() factory methods on Appointment and Task domains
+  - Enables loading past appointments/overdue tasks from database without validation failures
+  - Maintains strict temporal validation for new API submissions
+  - Appointment.isPast() computed property for UI indicators
+  - Task.isOverdue() computed property for UI indicators
+
+- **Appointment Archive Feature (2025-12-03)**:
+  - Added `archived` boolean field to Appointment domain and entity
+  - PATCH /api/v1/appointments/{id}/archive endpoint
+  - PATCH /api/v1/appointments/{id}/unarchive endpoint
+  - Frontend badges for past/archived appointments and overdue tasks
+  - Database migration V14__add_archived_to_appointments.sql
+
 - **Design Notes Reference Documentation (2025-12-03)**:
   - Added 7 design notes extracted from README to `docs/design-notes/notes/`
   - Includes: ci-cd-operations-notes, testing-strategy-notes, and others

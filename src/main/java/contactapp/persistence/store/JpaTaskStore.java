@@ -129,7 +129,32 @@ public class JpaTaskStore implements TaskStore {
                 .toList();
     }
 
+    /**
+     * Finds all tasks for a user that have no project assigned.
+     *
+     * @param user the user who owns the tasks
+     * @return list of tasks with null projectId (unassigned to any project)
+     */
+    public List<Task> findByProjectIdIsNull(final User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("user must not be null");
+        }
+        return repository.findByUserAndProjectIdIsNull(user).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    /**
+     * Returns all tasks without user filtering.
+     *
+     * @deprecated Since 1.0, will be removed in 2.0. This method bypasses user isolation
+     *             and returns all records regardless of ownership. Use
+     *             {@link #findAllByUser(User)} for user-scoped queries instead.
+     *             See ADR-0054 M-8 for security rationale.
+     * @return all tasks in the store
+     */
     @Override
+    @Deprecated(since = "1.0", forRemoval = true)
     public List<Task> findAll() {
         return repository.findAll().stream()
                 .map(mapper::toDomain)

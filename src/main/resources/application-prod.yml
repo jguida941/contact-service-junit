@@ -1,0 +1,130 @@
+# =============================================================================
+# Production Profile Configuration
+# =============================================================================
+# This profile enforces security requirements for production deployments.
+# Activate with: --spring.profiles.active=prod
+#
+# REQUIREMENTS:
+# - HTTPS must be enabled (via reverse proxy or SSL_ENABLED=true)
+# - Secure cookies must be enabled
+# - JWT secret must be set via environment variable (no default!)
+# - Database must be PostgreSQL (not H2)
+#
+# See ADR-0052 for security architecture details.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Database Configuration
+# -----------------------------------------------------------------------------
+# Production MUST use PostgreSQL. All three env vars are REQUIRED.
+# - DATABASE_URL: jdbc:postgresql://host:5432/dbname
+# - DB_USERNAME: database user
+# - DB_PASSWORD: database password
+# -----------------------------------------------------------------------------
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  # Disable dev-only features
+  h2:
+    console:
+      enabled: false
+  jpa:
+    show-sql: false
+
+# -----------------------------------------------------------------------------
+# API Documentation (Disabled in Production)
+# -----------------------------------------------------------------------------
+# Swagger/OpenAPI exposes internal API structure - disable for security.
+# -----------------------------------------------------------------------------
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# -----------------------------------------------------------------------------
+# Security: HTTPS and Secure Cookies (ADR-0052)
+# -----------------------------------------------------------------------------
+# Option A: TLS terminated at edge (Nginx/Caddy/ALB) - RECOMMENDED
+#   - SSL_ENABLED=false (edge handles TLS)
+#   - Reverse proxy sets X-Forwarded-Proto: https
+#   - Cookies marked Secure (browsers require HTTPS)
+#
+# Option B: Spring Boot terminates TLS directly
+#   - SSL_ENABLED=true
+#   - Provide real certificate (Let's Encrypt via certbot)
+#   - See ADR-0052 "Production TLS Strategy" section
+# -----------------------------------------------------------------------------
+server:
+  # Trust X-Forwarded-* headers from reverse proxy
+  forward-headers-strategy: framework
+  tomcat:
+    remote-ip-header: X-Forwarded-For
+    protocol-header: X-Forwarded-Proto
+  servlet:
+    session:
+      cookie:
+        # Production MUST use secure cookies
+        secure: true
+
+# Enable HTTPS requirement (redirects HTTP to HTTPS when behind proxy)
+security:
+  require-ssl: ${REQUIRE_SSL:true}
+
+# All auth cookies MUST be Secure in production
+app:
+  auth:
+    cookie:
+      secure: true
+
+# Strict CSP in production (no unsafe-inline for Vite HMR)
+csp:
+  relaxed: false
+
+# -----------------------------------------------------------------------------
+# JWT Configuration
+# -----------------------------------------------------------------------------
+# REQUIRED: JWT_SECRET must be set via environment variable.
+# No default value - application will fail to start without it.
+# Generate with: openssl rand -base64 32
+# -----------------------------------------------------------------------------
+jwt:
+  secret: ${JWT_SECRET}
+
+# -----------------------------------------------------------------------------
+# Actuator Configuration
+# -----------------------------------------------------------------------------
+# Minimal exposure in production. Prometheus endpoint should be protected
+# by network policies (e.g., only accessible from monitoring namespace).
+# -----------------------------------------------------------------------------
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      # Never expose health details publicly - use K8s probes instead
+      show-details: never
+
+# -----------------------------------------------------------------------------
+# Logging Configuration
+# -----------------------------------------------------------------------------
+# Production logging: WARN for root, INFO for application code.
+# Request logging disabled for performance.
+# -----------------------------------------------------------------------------
+logging:
+  level:
+    root: WARN
+    contactapp: INFO
+  request:
+    enabled: false

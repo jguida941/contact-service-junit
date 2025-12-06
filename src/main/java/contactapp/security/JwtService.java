@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,6 +49,21 @@ public class JwtService {
 
     /** Minimum secret key length in bytes (256 bits for HMAC-SHA256). */
     private static final int MIN_SECRET_BYTES = 32;
+
+    /** Clock skew tolerance in seconds for JWT validation (ADR-0052 Phase 0). */
+    private static final long CLOCK_SKEW_SECONDS = 60;
+
+    /** JWT issuer claim - identifies this service as the token source. */
+    private static final String ISSUER = "contact-service";
+
+    /** JWT audience claim - identifies intended token consumers. */
+    private static final String AUDIENCE = "contact-service-api";
+
+    /** JWT claim name for the token fingerprint hash (ADR-0052 Phase C). */
+    public static final String FINGERPRINT_CLAIM = "fph";
+
+    /** JWT claim name for token usage (browser session vs programmatic API). */
+    public static final String TOKEN_USE_CLAIM = "token_use";
 
     /**
      * Validates JWT configuration at startup.
@@ -123,24 +139,73 @@ public class JwtService {
     }
 
     /**
-     * Generates a JWT token for the given user.
+     * Generates a JWT token with fingerprint binding (ADR-0052 Phase C).
+     *
+     * <p>When a fingerprint hash is provided, it is included in the token as the "fph" claim.
+     * The filter will verify this hash against the fingerprint cookie on each request.
      *
      * @param userDetails the user details
+     * @param fingerprintHash SHA-256 hash of the fingerprint cookie value, or null for no binding
      * @return the generated JWT token
      */
-    public String generateToken(final UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+    public String generateToken(final UserDetails userDetails, final String fingerprintHash) {
+        return generateToken(new HashMap<>(), userDetails, fingerprintHash, TokenUse.SESSION);
     }
 
     /**
-     * Generates a JWT token with extra claims.
+     * Generates a JWT token with fingerprint binding and explicit token use.
+     *
+     * @param userDetails the user details
+     * @param fingerprintHash SHA-256 hash of the fingerprint cookie value, or null for no binding
+     * @param tokenUse intended token usage (session or api)
+     * @return the generated JWT token
+     */
+    public String generateToken(
+            final UserDetails userDetails,
+            final String fingerprintHash,
+            final TokenUse tokenUse
+    ) {
+        return generateToken(new HashMap<>(), userDetails, fingerprintHash, tokenUse);
+    }
+
+    /**
+     * Generates a JWT token with extra claims and fingerprint binding.
      *
      * @param extraClaims additional claims to include in the token
      * @param userDetails the user details
+     * @param fingerprintHash SHA-256 hash of the fingerprint cookie value, or null for no binding
      * @return the generated JWT token
      */
-    public String generateToken(final Map<String, Object> extraClaims, final UserDetails userDetails) {
-        return buildToken(extraClaims, userDetails, jwtExpiration);
+    public String generateToken(
+            final Map<String, Object> extraClaims,
+            final UserDetails userDetails,
+            final String fingerprintHash
+    ) {
+        return generateToken(extraClaims, userDetails, fingerprintHash, TokenUse.SESSION);
+    }
+
+    /**
+     * Generates a JWT token with extra claims, fingerprint binding, and explicit token use.
+     *
+     * @param extraClaims additional claims to include in the token
+     * @param userDetails the user details
+     * @param fingerprintHash SHA-256 hash of the fingerprint cookie value, or null for no binding
+     * @param tokenUse intended token usage (session or api)
+     * @return the generated JWT token
+     */
+    public String generateToken(
+            final Map<String, Object> extraClaims,
+            final UserDetails userDetails,
+            final String fingerprintHash,
+            final TokenUse tokenUse
+    ) {
+        final Map<String, Object> claims = new HashMap<>(extraClaims);
+        final TokenUse effectiveUse = tokenUse != null ? tokenUse : TokenUse.SESSION;
+        claims.put(TOKEN_USE_CLAIM, effectiveUse.claimValue());
+        if (fingerprintHash != null && !fingerprintHash.isEmpty()) {
+            claims.put(FINGERPRINT_CLAIM, fingerprintHash);
+        }
+        return buildToken(claims, userDetails, jwtExpiration);
     }
 
     /**
@@ -150,6 +215,27 @@ public class JwtService {
      */
     public long getExpirationTime() {
         return jwtExpiration;
+    }
+
+    /**
+     * Extracts the fingerprint hash from a JWT token.
+     *
+     * @param token the JWT token
+     * @return the fingerprint hash if present, or null if the token has no fingerprint claim
+     */
+    public String extractFingerprintHash(final String token) {
+        return extractClaim(token, claims -> claims.get(FINGERPRINT_CLAIM, String.class));
+    }
+
+    /**
+     * Extracts the token usage claim ("session" or "api").
+     *
+     * @param token the JWT token
+     * @return the TokenUse, or null if not present or unknown
+     */
+    public TokenUse extractTokenUse(final String token) {
+        final String claim = extractClaim(token, claims -> claims.get(TOKEN_USE_CLAIM, String.class));
+        return TokenUse.fromClaim(claim);
     }
 
     /**
@@ -220,12 +306,28 @@ public class JwtService {
             final long expiration
     ) {
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
+                .issuer(ISSUER)
+                .audience().add(AUDIENCE).and()
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSignInKey())
                 .compact();
+    }
+
+    /**
+     * Extracts the unique token identifier (JTI) from a JWT.
+     *
+     * <p>The JTI can be used for token revocation by maintaining a blocklist
+     * of revoked token IDs.
+     *
+     * @param token the JWT token
+     * @return the token's unique identifier
+     */
+    public String extractTokenId(final String token) {
+        return extractClaim(token, Claims::getId);
     }
 
     private boolean isTokenExpired(final String token) {
@@ -239,6 +341,9 @@ public class JwtService {
     private Claims extractAllClaims(final String token) {
         return Jwts.parser()
                 .verifyWith(getSignInKey())
+                .clockSkewSeconds(CLOCK_SKEW_SECONDS)
+                .requireIssuer(ISSUER)
+                .requireAudience(AUDIENCE)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

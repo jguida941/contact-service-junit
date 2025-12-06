@@ -56,41 +56,41 @@ class ActuatorEndpointsTest extends SecuredMockMvcTest {
     }
 
     /**
-     * Verifies /actuator/env is not accessible (returns 403).
+     * Verifies /actuator/env is not accessible (returns 401).
      *
      * <p>The env endpoint exposes environment variables and system properties,
-     * which may contain secrets. Spring Security intercepts requests to
-     * non-exposed endpoints and returns 403 Forbidden.
+     * which may contain secrets. Spring Security's AuthenticationEntryPoint
+     * returns 401 Unauthorized for unauthenticated requests.
      */
     @Test
     void envEndpointIsNotExposed() throws Exception {
         mockMvc.perform(get("/actuator/env"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     /**
-     * Verifies /actuator/beans is not accessible (returns 403).
+     * Verifies /actuator/beans is not accessible (returns 401).
      *
      * <p>The beans endpoint lists all Spring beans and their dependencies,
-     * which reveals internal architecture. Spring Security intercepts and
-     * returns 403 for non-exposed endpoints.
+     * which reveals internal architecture. Spring Security's AuthenticationEntryPoint
+     * returns 401 Unauthorized for unauthenticated requests.
      */
     @Test
     void beansEndpointIsNotExposed() throws Exception {
         mockMvc.perform(get("/actuator/beans"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     /**
-     * Verifies /actuator/metrics requires authentication (returns 403 without auth).
+     * Verifies /actuator/metrics requires authentication (returns 401 without auth).
      *
      * <p>The metrics endpoint exposes JVM and application metrics.
-     * Protected by Spring Security to prevent information disclosure.
+     * Protected by Spring Security's AuthenticationEntryPoint.
      */
     @Test
     void metricsEndpointRequiresAuth() throws Exception {
         mockMvc.perform(get("/actuator/metrics"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     /**
@@ -104,15 +104,15 @@ class ActuatorEndpointsTest extends SecuredMockMvcTest {
     }
 
     /**
-     * Verifies /actuator/prometheus requires authentication (returns 403 without auth).
+     * Verifies /actuator/prometheus requires authentication (returns 401 without auth).
      *
      * <p>The prometheus endpoint exposes metrics in Prometheus format.
-     * Protected by Spring Security; should be network-restricted in production.
+     * Protected by Spring Security's AuthenticationEntryPoint.
      */
     @Test
     void prometheusEndpointRequiresAuth() throws Exception {
         mockMvc.perform(get("/actuator/prometheus"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     /**

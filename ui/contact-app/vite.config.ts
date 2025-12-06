@@ -36,6 +36,8 @@ export default defineConfig({
     },
   },
   build: {
+    // Output to dist/ for Maven's frontend-maven-plugin workflow (ADR-0028)
+    // Maven copies dist/ → target/classes/static/ during prepare-package
     outDir: 'dist',
   },
 });

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Eye, Filter } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, Filter, Archive, ArchiveRestore } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
@@ -145,6 +145,16 @@ export function ProjectsPage() {
     },
   });
 
+  // Quick archive/unarchive by updating status
+  const handleQuickArchive = (project: Project) => {
+    if (updateMutation.isPending) return; // Prevent duplicate API calls
+    const newStatus = project.status === 'ARCHIVED' ? 'ACTIVE' : 'ARCHIVED';
+    updateMutation.mutate({
+      id: project.id,
+      data: { status: newStatus },
+    });
+  };
+
   const openCreateSheet = () => {
     setSelectedProject(null);
     setSheetMode('create');
@@ -276,7 +286,7 @@ export function ProjectsPage() {
                 Status
               </SortableTableHead>
               <TableHead>Tasks</TableHead>
-              <TableHead className="w-[140px]">Actions</TableHead>
+              <TableHead className="w-[170px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -351,6 +361,19 @@ export function ProjectsPage() {
                         aria-label={`Edit project ${project.name}`}
                       >
                         <Pencil className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleQuickArchive(project)}
+                        aria-label={project.status === 'ARCHIVED' ? `Unarchive project ${project.name}` : `Archive project ${project.name}`}
+                        title={project.status === 'ARCHIVED' ? 'Unarchive' : 'Archive'}
+                      >
+                        {project.status === 'ARCHIVED' ? (
+                          <ArchiveRestore className="h-4 w-4 text-blue-600" aria-hidden="true" />
+                        ) : (
+                          <Archive className="h-4 w-4 text-gray-600" aria-hidden="true" />
+                        )}
                       </Button>
                       <Button
                         variant="ghost"
@@ -455,6 +478,22 @@ export function ProjectsPage() {
                 <Button onClick={() => openEditSheet(selectedProject)} variant="outline">
                   <Pencil className="mr-2 h-4 w-4" />
                   Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleQuickArchive(selectedProject)}
+                >
+                  {selectedProject.status === 'ARCHIVED' ? (
+                    <>
+                      <ArchiveRestore className="mr-2 h-4 w-4" />
+                      Unarchive
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="mr-2 h-4 w-4" />
+                      Archive
+                    </>
+                  )}
                 </Button>
                 <Button
                   variant="destructive"

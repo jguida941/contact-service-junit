@@ -2,6 +2,7 @@ package contactapp.domain;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.UUID;
 
 /**
  * Task domain object.
@@ -45,7 +46,8 @@ public final class Task {
     private TaskStatus status;
     private LocalDate dueDate;
     private String projectId;
-    private Long assigneeId;
+    private UUID assigneeId;
+    private boolean archived;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -118,7 +120,7 @@ public final class Task {
             final TaskStatus status,
             final LocalDate dueDate,
             final String projectId,
-            final Long assigneeId,
+            final UUID assigneeId,
             final Instant createdAt,
             final Instant updatedAt) {
         this.taskId = Validation.validateTrimmedLength(taskId, "taskId", MIN_LENGTH, ID_MAX_LENGTH);
@@ -174,7 +176,7 @@ public final class Task {
         this.updatedAt = Instant.now();
     }
 
-    public Long getAssigneeId() {
+    public UUID getAssigneeId() {
         return assigneeId;
     }
 
@@ -183,7 +185,7 @@ public final class Task {
      *
      * @param assigneeId the user ID to assign the task to (nullable, can unassign)
      */
-    public void setAssigneeId(final Long assigneeId) {
+    public void setAssigneeId(final UUID assigneeId) {
         this.assigneeId = assigneeId;
         this.updatedAt = Instant.now();
     }
@@ -298,7 +300,7 @@ public final class Task {
             final TaskStatus newStatus,
             final LocalDate newDueDate,
             final String newProjectId,
-            final Long newAssigneeId) {
+            final UUID newAssigneeId) {
         // Validate all incoming values before mutating state so the update is all-or-nothing
         final String validatedName = normalizeTaskName(newName);
         final String validatedDescription = normalizeTaskDescription(newDescription);
@@ -338,24 +340,205 @@ public final class Task {
         return Validation.validateTrimmedLength(value, "description", DESCRIPTION_MAX_LENGTH);
     }
 
+     /**
+     * Returns whether this task is archived.
+     *
+     * @return true if archived, false otherwise
+     */
+    public boolean isArchived() {
+        return archived;
+    }
+
+    /**
+     * Sets the archived status of this task.
+     *
+     * @param archived true to archive, false to unarchive
+     */
+    public void setArchived(final boolean archived) {
+        this.archived = archived;
+        this.updatedAt = Instant.now();
+    }
+
+    /**
+     * Returns whether this task is overdue.
+     *
+     * <p>A task is considered overdue if it has a due date and that date is before today.
+     * Tasks with no due date (null) are never considered overdue.
+     *
+     * @return true if the task has a due date that is in the past, false otherwise
+     */
+    public boolean isOverdue() {
+        if (dueDate == null) {
+            return false;
+        }
+        return dueDate.isBefore(LocalDate.now());
+    }
+
     /**
      * Creates a defensive copy of this Task.
      *
-     * <p>Validates the source state, then creates a new Task with the same field values.
-     * Note: createdAt and updatedAt are copied as-is to preserve the original timestamps.
+     * <p>Uses reconstitution to preserve existing tasks that may have past
+     * due dates (tasks naturally become "overdue" over time).
      *
      * @return a new Task with the same field values
      * @throws IllegalArgumentException if internal state is corrupted (null fields)
      */
     public Task copy() {
         validateCopySource(this);
-        final Task copy = new Task(this.taskId, this.name, this.description, this.status, this.dueDate);
-        // Preserve original timestamps, project reference, and assignee
-        copy.projectId = this.projectId;
-        copy.assigneeId = this.assigneeId;
-        copy.createdAt = this.createdAt;
-        copy.updatedAt = this.updatedAt;
-        return copy;
+        return reconstitute(
+                this.taskId,
+                this.name,
+                this.description,
+                this.status,
+                this.dueDate,
+                this.projectId,
+                this.assigneeId,
+                this.createdAt,
+                this.updatedAt,
+                this.archived);
+    }
+
+    /**
+     * Reconstitutes a Task from persistence without applying the "not in past" rule.
+     *
+     * <p>This factory method is used when loading existing tasks from the database.
+     * The "dueDate must not be in the past" rule only applies to NEW tasks;
+     * existing tasks naturally become "overdue" over time and should still be readable,
+     * updatable, and deletable.
+     *
+     * @param taskId      unique identifier (required, length 1-10)
+     * @param name        task name (required, length 1-20)
+     * @param description task description (required, length 1-50)
+     * @param status      task status (required, defaults to TODO if null)
+     * @param dueDate     due date (optional, nullable, may be in the past for existing records)
+     * @param projectId   associated project ID (optional, nullable)
+     * @param assigneeId  assigned user ID (optional, nullable)
+     * @param createdAt   timestamp when originally created (required)
+     * @param updatedAt   timestamp when last updated (required)
+     * @return the reconstituted Task
+     * @throws IllegalArgumentException if required fields are null or violate length constraints
+     */
+    public static Task reconstitute(
+            final String taskId,
+            final String name,
+            final String description,
+            final TaskStatus status,
+            final LocalDate dueDate,
+            final String projectId,
+            final UUID assigneeId,
+            final Instant createdAt,
+            final Instant updatedAt) {
+        return reconstitute(
+                taskId,
+                name,
+                description,
+                status,
+                dueDate,
+                projectId,
+                assigneeId,
+                createdAt,
+                updatedAt,
+                false);
+    }
+
+    /**
+     * Reconstitutes a Task from persistence without applying the "not in past" rule.
+     *
+     * <p>This factory method is used when loading existing tasks from the database.
+     * The "dueDate must not be in the past" rule only applies to NEW tasks;
+     * existing tasks naturally become "overdue" over time and should still be readable,
+     * updatable, and deletable.
+     *
+     * @param taskId      unique identifier (required, length 1-10)
+     * @param name        task name (required, length 1-20)
+     * @param description task description (required, length 1-50)
+     * @param status      task status (required, defaults to TODO if null)
+     * @param dueDate     due date (optional, nullable, may be in the past for existing records)
+     * @param projectId   associated project ID (optional, nullable)
+     * @param assigneeId  assigned user ID (optional, nullable)
+     * @param createdAt   timestamp when originally created (required)
+     * @param updatedAt   timestamp when last updated (required)
+     * @param archived    whether the task is archived
+     * @return the reconstituted Task
+     * @throws IllegalArgumentException if required fields are null or violate length constraints
+     */
+    public static Task reconstitute(
+            final String taskId,
+            final String name,
+            final String description,
+            final TaskStatus status,
+            final LocalDate dueDate,
+            final String projectId,
+            final UUID assigneeId,
+            final Instant createdAt,
+            final Instant updatedAt,
+            final boolean archived) {
+        // Validate ID, name, description, and timestamps, but NOT the past-date rule for dueDate
+        final String validatedId = Validation.validateTrimmedLength(taskId, "taskId", MIN_LENGTH, ID_MAX_LENGTH);
+        final String validatedName = normalizeTaskName(name);
+        final String validatedDesc = normalizeTaskDescription(description);
+        final TaskStatus validatedStatus = (status == null) ? TaskStatus.TODO : status;
+
+        if (createdAt == null) {
+            throw new IllegalArgumentException("createdAt must not be null");
+        }
+        if (updatedAt == null) {
+            throw new IllegalArgumentException("updatedAt must not be null");
+        }
+
+        // Use private constructor that bypasses past-date validation
+        return new Task(
+                validatedId,
+                validatedName,
+                validatedDesc,
+                validatedStatus,
+                dueDate,
+                projectId != null ? projectId.trim() : null,
+                assigneeId,
+                createdAt,
+                updatedAt,
+                archived);
+    }
+
+    /**
+     * Private constructor for reconstitution that bypasses date validation.
+     *
+     * <p>This constructor is only called from {@link #reconstitute}, which handles
+     * loading existing tasks from the database. Since tasks may naturally have
+     * past due dates over time, we skip validation here.
+     *
+     * @param taskId              validated task ID
+     * @param name                validated task name
+     * @param description         validated task description
+     * @param status              validated task status
+     * @param dueDate             due date (optional, may be in past)
+     * @param projectId           optional project ID
+     * @param assigneeId          optional assignee user ID
+     * @param createdAt           creation timestamp
+     * @param updatedAt           update timestamp
+     * @param archived            whether the task is archived
+     */
+    private Task(
+            final String taskId,
+            final String name,
+            final String description,
+            final TaskStatus status,
+            final LocalDate dueDate,
+            final String projectId,
+            final UUID assigneeId,
+            final Instant createdAt,
+            final Instant updatedAt,
+            final boolean archived) {
+        this.taskId = taskId;
+        this.name = name;
+        this.description = description;
+        this.status = status;
+        this.dueDate = dueDate; // Pre-validated by caller (reconstitute)
+        this.projectId = projectId;
+        this.assigneeId = assigneeId;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.archived = archived;
     }
 
     /**

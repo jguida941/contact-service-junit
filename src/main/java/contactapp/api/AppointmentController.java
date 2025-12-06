@@ -28,6 +28,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -50,6 +51,8 @@ import static contactapp.domain.Validation.MAX_ID_LENGTH;
  *   <li>GET /api/v1/appointments/{id} - Get appointment by ID (200 OK / 404 Not Found)</li>
  *   <li>PUT /api/v1/appointments/{id} - Update appointment (200 OK / 404 Not Found)</li>
  *   <li>DELETE /api/v1/appointments/{id} - Delete appointment (204 No Content / 404 Not Found)</li>
+ *   <li>PATCH /api/v1/appointments/{id}/archive - Archive appointment (200 OK / 404 Not Found)</li>
+ *   <li>PATCH /api/v1/appointments/{id}/unarchive - Unarchive appointment (200 OK / 404 Not Found)</li>
  * </ul>
  *
  * <h2>Date Handling</h2>
@@ -283,5 +286,71 @@ public class AppointmentController {
         if (!appointmentService.deleteAppointment(id)) {
             throw new ResourceNotFoundException("Appointment not found: " + id);
         }
+    }
+
+    /**
+     * Archives an appointment by ID.
+     *
+     * @param id the appointment ID
+     * @return the updated appointment
+     * @throws ResourceNotFoundException if no appointment with the given ID exists
+     */
+    @Operation(summary = "Archive an appointment")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Appointment archived",
+                    content = @Content(schema = @Schema(implementation = AppointmentResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid ID format",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Appointment not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PatchMapping("/{id}/archive")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public AppointmentResponse archive(
+            @Parameter(
+                    description = "Appointment ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
+            @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String id) {
+        if (!appointmentService.archiveAppointment(id)) {
+            throw new ResourceNotFoundException("Appointment not found: " + id);
+        }
+
+        return getById(id);
+    }
+
+    /**
+     * Unarchives an appointment by ID.
+     *
+     * @param id the appointment ID
+     * @return the updated appointment
+     * @throws ResourceNotFoundException if no appointment with the given ID exists
+     */
+    @Operation(summary = "Unarchive an appointment")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Appointment unarchived",
+                    content = @Content(schema = @Schema(implementation = AppointmentResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid ID format",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Appointment not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PatchMapping("/{id}/unarchive")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public AppointmentResponse unarchive(
+            @Parameter(
+                    description = "Appointment ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
+            @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String id) {
+        if (!appointmentService.unarchiveAppointment(id)) {
+            throw new ResourceNotFoundException("Appointment not found: " + id);
+        }
+
+        return getById(id);
     }
 }

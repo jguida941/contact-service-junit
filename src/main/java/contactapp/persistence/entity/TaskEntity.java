@@ -21,6 +21,7 @@ import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.UUID;
 
 /**
  * Hibernate entity for {@link contactapp.domain.Task} persistence.
@@ -75,7 +76,10 @@ public class TaskEntity {
     private String projectId;
 
     @Column(name = "assignee_id")
-    private Long assigneeId;
+    private UUID assigneeId;
+
+    @Column(name = "archived", nullable = false)
+    private boolean archived;
 
     protected TaskEntity() {
         // JPA only
@@ -176,12 +180,20 @@ public class TaskEntity {
         this.projectId = projectId;
     }
 
-    public Long getAssigneeId() {
+    public UUID getAssigneeId() {
         return assigneeId;
     }
 
-    public void setAssigneeId(final Long assigneeId) {
+    public void setAssigneeId(final UUID assigneeId) {
         this.assigneeId = assigneeId;
+    }
+
+    public boolean isArchived() {
+        return archived;
+    }
+
+    public void setArchived(final boolean archived) {
+        this.archived = archived;
     }
 
     @PrePersist

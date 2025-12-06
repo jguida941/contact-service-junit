@@ -78,13 +78,24 @@ flowchart LR
 ### Build Integration (ADR-0028)
 
 **Maven Plugin**: `frontend-maven-plugin`
-- Installs Node.js 22.11.0 + npm 10.9.0
+- Installs Node.js 22.16.0 + npm
 - Runs `npm ci` for reproducible installs
-- Executes Vitest tests
-- Builds production bundle via `npm run build`
-- Copies `dist/` into `target/classes/static/` for JAR packaging
+- Builds production bundle via `npm run build` → outputs to `dist/`
+- `maven-resources-plugin` copies `dist/` → `target/classes/static/`
 
-**Single-command deployment**: `mvn clean package && java -jar target/*.jar`
+**Build commands**:
+```bash
+# Production build (CI/CD) - single JAR with frontend bundled
+mvn clean package && java -jar target/*.jar
+
+# Development - separate servers (recommended for hot reload)
+mvn spring-boot:run              # Terminal 1: Backend on :8080
+cd ui/contact-app && npm run dev # Terminal 2: Frontend on :5173 (proxies to :8080)
+```
+
+**Test Fixtures**:
+- `src/test/resources/static/index.html` - Minimal HTML fixture for SpaController integration tests
+- Enables testing SPA forwarding behavior without requiring full React build
 
 ## File Structure
 
@@ -130,6 +141,34 @@ async function fetchWithCsrf(input: RequestInfo | URL, init: RequestInit = {}): 
 ```
 
 **Cookie-based auth**: JWTs stored in HttpOnly cookies. Profile metadata cached in `sessionStorage` via `useProfile` hook.
+
+## Timezone-Safe Date Handling (ADR-0053)
+
+**Problem**: JavaScript's `new Date("2025-12-06")` parses date-only strings as **UTC midnight**, causing dates to shift backwards by one day in negative UTC offset timezones (EST, PST, etc.).
+
+**Solution**: Use `parseISO()` from date-fns which parses as **local midnight**.
+
+**Centralized utilities in `lib/dateUtils.ts`**:
+```typescript
+import { format, parseISO } from 'date-fns';
+
+// Use for date-only strings from API (YYYY-MM-DD)
+export function formatDateSafe(dateString: string | null | undefined): string {
+  if (!dateString) return 'No date';
+  return format(parseISO(dateString), 'PPP');  // e.g., "December 6th, 2025"
+}
+
+// Use for ISO datetime strings
+export function formatDateTimeSafe(dateString: string | null | undefined): string {
+  if (!dateString) return 'No date';
+  return format(parseISO(dateString), 'PPP p');  // e.g., "December 6th, 2025 at 2:30 PM"
+}
+```
+
+**Guidelines**:
+- ✅ Use `formatDateSafe()` / `formatDateTimeSafe()` for all API date display
+- ❌ Never use `new Date(isoString)` directly for display
+- ✅ Timezone regression tests in `dateUtils.test.ts` catch date-shift bugs
 
 ## Validation Alignment
 
@@ -195,3 +234,4 @@ npm run dev
 - [ADR-0026](../../adrs/ADR-0026-theme-system-and-design-tokens.md) - Theme System and Design Tokens
 - [ADR-0027](../../adrs/ADR-0027-application-shell-layout.md) - Application Shell Layout Pattern
 - [ADR-0028](../../adrs/ADR-0028-frontend-backend-build-integration.md) - Frontend-Backend Build Integration
+- [ADR-0053](../../adrs/ADR-0053-timezone-safe-date-parsing.md) - Timezone-Safe Date Parsing in Frontend

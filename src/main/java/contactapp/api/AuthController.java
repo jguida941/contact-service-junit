@@ -6,7 +6,11 @@ import contactapp.api.dto.LoginRequest;
 import contactapp.api.dto.RegisterRequest;
 import contactapp.api.exception.DuplicateResourceException;
 import contactapp.security.JwtService;
+import contactapp.security.RefreshToken;
+import contactapp.security.RefreshTokenService;
 import contactapp.security.Role;
+import contactapp.security.TokenFingerprintService;
+import contactapp.security.TokenUse;
 import contactapp.security.User;
 import contactapp.security.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,6 +32,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -83,6 +89,8 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final TokenFingerprintService fingerprintService;
+    private final RefreshTokenService refreshTokenService;
 
     @Value("${app.auth.cookie.secure:true}")
     private boolean secureCookie;
@@ -94,16 +102,22 @@ public class AuthController {
      * @param userRepository repository for user persistence
      * @param passwordEncoder encoder for password hashing (BCrypt)
      * @param jwtService service for JWT token generation
+     * @param fingerprintService service for token fingerprinting (ADR-0052 Phase C)
+     * @param refreshTokenService service for refresh token management (ADR-0052 Phase B)
      */
     public AuthController(
             final AuthenticationManager authenticationManager,
             final UserRepository userRepository,
             final PasswordEncoder passwordEncoder,
-            final JwtService jwtService) {
+            final JwtService jwtService,
+            final TokenFingerprintService fingerprintService,
+            final RefreshTokenService refreshTokenService) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.fingerprintService = fingerprintService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     /**
@@ -153,17 +167,74 @@ public class AuthController {
                 )
         );
 
-        // Load user and generate token
+        // Load user and generate token with fingerprint (ADR-0052 Phase C)
         final User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
-        final String token = jwtService.generateToken(user);
+        // Generate fingerprint pair: raw for cookie, hash for JWT
+        final TokenFingerprintService.FingerprintPair fingerprint = fingerprintService.generateFingerprintPair();
+        final String token = jwtService.generateToken(user, fingerprint.hashed(), TokenUse.SESSION);
 
-        // Set HttpOnly cookie with JWT
+        // Create refresh token (ADR-0052 Phase B) - revokes existing tokens
+        final RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+
+        // Set HttpOnly cookies: auth token, refresh token, and fingerprint
         setAuthCookie(response, token, jwtService.getExpirationTime());
+        setRefreshTokenCookie(response, refreshToken.getToken());
+        setFingerprintCookie(response, fingerprint.raw());
 
         return new AuthResponse(
                 null, // Token is in HttpOnly cookie, not response body
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole().name(),
+                jwtService.getExpirationTime()
+        );
+    }
+
+    /**
+     * Issues a non-fingerprinted API token for programmatic clients (header-based auth).
+     *
+     * <p>Unlike the browser login flow, this endpoint does not set cookies and does not
+     * include a fingerprint claim. Tokens are intended to be used via
+     * {@code Authorization: Bearer <token>} only.</p>
+     *
+     * @param request the login credentials
+     * @return authentication response with token in body
+     */
+    @Operation(summary = "Issue API token for programmatic clients (Authorization header)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "API token issued",
+                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Validation error",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PostMapping(value = "/api-token", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public AuthResponse apiToken(
+            @Valid @RequestBody final LoginRequest request
+    ) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.username(),
+                        request.password()
+                )
+        );
+
+        final User user = userRepository.findByUsername(request.username())
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        // API tokens are header-only and intentionally omit fingerprint binding
+        final String token = jwtService.generateToken(
+                Map.of(),
+                user,
+                null,
+                TokenUse.API
+        );
+
+        return new AuthResponse(
+                token, // Token returned in body for header-based clients
                 user.getUsername(),
                 user.getEmail(),
                 user.getRole().name(),
@@ -215,11 +286,17 @@ public class AuthController {
             throw new DuplicateResourceException("Username or email already exists");
         }
 
-        // Generate token for immediate login
-        final String token = jwtService.generateToken(user);
+        // Generate token with fingerprint for immediate login (ADR-0052 Phase C)
+        final TokenFingerprintService.FingerprintPair fingerprint = fingerprintService.generateFingerprintPair();
+        final String token = jwtService.generateToken(user, fingerprint.hashed(), TokenUse.SESSION);
 
-        // Set HttpOnly cookie with JWT
+        // Create refresh token (ADR-0052 Phase B)
+        final RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+
+        // Set HttpOnly cookies: auth token, refresh token, and fingerprint
         setAuthCookie(response, token, jwtService.getExpirationTime());
+        setRefreshTokenCookie(response, refreshToken.getToken());
+        setFingerprintCookie(response, fingerprint.raw());
 
         return new AuthResponse(
                 null, // Token is in HttpOnly cookie, not response body
@@ -231,60 +308,58 @@ public class AuthController {
     }
 
     /**
-     * Refreshes the JWT token if the current token is valid or within the refresh window.
+     * Refreshes the JWT token using a valid refresh token (ADR-0052 Phase B).
      *
-     * <p>This endpoint implements sliding session behavior:
+     * <p>Token rotation is performed on each refresh:
      * <ul>
-     *   <li>If the token is still valid, a new token is issued</li>
-     *   <li>If the token expired within the refresh window (default 5 min), a new token is issued</li>
-     *   <li>If the token is too old, 401 Unauthorized is returned</li>
+     *   <li>Old refresh token is revoked</li>
+     *   <li>New refresh token is created</li>
+     *   <li>New access token is issued with rotated fingerprint</li>
      * </ul>
      *
-     * <p>Frontend clients should call this endpoint proactively (e.g., 5 minutes before expiry)
-     * to maintain a seamless user session without requiring re-authentication.
+     * <p>Frontend clients should call this endpoint when receiving a 401,
+     * attempting a single refresh before redirecting to login.
      *
-     * @param request HTTP request containing the auth cookie
-     * @param response HTTP response for setting the new auth cookie
+     * @param request HTTP request containing the refresh_token cookie
+     * @param response HTTP response for setting new cookies
      * @return authentication response with refreshed token info
      */
-    @Operation(summary = "Refresh JWT token (sliding session)")
+    @Operation(summary = "Refresh JWT token using refresh token")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Token refreshed successfully",
                     content = @Content(schema = @Schema(implementation = AuthResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Token expired or invalid",
+            @ApiResponse(responseCode = "401", description = "Refresh token expired or invalid",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping("/refresh")
     public AuthResponse refresh(
             final jakarta.servlet.http.HttpServletRequest request,
             final HttpServletResponse response) {
-        // Extract token from cookie
-        final String token = extractTokenFromCookies(request);
-        if (token == null) {
-            throw new BadCredentialsException("No authentication token found");
+        // Extract refresh token from cookie
+        final String refreshTokenValue = extractRefreshTokenFromCookies(request);
+        if (refreshTokenValue == null) {
+            throw new BadCredentialsException("No refresh token found");
         }
 
-        // Extract username and load user
-        final String username;
-        try {
-            username = jwtService.extractUsername(token);
-        } catch (Exception e) {
-            throw new BadCredentialsException("Invalid token");
-        }
+        // Atomically validate and revoke refresh token (prevents TOCTOU race condition)
+        // Uses pessimistic locking so concurrent refresh requests serialize at DB level
+        final RefreshToken oldRefreshToken = refreshTokenService.validateAndRevokeAtomically(refreshTokenValue)
+                .orElseThrow(() -> new BadCredentialsException(
+                        "Invalid or expired refresh token - please log in again"));
 
-        final User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BadCredentialsException("User not found"));
+        final User user = oldRefreshToken.getUser();
 
-        // Check if token is eligible for refresh
-        if (!jwtService.isTokenEligibleForRefresh(token, user)) {
-            throw new BadCredentialsException("Token expired - please log in again");
-        }
+        // Create new refresh token
+        final RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user);
 
-        // Generate new token
-        final String newToken = jwtService.generateToken(user);
+        // Generate new access token with rotated fingerprint (ADR-0052 Phase C)
+        final TokenFingerprintService.FingerprintPair fingerprint = fingerprintService.generateFingerprintPair();
+        final String newAccessToken = jwtService.generateToken(user, fingerprint.hashed(), TokenUse.SESSION);
 
-        // Set new cookie
-        setAuthCookie(response, newToken, jwtService.getExpirationTime());
+        // Set new cookies: access token, refresh token, and fingerprint
+        setAuthCookie(response, newAccessToken, jwtService.getExpirationTime());
+        setRefreshTokenCookie(response, newRefreshToken.getToken());
+        setFingerprintCookie(response, fingerprint.raw());
 
         return new AuthResponse(
                 null, // Token is in HttpOnly cookie, not response body
@@ -296,24 +371,42 @@ public class AuthController {
     }
 
     /**
-     * Logs out the current user by clearing the auth cookie.
+     * Logs out the current user by revoking tokens and clearing cookies.
      *
-     * <p>Clears the HttpOnly auth cookie and provides a hook for:
+     * <p>Performs complete session termination:
      * <ul>
-     *   <li>Future token blacklisting implementation</li>
-     *   <li>Audit logging of logout events</li>
+     *   <li>Revokes the refresh token in the database (ADR-0052 Phase B)</li>
+     *   <li>Clears the auth_token cookie</li>
+     *   <li>Clears the refresh_token cookie</li>
+     *   <li>Clears the fingerprint cookies (ADR-0052 Phase C)</li>
      * </ul>
      *
-     * @param response HTTP response for clearing the auth cookie
+     * @param request HTTP request containing the refresh token cookie
+     * @param response HTTP response for clearing cookies
      */
     @Operation(summary = "Logout current user")
     @ApiResponse(responseCode = "204", description = "Logout successful")
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void logout(final HttpServletResponse response) {
-        // Clear the auth cookie by setting it with maxAge=0
+    public void logout(
+            final jakarta.servlet.http.HttpServletRequest request,
+            final HttpServletResponse response) {
+        // Revoke refresh token if present (ADR-0052 Phase B)
+        final String refreshTokenValue = extractRefreshTokenFromCookies(request);
+        if (refreshTokenValue != null) {
+            refreshTokenService.revokeToken(refreshTokenValue);
+        } else {
+            // Fallback: revoke all user tokens when cookie is missing (e.g., legacy path scoping)
+            final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof User user) {
+                refreshTokenService.revokeAllUserTokens(user);
+            }
+        }
+
+        // Clear all auth cookies
         clearAuthCookie(response);
-        // Future: Add token to blacklist if implementing token revocation
+        clearRefreshTokenCookie(response);
+        clearFingerprintCookies(response);
     }
 
     /**
@@ -327,6 +420,24 @@ public class AuthController {
         if (cookies != null) {
             for (final jakarta.servlet.http.Cookie cookie : cookies) {
                 if (AUTH_COOKIE_NAME.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Extracts the refresh token from request cookies.
+     *
+     * @param request the HTTP request
+     * @return the refresh token value or null if not found
+     */
+    private String extractRefreshTokenFromCookies(final jakarta.servlet.http.HttpServletRequest request) {
+        final jakarta.servlet.http.Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (final jakarta.servlet.http.Cookie cookie : cookies) {
+                if (RefreshTokenService.REFRESH_TOKEN_COOKIE.equals(cookie.getName())) {
                     return cookie.getValue();
                 }
             }
@@ -366,5 +477,61 @@ public class AuthController {
                 .maxAge(Duration.ZERO)
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    /**
+     * Sets the refresh token cookie (ADR-0052 Phase B).
+     * Cookie path is scoped to /api/auth so it's sent to both refresh and logout endpoints.
+     *
+     * @param response the HTTP response
+     * @param tokenValue the refresh token value
+     */
+    private void setRefreshTokenCookie(final HttpServletResponse response, final String tokenValue) {
+        final ResponseCookie cookie = refreshTokenService.createRefreshTokenCookie(tokenValue);
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    /**
+     * Clears the refresh token cookie.
+     *
+     * @param response the HTTP response
+     */
+    private void clearRefreshTokenCookie(final HttpServletResponse response) {
+        final ResponseCookie cookie = refreshTokenService.createClearRefreshTokenCookie();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        // Clear legacy path variant (/api/auth/refresh) to cover pre-fix deployments
+        final ResponseCookie legacyCookie = refreshTokenService.createLegacyClearRefreshTokenCookie();
+        response.addHeader(HttpHeaders.SET_COOKIE, legacyCookie.toString());
+    }
+
+    /**
+     * Sets the fingerprint cookie using TokenFingerprintService (ADR-0052 Phase C).
+     * Cookie max-age is aligned with JWT expiration to prevent silent auth failures.
+     *
+     * @param response the HTTP response
+     * @param fingerprint the raw fingerprint value
+     */
+    private void setFingerprintCookie(final HttpServletResponse response, final String fingerprint) {
+        final Duration maxAge = Duration.ofMillis(jwtService.getExpirationTime());
+        final ResponseCookie cookie = fingerprintService.createFingerprintCookie(fingerprint, secureCookie, maxAge);
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        // Clear the opposite variant to avoid stale cookies when switching HTTP↔HTTPS
+        final ResponseCookie oppositeClearCookie = fingerprintService.createClearCookie(!secureCookie);
+        response.addHeader(HttpHeaders.SET_COOKIE, oppositeClearCookie.toString());
+    }
+
+    /**
+     * Clears both fingerprint cookie variants (HTTPS and HTTP dev names).
+     * ADR-0052 specifies __Secure-Fgp for HTTPS and Fgp for HTTP dev.
+     *
+     * @param response the HTTP response
+     */
+    private void clearFingerprintCookies(final HttpServletResponse response) {
+        // Clear the secure cookie variant
+        final ResponseCookie secureClearCookie = fingerprintService.createClearCookie(true);
+        response.addHeader(HttpHeaders.SET_COOKIE, secureClearCookie.toString());
+        // Clear the dev cookie variant
+        final ResponseCookie devClearCookie = fingerprintService.createClearCookie(false);
+        response.addHeader(HttpHeaders.SET_COOKIE, devClearCookie.toString());
     }
 }

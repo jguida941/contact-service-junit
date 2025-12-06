@@ -2,12 +2,15 @@ package contactapp.security;
 
 import contactapp.config.RateLimitingFilter;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import jakarta.servlet.http.HttpServletResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -19,10 +22,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.AndRequestMatcher;
@@ -128,21 +134,28 @@ public class SecurityConfig {
     @SuppressWarnings("deprecation") // requiresChannel deprecated in Spring Security 6.1; kept for SSL config
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) {
         try {
-            // Spring Security 7+ .spa() method handles SPA CSRF automatically:
-            // - Uses CookieCsrfTokenRepository with HttpOnly=false
-            // - Properly resolves raw tokens from X-XSRF-TOKEN header
-            // - Handles BREACH protection correctly for SPAs
+            // CSRF configuration for SPA (React frontend):
+            // - CookieCsrfTokenRepository with HttpOnly=false so JavaScript can read the token
+            // - XorCsrfTokenRequestAttributeHandler provides BREACH protection and handles X-XSRF-TOKEN header
+            // - SameSite=Lax prevents CSRF while allowing same-site navigation
+            // - Secure flag set based on environment (HTTPS in production)
+            // Note: We explicitly configure instead of using .spa() to ensure cookie customizer is applied
             final CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
             csrfTokenRepository.setCookieCustomizer(cookie -> cookie
                     .sameSite("Lax")
                     .secure(secureSessionCookie));
+
+            // XorCsrfTokenRequestAttributeHandler handles BREACH protection for SPAs
+            final XorCsrfTokenRequestAttributeHandler csrfHandler = new XorCsrfTokenRequestAttributeHandler();
+            // Setting to null means the token is available immediately (not deferred) - required for SPAs
+            csrfHandler.setCsrfRequestAttributeName(null);
 
             http
                     .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                     .csrf(csrf -> csrf
                             .ignoringRequestMatchers(CSRF_IGNORED_MATCHERS)
                             .csrfTokenRepository(csrfTokenRepository)
-                            .spa())
+                            .csrfTokenRequestHandler(csrfHandler))
                     .headers(headers -> {
                         headers.contentSecurityPolicy(csp -> csp
                                 .policyDirectives(buildCspPolicy()));
@@ -150,7 +163,7 @@ public class SecurityConfig {
                                 .policy("geolocation=(), microphone=(), camera=(), "
                                         + "payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"));
                         headers.contentTypeOptions(contentType -> { });
-                        headers.frameOptions(frame -> frame.sameOrigin());
+                        headers.frameOptions(frame -> frame.deny());
                         headers.referrerPolicy(referrer -> referrer
                                 .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
                     })
@@ -170,6 +183,11 @@ public class SecurityConfig {
                             .requestMatchers("/error").permitAll()
                             // Any other request also requires authentication
                             .anyRequest().authenticated()
+                    )
+                    // Exception handling: proper 401/403 JSON responses (ADR-0052 Phase 0)
+                    .exceptionHandling(ex -> ex
+                            .authenticationEntryPoint(jsonAuthenticationEntryPoint())
+                            .accessDeniedHandler(jsonAccessDeniedHandler())
                     );
 
             // Require HTTPS in production when configured
@@ -196,6 +214,32 @@ public class SecurityConfig {
     }
 
     /**
+     * Creates an AuthenticationEntryPoint that returns JSON 401 responses.
+     * Per ADR-0052 Phase 0: Unauthenticated requests get proper JSON error.
+     */
+    private AuthenticationEntryPoint jsonAuthenticationEntryPoint() {
+        return (request, response, authException) -> {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Authentication required\"}");
+        };
+    }
+
+    /**
+     * Creates an AccessDeniedHandler that returns JSON 403 responses.
+     * Per ADR-0052 Phase 0: Authenticated but unauthorized requests get proper JSON error.
+     */
+    private AccessDeniedHandler jsonAccessDeniedHandler() {
+        return (request, response, accessDeniedException) -> {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.getWriter().write("{\"error\":\"Forbidden\",\"message\":\"Access denied\"}");
+        };
+    }
+
+    /**
      * Configures CORS for the SPA origin.
      *
      * <p>Allows the React frontend (running on a different port during development)
@@ -208,7 +252,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         final CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(parseAllowedOrigins());
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
@@ -267,7 +311,7 @@ public class SecurityConfig {
                     + "img-src 'self' data: blob:; "
                     + "font-src 'self' data:; "
                     + "connect-src 'self' ws: wss:; "
-                    + "frame-ancestors 'self'; "
+                    + "frame-ancestors 'none'; "
                     + "form-action 'self'; "
                     + "base-uri 'self'; "
                     + "object-src 'none'";
@@ -279,7 +323,7 @@ public class SecurityConfig {
                 + "img-src 'self' data:; "
                 + "font-src 'self'; "
                 + "connect-src 'self'; "
-                + "frame-ancestors 'self'; "
+                + "frame-ancestors 'none'; "
                 + "form-action 'self'; "
                 + "base-uri 'self'; "
                 + "object-src 'none'";

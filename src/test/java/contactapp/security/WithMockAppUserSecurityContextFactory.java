@@ -1,5 +1,6 @@
 package contactapp.security;
 
+import java.util.UUID;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -39,10 +40,23 @@ public class WithMockAppUserSecurityContextFactory
         );
 
         // Set the ID via reflection since it's normally set by JPA
+        // Generate random UUID if not specified, otherwise parse provided string
+        final UUID userId;
+        if (annotation.id().isEmpty()) {
+            userId = UUID.randomUUID();
+        } else {
+            try {
+                userId = UUID.fromString(annotation.id());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException(
+                        "Invalid UUID format in @WithMockAppUser.id(): '" + annotation.id()
+                                + "'. Expected format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", e);
+            }
+        }
         try {
             final var idField = User.class.getDeclaredField("id");
             idField.setAccessible(true);
-            idField.set(user, annotation.id());
+            idField.set(user, userId);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException("Failed to set user ID for test", e);
         }

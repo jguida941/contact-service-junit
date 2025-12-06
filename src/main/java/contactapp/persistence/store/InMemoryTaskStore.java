@@ -34,6 +34,27 @@ public class InMemoryTaskStore implements TaskStore {
         }
         final Task copy = Optional.ofNullable(aggregate.copy())
                 .orElseThrow(() -> new IllegalStateException("task copy must not be null"));
+        // Use put() to support both insert and update (merge semantics like JPA)
+        database.put(taskId, copy);
+    }
+
+    /**
+     * Inserts a new task, throwing if one with the same ID already exists.
+     * This method is used by TaskService.addTask() to enforce uniqueness.
+     *
+     * @param aggregate the task to insert
+     * @throws DataIntegrityViolationException if a task with the same ID exists
+     */
+    public void insert(final Task aggregate) {
+        if (aggregate == null) {
+            throw new IllegalArgumentException("task aggregate must not be null");
+        }
+        final String taskId = aggregate.getTaskId();
+        if (taskId == null) {
+            throw new IllegalArgumentException("taskId must not be null");
+        }
+        final Task copy = Optional.ofNullable(aggregate.copy())
+                .orElseThrow(() -> new IllegalStateException("task copy must not be null"));
         final Task existing = database.putIfAbsent(taskId, copy);
         if (existing != null) {
             throw new DataIntegrityViolationException("Task with id '" + taskId + "' already exists");
@@ -50,6 +71,7 @@ public class InMemoryTaskStore implements TaskStore {
     }
 
     @Override
+    @Deprecated(since = "1.0", forRemoval = true)
     public List<Task> findAll() {
         final List<Task> tasks = new ArrayList<>();
         database.values().forEach(task -> tasks.add(task.copy()));

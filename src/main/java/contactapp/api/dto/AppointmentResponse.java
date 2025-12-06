@@ -21,6 +21,8 @@ import java.util.Objects;
  * @param description     the appointment description
  * @param projectId       the associated project ID (nullable)
  * @param taskId          the associated task ID (nullable)
+ * @param isPast          true if the appointment date is in the past
+ * @param archived        true if the appointment has been archived
  */
 public record AppointmentResponse(
         String id,
@@ -28,7 +30,9 @@ public record AppointmentResponse(
         Date appointmentDate,
         String description,
         String projectId,
-        String taskId
+        String taskId,
+        boolean isPast,
+        boolean archived
 ) {
     /**
      * Compact constructor that makes a defensive copy of the mutable Date.
@@ -63,7 +67,9 @@ public record AppointmentResponse(
                 appointment.getAppointmentDate(),
                 appointment.getDescription(),
                 appointment.getProjectId(),
-                appointment.getTaskId()
+                appointment.getTaskId(),
+                appointment.isPast(),
+                appointment.isArchived()
         );
     }
 }

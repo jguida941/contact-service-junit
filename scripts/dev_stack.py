@@ -197,8 +197,14 @@ def _build_backend_env(args: argparse.Namespace) -> Dict[str, str]:
     """
     Construct environment variables for the backend process. When Postgres is selected,
     default datasource credentials and the Spring profile are configured unless already set.
+
+    Local development runs over HTTP (not HTTPS), so Secure cookies must be disabled.
     """
     env = os.environ.copy()
+    # Disable Secure cookie flag for local HTTP development
+    # (Secure cookies are only sent over HTTPS, breaking auth on localhost)
+    env.setdefault("APP_AUTH_COOKIE_SECURE", "false")
+    env.setdefault("COOKIE_SECURE", "false")
     if args.database == "postgres":
         env.setdefault("SPRING_PROFILES_ACTIVE", args.postgres_profile)
         env.setdefault("SPRING_DATASOURCE_URL", args.postgres_url)

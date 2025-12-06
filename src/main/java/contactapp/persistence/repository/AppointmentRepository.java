@@ -69,4 +69,28 @@ public interface AppointmentRepository extends JpaRepository<AppointmentEntity, 
     @Modifying
     @Transactional
     int deleteByAppointmentIdAndUser(String appointmentId, User user);
+
+    /**
+     * Finds all appointments associated with a specific project for a user.
+     *
+     * <p>This query method avoids in-memory filtering by pushing the filter
+     * down to the database level where indexes can be utilized.
+     *
+     * @param projectId the project ID to filter by
+     * @param user the user who owns the appointments
+     * @return list of appointments for the specified project
+     */
+    List<AppointmentEntity> findByProjectIdAndUser(String projectId, User user);
+
+    /**
+     * Finds all appointments associated with a specific task for a user.
+     *
+     * <p>This query method avoids in-memory filtering by pushing the filter
+     * down to the database level where indexes can be utilized.
+     *
+     * @param taskId the task ID to filter by
+     * @param user the user who owns the appointments
+     * @return list of appointments for the specified task
+     */
+    List<AppointmentEntity> findByTaskIdAndUser(String taskId, User user);
 }

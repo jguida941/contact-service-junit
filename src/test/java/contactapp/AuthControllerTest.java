@@ -376,7 +376,7 @@ class AuthControllerTest extends SecuredMockMvcTest {
 
     @Test
     void refresh_withValidToken_returns200WithNewToken() throws Exception {
-        // First, login to get a valid auth cookie
+        // First, login to get valid cookies (auth_token and refresh_token)
         createTestUser("refreshuser", "refresh@example.com", "Password123");
 
         final var loginResult = mockMvc.perform(post("/api/auth/login")
@@ -391,19 +391,20 @@ class AuthControllerTest extends SecuredMockMvcTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        // Extract the auth cookie from login response
-        final var authCookie = loginResult.getResponse().getCookie("auth_token");
-        assertThat(authCookie).isNotNull();
+        // Extract the refresh_token cookie from login response (ADR-0052 Phase B)
+        final var refreshCookie = loginResult.getResponse().getCookie("refresh_token");
+        assertThat(refreshCookie).isNotNull();
 
-        // Now call refresh with the valid cookie
+        // Now call refresh with the refresh_token cookie
         mockMvc.perform(post("/api/auth/refresh")
                         .with(csrf())
-                        .cookie(authCookie))
+                        .cookie(refreshCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("refreshuser"))
                 .andExpect(jsonPath("$.email").value("refresh@example.com"))
                 .andExpect(jsonPath("$.expiresIn").value(greaterThan(0)))
-                .andExpect(cookie().exists("auth_token"));
+                .andExpect(cookie().exists("auth_token"))
+                .andExpect(cookie().exists("refresh_token"));
     }
 
     @Test
@@ -421,6 +422,144 @@ class AuthControllerTest extends SecuredMockMvcTest {
                         .with(csrf())
                         .cookie(invalidCookie))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // ==================== Logout Tests ====================
+
+    @Test
+    void logout_returns204AndClearsCookies() throws Exception {
+        // First, login to get valid cookies
+        createTestUser("logoutuser", "logout@example.com", "Password123");
+
+        final var loginResult = mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "username": "logoutuser",
+                                "password": "Password123"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        final var authCookie = loginResult.getResponse().getCookie("auth_token");
+        final var refreshCookie = loginResult.getResponse().getCookie("refresh_token");
+        assertThat(authCookie).isNotNull();
+        assertThat(refreshCookie).isNotNull();
+
+        // Now logout - should clear cookies
+        mockMvc.perform(post("/api/auth/logout")
+                        .with(csrf())
+                        .cookie(authCookie)
+                        .cookie(refreshCookie))
+                .andExpect(status().isNoContent())
+                // Cookies should be cleared (maxAge=0)
+                .andExpect(cookie().maxAge("auth_token", 0))
+                .andExpect(cookie().maxAge("refresh_token", 0));
+    }
+
+    @Test
+    void logout_withoutCookies_stillReturns204() throws Exception {
+        // Logout without any cookies should still succeed (idempotent)
+        mockMvc.perform(post("/api/auth/logout")
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void logout_revokesRefreshToken_preventingReuse() throws Exception {
+        // First, login to get valid cookies
+        createTestUser("revokeuser", "revoke@example.com", "Password123");
+
+        final var loginResult = mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "username": "revokeuser",
+                                "password": "Password123"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        final var refreshCookie = loginResult.getResponse().getCookie("refresh_token");
+        assertThat(refreshCookie).isNotNull();
+
+        // Logout to revoke the refresh token
+        mockMvc.perform(post("/api/auth/logout")
+                        .with(csrf())
+                        .cookie(refreshCookie))
+                .andExpect(status().isNoContent());
+
+        // Attempt to use the revoked refresh token - should fail
+        mockMvc.perform(post("/api/auth/refresh")
+                        .with(csrf())
+                        .cookie(refreshCookie))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void logout_withoutRefreshCookie_stillRevokesTokens() throws Exception {
+        createTestUser("legacy-path", "legacy@example.com", "Password123");
+
+        final var loginResult = mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "username": "legacy-path",
+                                "password": "Password123"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        final var authCookie = loginResult.getResponse().getCookie("auth_token");
+        final var refreshCookie = loginResult.getResponse().getCookie("refresh_token");
+        // Fingerprint cookie is needed for the JWT to be validated
+        final var fgpCookie = loginResult.getResponse().getCookie("Fgp");
+        assertThat(authCookie).isNotNull();
+        assertThat(refreshCookie).isNotNull();
+        assertThat(fgpCookie).isNotNull();
+
+        // Simulate legacy path scoping where refresh_token is not sent to /logout
+        // but fingerprint cookie IS sent (required for JWT validation)
+        mockMvc.perform(post("/api/auth/logout")
+                        .with(csrf())
+                        .cookie(authCookie, fgpCookie))
+                .andExpect(status().isNoContent());
+
+        // Refresh token should be revoked even though it was not sent on logout
+        mockMvc.perform(post("/api/auth/refresh")
+                        .with(csrf())
+                        .cookie(refreshCookie))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ==================== Cookie Security Attribute Tests ====================
+
+    @Test
+    void login_setsHttpOnlyCookies() throws Exception {
+        createTestUser("cookieuser", "cookie@example.com", "Password123");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "username": "cookieuser",
+                                "password": "Password123"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                // Verify auth_token cookie attributes
+                .andExpect(cookie().exists("auth_token"))
+                .andExpect(cookie().httpOnly("auth_token", true))
+                // Verify refresh_token cookie exists
+                .andExpect(cookie().exists("refresh_token"))
+                .andExpect(cookie().httpOnly("refresh_token", true));
     }
 
     // ==================== Helper Methods ====================

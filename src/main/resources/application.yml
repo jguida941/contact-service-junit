@@ -107,6 +107,17 @@ server:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
     min-response-size: 1024
+  # -----------------------------------------------------------------------------
+  # SSL/TLS Configuration (ADR-0052 Phase A)
+  # Disabled by default. Enable with: export SSL_ENABLED=true
+  # Generate keystore with: ./cs setup-ssl
+  # -----------------------------------------------------------------------------
+  ssl:
+    enabled: ${SSL_ENABLED:false}
+    key-store: classpath:local-ssl.p12
+    key-store-type: PKCS12
+    key-store-password: ${SSL_KEY_STORE_PASSWORD:changeit}
+    key-alias: local-ssl
 
 # Graceful shutdown timeout
 spring.lifecycle.timeout-per-shutdown-phase: 30s
@@ -118,8 +129,10 @@ csp:
 app:
   auth:
     cookie:
-      # Secure by default; use dev profile for local HTTP testing
-      secure: ${APP_AUTH_COOKIE_SECURE:${COOKIE_SECURE:true}}
+      # Secure cookie flag MUST match SSL_ENABLED to prevent browser rejection
+      # When SSL_ENABLED=true → Secure=true → __Secure-Fgp cookie (HTTPS)
+      # When SSL_ENABLED=false → Secure=false → Fgp cookie (HTTP dev)
+      secure: ${APP_AUTH_COOKIE_SECURE:${SSL_ENABLED:false}}
 
 # -----------------------------------------------------------------------------
 # Logging Configuration (default: INFO level)
@@ -149,6 +162,7 @@ jwt:
   secret: ${JWT_SECRET:dGVzdC1zZWNyZXQta2V5LWZvci1kZXZlbG9wbWVudC1vbmx5LWRvLW5vdC11c2UtaW4tcHJvZA==}
   expiration: 1800000  # 30 minutes in milliseconds
   refresh-window: 300000  # 5 minutes - allow refresh when token expires within this window
+  refresh-expiration: 604800000  # 7 days in milliseconds - refresh token lifetime
 
 # -----------------------------------------------------------------------------
 # Rate Limiting Configuration
@@ -218,6 +232,10 @@ app:
 csp:
   relaxed: true
 
+# Longer token lifetime for dev (8 hours instead of 30 min)
+jwt:
+  expiration: 28800000  # 8 hours in milliseconds
+
 ---
 # =============================================================================
 # Test Profile
@@ -268,56 +286,10 @@ logging:
   level:
     contactapp: INFO
 
----
 # =============================================================================
 # Production Profile
 # =============================================================================
-# Locked-down settings for production deployment. Health details are only
-# shown to authorized users. Consider adding authentication to actuator
-# endpoints in Phase 2+ when Spring Security is integrated.
+# Production configuration is in application-prod.yml for clarity.
+# Activate with: --spring.profiles.active=prod
+# See ADR-0052 for security architecture and requirements.
 # =============================================================================
-spring:
-  config:
-    activate:
-      on-profile: prod
-  datasource:
-    url: ${DATABASE_URL}
-    driver-class-name: org.postgresql.Driver
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
-
-server:
-  servlet:
-    session:
-      cookie:
-        # Production must use secure cookies - explicit true fallback
-        secure: ${COOKIE_SECURE:true}
-  # Trust X-Forwarded-* headers from reverse proxy (required for HTTPS behind load balancer)
-  forward-headers-strategy: native
-
-# Enable HTTPS requirement in production (redirects HTTP to HTTPS)
-security:
-  require-ssl: ${REQUIRE_SSL:true}
-
-# Production JWT secret - REQUIRED, no default (fails fast if not set)
-jwt:
-  secret: ${JWT_SECRET}
-
-app:
-  auth:
-    cookie:
-      # Production auth cookies must be secure - explicit true fallback
-      secure: ${APP_AUTH_COOKIE_SECURE:${COOKIE_SECURE:true}}
-
-management:
-  endpoint:
-    health:
-      show-details: when-authorized
-
-logging:
-  level:
-    root: WARN
-    contactapp: INFO

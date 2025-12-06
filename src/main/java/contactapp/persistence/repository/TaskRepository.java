@@ -99,4 +99,12 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
      * @return list of tasks with due date in the specified range
      */
     List<TaskEntity> findByUserAndDueDateBetween(User user, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * Finds all tasks for a user that have no project assigned.
+     *
+     * @param user the user who owns the tasks
+     * @return list of tasks with null projectId (unassigned to any project)
+     */
+    List<TaskEntity> findByUserAndProjectIdIsNull(User user);
 }

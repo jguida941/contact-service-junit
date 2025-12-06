@@ -47,43 +47,105 @@ public class Contact {
 
 Hibernate creates objects through the no-arg constructor, bypassing validation entirely.
 
-## Reconstitution Constructor Pattern (Task)
-Task has timestamps (createdAt, updatedAt) that must stay in sync between domain and entity layers.
+## Reconstitution Pattern (Task and Appointment)
 
-Standard constructor:
+Domain objects with temporal constraints face different challenges when loading from persistence. We use two reconstitution approaches:
+
+### Task: Timestamp Preservation + Temporal Validation Bypass
+
+Task has timestamps (createdAt, updatedAt) and an optional dueDate with "not in past" validation. Both requirements are handled by a static factory method.
+
+Standard constructor (for new tasks):
 ```java
 public Task(String taskId, String name, String description,
             TaskStatus status, LocalDate dueDate) {
     // Sets createdAt = updatedAt = Instant.now()
+    // Validates dueDate is not in the past
 }
 ```
 
-Reconstitution constructor (for loading from persistence):
+Reconstitution factory method (for loading from persistence):
 ```java
-public Task(String taskId, String name, String description,
-            TaskStatus status, LocalDate dueDate,
-            Instant createdAt, Instant updatedAt) {
+public static Task reconstitute(
+        String taskId, String name, String description,
+        TaskStatus status, LocalDate dueDate,
+        String projectId, UUID assigneeId,  // UUID per ADR-0052 Batch 2
+        Instant createdAt, Instant updatedAt) {
     // Accepts timestamps from entity, preserves original values
+    // Bypasses "not in past" validation for dueDate (overdue tasks)
 }
 ```
 
-TaskMapper.toDomain() uses the 7-arg constructor:
+TaskMapper.toDomain() uses reconstitute():
 ```java
 public Task toDomain(TaskEntity entity) {
-    return new Task(
+    return Task.reconstitute(
         entity.getTaskId(),
         entity.getName(),
         entity.getDescription(),
         entity.getStatus(),
         entity.getDueDate(),
+        entity.getProjectId(),
+        entity.getAssigneeId(),
         entity.getCreatedAt(),    // From entity!
         entity.getUpdatedAt());   // From entity!
 }
 ```
 
-This prevents timestamp drift. Without this, loading would generate fresh timestamps that don't match the entity's persisted values.
+This prevents timestamp drift AND allows loading overdue tasks without validation errors.
 
-Contact and Appointment don't track timestamps, so they use simpler constructors.
+### Appointment: Temporal Validation Bypass
+
+Appointment enforces "date must not be in the past" validation in its constructor. This breaks when loading appointments that were valid when created but have naturally aged.
+
+Standard constructor (enforces temporal validation):
+```java
+public Appointment(String appointmentId, Date appointmentDate, String description) {
+    Validation.validateDateNotPast(appointmentDate, "appointmentDate");
+    // ... rest of initialization
+}
+```
+
+Reconstitution factory method (skips temporal validation):
+```java
+public static Appointment reconstitute(
+        String appointmentId,
+        Date appointmentDate,
+        String description,
+        String projectId,
+        String taskId,
+        boolean archived) {
+    // Validates length and nulls, but NOT the past-date rule
+    // Uses private constructor that bypasses temporal validation
+}
+```
+
+AppointmentMapper.toDomain() uses reconstitute():
+```java
+public Appointment toDomain(AppointmentEntity entity) {
+    return Appointment.reconstitute(
+        entity.getAppointmentId(),
+        entity.getAppointmentDate(),
+        entity.getDescription(),
+        entity.getProject() != null ? entity.getProject().getId() : null,
+        entity.getTask() != null ? entity.getTask().getId() : null,
+        entity.isArchived());
+}
+```
+
+This allows past appointments to be loaded, displayed, archived, and deleted while still preventing users from creating NEW appointments with past dates.
+
+### When to Use Each Approach
+
+| Scenario | Use This |
+|----------|----------|
+| Creating NEW appointment via API | Constructor (enforces temporal validation) |
+| Loading EXISTING appointment from DB | `Appointment.reconstitute()` (skips temporal validation) |
+| Creating NEW task via API | Constructor (sets timestamps to now) |
+| Loading EXISTING task from DB | `Task.reconstitute()` (preserves original values) |
+| Copying appointment with modifications | `copy()` which delegates to `reconstitute()` |
+
+Contact doesn't need reconstitution because it has no temporal constraints or managed timestamps.
 
 ## Simple explanation
-"Domain stays pure, entity handles database stuff, mapper bridges them. Loading from DB still validates because mapper calls the domain constructor. For Task, a special reconstitution constructor preserves timestamps from the entity."
+"Domain stays pure, entity handles database stuff, mapper bridges them. When loading from the database, we use reconstitution: Task preserves timestamps via a multi-parameter constructor, while Appointment uses a static factory method to bypass temporal validation for records that have naturally aged. This keeps NEW records strictly validated while allowing EXISTING past records to be loaded and managed."

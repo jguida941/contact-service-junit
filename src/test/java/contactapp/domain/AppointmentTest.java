@@ -187,6 +187,123 @@ public class AppointmentTest {
     }
 
     /**
+     * Verifies reconstitute() works with a past date (unlike constructor).
+     */
+    @Test
+    void reconstitute_withPastDate_shouldSucceed() {
+        Date past = pastDate();
+
+        Appointment appointment = Appointment.reconstitute("100", past, "Past Appointment", null, null, false);
+
+        assertThat(appointment.getAppointmentId()).isEqualTo("100");
+        assertThat(appointment.getAppointmentDate()).isEqualTo(past);
+        assertThat(appointment.getDescription()).isEqualTo("Past Appointment");
+        assertThat(appointment.isArchived()).isFalse();
+    }
+
+    /**
+     * Verifies reconstitute() works with future date.
+     */
+    @Test
+    void reconstitute_withFutureDate_shouldSucceed() {
+        Date future = futureDate(30);
+
+        Appointment appointment = Appointment.reconstitute("200", future, "Future Appointment", "proj-1", "task-1", true);
+
+        assertThat(appointment.getAppointmentId()).isEqualTo("200");
+        assertThat(appointment.getAppointmentDate()).isEqualTo(future);
+        assertThat(appointment.getDescription()).isEqualTo("Future Appointment");
+        assertThat(appointment.getProjectId()).isEqualTo("proj-1");
+        assertThat(appointment.getTaskId()).isEqualTo("task-1");
+        assertThat(appointment.isArchived()).isTrue();
+    }
+
+    /**
+     * Verifies reconstitute() rejects null date.
+     */
+    @Test
+    void reconstitute_withNullDate_shouldThrow() {
+        assertThatThrownBy(() -> Appointment.reconstitute("300", null, "Description", null, null, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("appointmentDate must not be null");
+    }
+
+    /**
+     * Verifies reconstitute() rejects null ID.
+     */
+    @Test
+    void reconstitute_withNullId_shouldThrow() {
+        assertThatThrownBy(() -> Appointment.reconstitute(null, futureDate(30), "Description", null, null, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("appointmentId must not be null or blank");
+    }
+
+    /**
+     * Verifies isPast() returns true for past dates.
+     */
+    @Test
+    void isPast_withPastDate_shouldReturnTrue() {
+        Date past = pastDate();
+        Appointment appointment = Appointment.reconstitute("400", past, "Past Appointment", null, null, false);
+
+        assertThat(appointment.isPast()).isTrue();
+    }
+
+    /**
+     * Verifies isPast() returns false for future dates.
+     */
+    @Test
+    void isPast_withFutureDate_shouldReturnFalse() {
+        Date future = futureDate(30);
+        Appointment appointment = new Appointment("500", future, "Future Appointment");
+
+        assertThat(appointment.isPast()).isFalse();
+    }
+
+    /**
+     * Verifies copy() works even when appointment date is past.
+     */
+    @Test
+    void copy_withPastDate_shouldSucceed() {
+        Date past = pastDate();
+        Appointment original = Appointment.reconstitute("600", past, "Past Appointment", "proj-1", "task-1", true);
+
+        Appointment copy = original.copy();
+
+        assertThat(copy).isNotSameAs(original);
+        assertThat(copy.getAppointmentId()).isEqualTo("600");
+        assertThat(copy.getAppointmentDate()).isEqualTo(past);
+        assertThat(copy.getDescription()).isEqualTo("Past Appointment");
+        assertThat(copy.getProjectId()).isEqualTo("proj-1");
+        assertThat(copy.getTaskId()).isEqualTo("task-1");
+        assertThat(copy.isArchived()).isTrue();
+    }
+
+    /**
+     * Verifies new appointments have archived=false by default.
+     */
+    @Test
+    void archived_defaultsFalse() {
+        Appointment appointment = new Appointment("700", futureDate(30), "New Appointment");
+
+        assertThat(appointment.isArchived()).isFalse();
+    }
+
+    /**
+     * Verifies setArchived works.
+     */
+    @Test
+    void setArchived_shouldUpdateValue() {
+        Appointment appointment = new Appointment("800", futureDate(30), "New Appointment");
+
+        appointment.setArchived(true);
+        assertThat(appointment.isArchived()).isTrue();
+
+        appointment.setArchived(false);
+        assertThat(appointment.isArchived()).isFalse();
+    }
+
+    /**
      * Supplies invalid constructor inputs for {@link #testConstructorValidation}.
      */
     private static Stream<Arguments> invalidCreationInputs() {

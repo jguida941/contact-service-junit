@@ -1,12 +1,11 @@
 package contactapp.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import contactapp.domain.Validation;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -15,6 +14,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -46,12 +46,12 @@ public class User implements UserDetails {
     private static final Pattern BCRYPT_PATTERN = Pattern.compile("^\\$2[aby]\\$\\d{2}\\$.{53}$");
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     @Column(unique = true, nullable = false, length = Validation.MAX_USERNAME_LENGTH)
     private String username;
 
+    @JsonIgnore
     @Column(nullable = false, length = Validation.MAX_PASSWORD_LENGTH)
     private String password;
 
@@ -99,6 +99,9 @@ public class User implements UserDetails {
 
     @PrePersist
     protected void onCreate() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
         final Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;
@@ -116,6 +119,7 @@ public class User implements UserDetails {
     }
 
     @Override
+    @JsonIgnore
     public String getPassword() {
         return password;
     }
@@ -147,7 +151,7 @@ public class User implements UserDetails {
 
     // Getters
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
@@ -169,7 +173,7 @@ public class User implements UserDetails {
 
     // Package-private setters for JPA and testing
 
-    void setId(final Long id) {
+    void setId(final UUID id) {
         this.id = id;
     }
 

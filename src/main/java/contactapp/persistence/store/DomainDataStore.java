@@ -34,8 +34,14 @@ public interface DomainDataStore<T> {
     Optional<T> findById(String id);
 
     /**
+     * Returns all aggregates currently stored without user isolation.
+     *
      * @return all aggregates currently stored
+     * @deprecated Use user-scoped methods like {@code findAllByUserId(Long)} instead.
+     *     This method bypasses per-user data isolation and should only be used for
+     *     administrative operations or data migration. Will be removed in a future version.
      */
+    @Deprecated(since = "1.0", forRemoval = true)
     List<T> findAll();
 
     /**

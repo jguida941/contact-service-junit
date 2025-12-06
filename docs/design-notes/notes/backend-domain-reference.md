@@ -343,7 +343,7 @@ Security hardening introduced specialized test utilities:
 - JPA entity tests (`ContactEntityTest`, `TaskEntityTest`, `AppointmentEntityTest`) exercise protected constructors and setters for Hibernate proxies.
 - Legacy `InMemory*Store` suites assert the `Optional.empty` branch of `findById`.
 
-**Current metrics**: 930 tests with ~83.1% mutation kills and ~89.9% line coverage (higher on stores/mappers).
+**Current metrics**: 1109 tests with 85% mutation kills and 90% line coverage (higher on stores/mappers).
 
 ---
 

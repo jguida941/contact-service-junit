@@ -30,9 +30,11 @@ export interface AuthResponse {
 const USER_KEY = 'auth_user';
 const PROFILE_STORAGE_KEY = 'contact-app-profile';
 const SESSION_TIMESTAMP_KEY = 'auth_session_timestamp';
+const TOKEN_EXPIRES_AT_KEY = 'auth_token_expires_at';
 
 // In-memory state for current user (not persisted to localStorage for security)
 let currentUser: AuthResponse | null = null;
+let tokenExpiresAt: number | null = null; // Absolute timestamp when token expires
 
 /**
  * Session storage for user data. Uses sessionStorage instead of localStorage
@@ -51,10 +53,18 @@ export const tokenStorage = {
     if (user) {
       try {
         currentUser = JSON.parse(user);
+        // Also restore tokenExpiresAt from sessionStorage
+        const expiresAtStr = sessionStorage.getItem(TOKEN_EXPIRES_AT_KEY);
+        if (expiresAtStr) {
+          const parsed = parseInt(expiresAtStr, 10);
+          tokenExpiresAt = isNaN(parsed) ? null : parsed;
+        }
         return currentUser;
       } catch {
         sessionStorage.removeItem(USER_KEY);
+        sessionStorage.removeItem(TOKEN_EXPIRES_AT_KEY);
         currentUser = null;
+        tokenExpiresAt = null;
         return null;
       }
     }
@@ -62,20 +72,38 @@ export const tokenStorage = {
   },
   setUser: (user: AuthResponse): void => {
     currentUser = user;
+    // Store absolute expiration timestamp (ADR-0052 Phase C)
+    tokenExpiresAt = Date.now() + user.expiresIn;
     sessionStorage.setItem(USER_KEY, JSON.stringify(user));
     sessionStorage.setItem(SESSION_TIMESTAMP_KEY, Date.now().toString());
+    sessionStorage.setItem(TOKEN_EXPIRES_AT_KEY, tokenExpiresAt.toString());
   },
   removeUser: (): void => {
     currentUser = null;
+    tokenExpiresAt = null;
     sessionStorage.removeItem(USER_KEY);
     sessionStorage.removeItem(SESSION_TIMESTAMP_KEY);
+    sessionStorage.removeItem(TOKEN_EXPIRES_AT_KEY);
+  },
+
+  getTokenExpiresAt: (): number | null => {
+    if (tokenExpiresAt) return tokenExpiresAt;
+    const stored = sessionStorage.getItem(TOKEN_EXPIRES_AT_KEY);
+    if (stored) {
+      const parsed = parseInt(stored, 10);
+      tokenExpiresAt = isNaN(parsed) ? null : parsed;
+      return tokenExpiresAt;
+    }
+    return null;
   },
 
   clear: (): void => {
     currentUser = null;
+    tokenExpiresAt = null;
     sessionStorage.removeItem(USER_KEY);
     sessionStorage.removeItem(PROFILE_STORAGE_KEY);
     sessionStorage.removeItem(SESSION_TIMESTAMP_KEY);
+    sessionStorage.removeItem(TOKEN_EXPIRES_AT_KEY);
     // Also clear any legacy localStorage items
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
@@ -99,15 +127,19 @@ export interface ApiError {
  */
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    // Handle authentication errors (invalid/expired token) with auto-logout
+    // ADR-0052 Phase 0: Proper 401 vs 403 handling
+    // 401 = Unauthenticated (no/invalid/expired token) - clear session and redirect
+    // 403 = Forbidden (authenticated but unauthorized) - do NOT clear session
     if (response.status === 401) {
       tokenStorage.clear();
       queryClient.clear(); // Clear cached data to prevent data leakage
       // Redirect to login page if not already there
       if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+        window.location.href = '/login?reason=sessionExpired';
       }
     }
+    // 403 = Forbidden - user is authenticated but lacks permission
+    // Do NOT clear session or redirect - just throw the error
 
     let message = `HTTP ${response.status}`;
     let errors: Record<string, string> | undefined;
@@ -275,16 +307,21 @@ export const authApi = {
   /**
    * Check if user is authenticated. With HttpOnly cookies, we can't
    * directly check the token, so we rely on stored user info and
-   * check expiration based on the expiresIn value from login.
+   * check expiration based on the stored absolute timestamp (ADR-0052 Phase C).
    */
   isAuthenticated: (): boolean => {
     const user = tokenStorage.getUser();
     if (!user) return false;
 
-    // Check if session has expired based on expiresIn
-    // Note: This is a client-side check; actual auth is validated by backend
-    // For precise expiration tracking, we'd need to store the login timestamp
-    return true; // If we have user info, assume authenticated until 401
+    // Check if session has expired based on stored absolute timestamp
+    const expiresAt = tokenStorage.getTokenExpiresAt();
+    if (expiresAt && Date.now() >= expiresAt) {
+      // Token expired - clear session
+      tokenStorage.clear();
+      return false;
+    }
+
+    return true;
   },
 
   getCurrentUser: (): AuthResponse | null => {
@@ -294,14 +331,28 @@ export const authApi = {
   /**
    * Initialize token refresh on app load if user is authenticated.
    * Call this from App.tsx to restore refresh scheduling after page reload.
+   * Uses stored absolute timestamp to calculate accurate remaining time (ADR-0052 Phase C).
    */
   initializeRefresh: (): void => {
     const user = tokenStorage.getUser();
-    if (user) {
-      // Schedule refresh based on stored expiration
-      // Since we don't know exact time remaining, refresh soon to be safe
-      scheduleTokenRefresh(user.expiresIn);
+    if (!user) return;
+
+    const expiresAt = tokenStorage.getTokenExpiresAt();
+    if (!expiresAt) {
+      // No expiration timestamp - try immediate refresh
+      authApi.refresh();
+      return;
     }
+
+    const remainingMs = expiresAt - Date.now();
+    if (remainingMs <= 0) {
+      // Token already expired - try refresh with refresh token
+      authApi.refresh();
+      return;
+    }
+
+    // Schedule refresh based on actual remaining time
+    scheduleTokenRefresh(remainingMs);
   },
 };
 
@@ -428,6 +479,20 @@ export const tasksApi = {
     });
     return handleResponse<void>(response);
   },
+
+  archive: async (id: string): Promise<Task> => {
+    const response = await fetchWithCsrf(`${API_BASE}/tasks/${encodeURIComponent(id)}/archive`, {
+      method: 'PATCH',
+    });
+    return handleResponse<Task>(response);
+  },
+
+  unarchive: async (id: string): Promise<Task> => {
+    const response = await fetchWithCsrf(`${API_BASE}/tasks/${encodeURIComponent(id)}/unarchive`, {
+      method: 'PATCH',
+    });
+    return handleResponse<Task>(response);
+  },
 };
 
 // ==================== Appointments API ====================
@@ -466,6 +531,20 @@ export const appointmentsApi = {
       method: 'DELETE',
     });
     return handleResponse<void>(response);
+  },
+
+  archive: async (id: string): Promise<Appointment> => {
+    const response = await fetchWithCsrf(`${API_BASE}/appointments/${encodeURIComponent(id)}/archive`, {
+      method: 'PATCH',
+    });
+    return handleResponse<Appointment>(response);
+  },
+
+  unarchive: async (id: string): Promise<Appointment> => {
+    const response = await fetchWithCsrf(`${API_BASE}/appointments/${encodeURIComponent(id)}/unarchive`, {
+      method: 'PATCH',
+    });
+    return handleResponse<Appointment>(response);
   },
 };
 

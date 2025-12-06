@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -28,6 +29,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -131,8 +133,9 @@ public class TaskController {
      *   <li>{@code ?status=TODO|IN_PROGRESS|DONE} - filter by status</li>
      *   <li>{@code ?dueBefore=2024-12-31} - filter by due date</li>
      *   <li>{@code ?overdue=true} - show only overdue tasks</li>
-     *   <li>{@code ?projectId=proj-1} - filter by associated project</li>
-     *   <li>{@code ?assigneeId=123} - filter by assignee user ID</li>
+     *   <li>{@code ?projectId=proj-1} - filter by associated project
+     *       (use {@code ?projectId=none} for unassigned tasks)</li>
+     *   <li>{@code ?assigneeId=550e8400-e29b-41d4-a716-446655440000} - filter by assignee user ID (UUID format)</li>
      * </ul>
      *
      * @param all if true and user is ADMIN, returns all tasks across all users
@@ -161,7 +164,7 @@ public class TaskController {
             @Parameter(description = "Filter by associated project ID")
             @RequestParam(required = false) @Size(max = MAX_ID_LENGTH) final String projectId,
             @Parameter(description = "Filter by assignee user ID")
-            @RequestParam(required = false) final Long assigneeId) {
+            @RequestParam(required = false) final UUID assigneeId) {
 
         // Handle filtering
         if (status != null) {
@@ -183,6 +186,11 @@ public class TaskController {
         }
 
         if (projectId != null) {
+            if ("none".equalsIgnoreCase(projectId)) {
+                return taskService.getUnassignedTasks().stream()
+                        .map(TaskResponse::from)
+                        .toList();
+            }
             return taskService.getTasksByProjectId(projectId).stream()
                     .map(TaskResponse::from)
                     .toList();
@@ -312,5 +320,65 @@ public class TaskController {
         if (!taskService.deleteTask(id)) {
             throw new ResourceNotFoundException("Task not found: " + id);
         }
+    }
+
+    /**
+     * Archives a task by ID.
+     *
+     * @param id the task ID
+     * @return the archived task
+     * @throws ResourceNotFoundException if no task with the given ID exists
+     */
+    @Operation(summary = "Archive a task")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Task archived",
+                    content = @Content(schema = @Schema(implementation = TaskResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid ID format",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Task not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PatchMapping("/{id}/archive")
+    public TaskResponse archive(
+            @Parameter(
+                    description = "Task ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
+            @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String id) {
+        return taskService.archiveTask(id)
+                .map(TaskResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + id));
+    }
+
+    /**
+     * Unarchives a task by ID.
+     *
+     * @param id the task ID
+     * @return the unarchived task
+     * @throws ResourceNotFoundException if no task with the given ID exists
+     */
+    @Operation(summary = "Unarchive a task")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Task unarchived",
+                    content = @Content(schema = @Schema(implementation = TaskResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid ID format",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Task not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PatchMapping("/{id}/unarchive")
+    public TaskResponse unarchive(
+            @Parameter(
+                    description = "Task ID",
+                    schema = @Schema(
+                            minLength = 1,
+                            maxLength = MAX_ID_LENGTH,
+                            pattern = "\\S+"))
+            @NotBlank @Size(min = 1, max = MAX_ID_LENGTH) @PathVariable final String id) {
+        return taskService.unarchiveTask(id)
+                .map(TaskResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + id));
     }
 }

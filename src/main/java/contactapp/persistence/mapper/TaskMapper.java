@@ -31,6 +31,7 @@ public class TaskMapper {
                 user);
         entity.setProjectId(domain.getProjectId());
         entity.setAssigneeId(domain.getAssigneeId());
+        entity.setArchived(domain.isArchived());
         return entity;
     }
 
@@ -50,11 +51,20 @@ public class TaskMapper {
                 "Use toEntity(Task, User) instead. This method requires a User parameter.");
     }
 
+    /**
+     * Converts an entity to a domain Task using reconstitution.
+     *
+     * <p>Uses {@link Task#reconstitute} to bypass the "not in past" validation for dueDate,
+     * allowing tasks with overdue dates to be loaded from the database successfully.
+     *
+     * @param entity the entity to convert
+     * @return the domain task, or null if entity is null
+     */
     public Task toDomain(final TaskEntity entity) {
         if (entity == null) {
             return null;
         }
-        return new Task(
+        return Task.reconstitute(
                 entity.getTaskId(),
                 entity.getName(),
                 entity.getDescription(),
@@ -63,7 +73,8 @@ public class TaskMapper {
                 entity.getProjectId(),
                 entity.getAssigneeId(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt());
+                entity.getUpdatedAt(),
+                entity.isArchived());
     }
 
     /**
@@ -85,5 +96,6 @@ public class TaskMapper {
         target.setDueDate(source.getDueDate());
         target.setProjectId(source.getProjectId());
         target.setAssigneeId(source.getAssigneeId());
+        target.setArchived(source.isArchived());
     }
 }

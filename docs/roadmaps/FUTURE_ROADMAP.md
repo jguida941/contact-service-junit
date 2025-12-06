@@ -2,7 +2,21 @@
 
 > Evolving ContactApp into a full-featured project management platform
 
-**Status:** Planning | **Created:** 2025-12-03 | **Owner:** Justin Guida
+**Status:** Planning | **Created:** 2025-12-03 | **Updated:** 2025-12-03 | **Owner:** Justin Guida
+
+---
+
+## Table of Contents
+
+1. [Current State Summary](#current-state-summary)
+2. [Evolution Roadmap](#evolution-roadmap)
+3. [Phase 8-10: Backend Foundations](#phase-8-task-enhancements)
+4. [Phase 11: Kanban Board UI](#phase-11-kanban-board-ui)
+5. [**Phase UI-1: Frontend Polish & UX**](#phase-ui-1-frontend-polish--ux) ← NEW
+6. [**Phase UI-2: Advanced Theme System**](#phase-ui-2-advanced-theme-system) ← NEW
+7. [**Phase UI-3: Advanced Frontend Features**](#phase-ui-3-advanced-frontend-features) ← NEW
+8. [Phase 12-17: Advanced Backend](#phase-12-reporting--analytics)
+9. [Implementation Priority Matrix](#implementation-priority-matrix)
 
 ---
 
@@ -23,12 +37,13 @@
 | Category     | Implementation                                              |
 |--------------|-------------------------------------------------------------|
 | **Backend**  | Spring Boot 3.4, Spring Security 7, JPA/Hibernate           |
-| **Frontend** | React 19, Vite, Tailwind v4, shadcn/ui                      |
-| **Database** | PostgreSQL + Flyway (13 migrations)                         |
-| **Testing**  | 1,026 tests, 90%+ mutation coverage, E2E with Playwright    |
+| **Frontend** | React 19, Vite 7, Tailwind v4, shadcn/ui, TanStack Query    |
+| **Database** | PostgreSQL + Flyway (17 migrations)                         |
+| **Testing**  | 1109 tests, 84% mutation coverage, E2E with Playwright      |
 | **CI/CD**    | GitHub Actions, CodeQL, ZAP, API fuzzing, Docker            |
-| **Security** | JWT HttpOnly cookies, CSRF, rate limiting, tenant isolation |
-| **Docs**     | 49 ADRs, threat model, design notes                         |
+| **Security** | JWT HttpOnly cookies, CSRF, rate limiting, refresh tokens   |
+| **Docs**     | 54 ADRs, threat model, design notes                         |
+| **Theming**  | 5 color themes, dark/light mode, CSS variables              |
 
 ---
 
@@ -349,7 +364,7 @@ public class Comment {
 public class ActivityEntry {
     private Long id;
     private String taskId;
-    private Long userId;
+    private UUID userId;             // UUID per ADR-0052
     private ActivityType type;       // STATUS_CHANGED, ASSIGNED, etc.
     private String oldValue;
     private String newValue;
@@ -509,6 +524,1381 @@ Request: { taskIds: ["T1", "T2", "T3"], status: "IN_PROGRESS" }
 
 ---
 
+## Phase UI-1: Frontend Polish & UX
+
+**Goal:** Elevate the UI from functional to professional SaaS quality
+
+### Current UI Issues (Identified from Screenshots)
+
+| Issue | Impact | Fix |
+|-------|--------|-----|
+| Low dark mode contrast | Text/borders blend into background | Increase border opacity, use `border-border/50` |
+| Inconsistent spacing | Cards/tables have varying padding | Standardize with `px-6 py-4` pattern |
+| Flat typography hierarchy | Headings feel same weight as body | Use distinct sizes: `2xl`, `base`, `sm` |
+| Missing hover states | Tables don't highlight on hover | Add `hover:bg-muted cursor-pointer` |
+| No loading feedback | Users see blank during data fetch | Add skeleton loaders |
+| Action icons lack context | Edit/Delete unclear without labels | Add Radix tooltips |
+
+### A. Design Token Refinement
+
+Already have CSS variables in `index.css`, but need to ensure consistency:
+
+```css
+/* Ensure all themes define these critical tokens */
+:root {
+  --background: 220 13% 96%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --border: 214.3 31.8% 91.4%;
+  --muted: 220 13% 91%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --ring: 222.2 84% 4.9%;
+  --radius: 0.5rem;
+}
+```
+
+### B. Typography Hierarchy
+
+```tsx
+// Standardized text classes across all pages
+text-2xl font-semibold   → Page titles (Dashboard, Contacts, etc.)
+text-lg font-medium      → Section headings (within cards)
+text-base font-medium    → Table headers
+text-sm text-muted-foreground → Table row content, descriptions
+text-xs text-muted-foreground → Timestamps, secondary info
+```
+
+### C. Interactive States
+
+```tsx
+// Button improvements
+<Button className="transition-colors hover:bg-accent/90 active:scale-[.97]">
+
+// Table row hover
+<TableRow className="hover:bg-muted/50 cursor-pointer transition-colors">
+
+// Icon button feedback
+<button className="opacity-70 hover:opacity-100 transition-opacity">
+```
+
+### D. Skeleton Loaders
+
+```
+ui/contact-app/src/
+├── components/
+│   └── ui/
+│       ├── skeleton.tsx           # Base skeleton component
+│       ├── table-skeleton.tsx     # Table loading state
+│       └── card-skeleton.tsx      # Card loading state
+```
+
+```tsx
+// Usage with TanStack Query (already in place)
+const { data, isLoading } = useQuery(['contacts'], fetchContacts);
+
+if (isLoading) return <TableSkeleton rows={5} columns={4} />;
+```
+
+### E. Tooltips on Actions
+
+```tsx
+// Already have @radix-ui/react-tooltip installed
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+
+<Tooltip>
+  <TooltipTrigger asChild>
+    <Button variant="ghost" size="icon">
+      <Pencil className="h-4 w-4" />
+    </Button>
+  </TooltipTrigger>
+  <TooltipContent>Edit contact</TooltipContent>
+</Tooltip>
+```
+
+### F. Empty States
+
+```tsx
+// Already have empty-state.tsx - ensure all pages use it
+<EmptyState
+  icon={<Inbox className="h-12 w-12" />}
+  title="No contacts yet"
+  description="Create your first contact to get started"
+  action={<Button onClick={openCreateDialog}>Add Contact</Button>}
+/>
+```
+
+### Files to Update
+
+| File | Changes |
+|------|---------|
+| `index.css` | Improve dark mode contrast tokens |
+| `ContactsPage.tsx` | Add hover states, tooltips, skeleton |
+| `TasksPage.tsx` | Add hover states, tooltips, skeleton |
+| `AppointmentsPage.tsx` | Add hover states, tooltips, skeleton |
+| `ProjectsPage.tsx` | Add hover states, tooltips, skeleton |
+| `OverviewPage.tsx` | Add card hover effects |
+| `table.tsx` | Default hover class on TableRow |
+
+### Effort Estimate: 1-2 days
+
+---
+
+## Phase UI-2: Advanced Theme System
+
+**Goal:** Full user-customizable theming with export/import capability
+
+### Current Theme Implementation
+
+Already have:
+- ✅ 5 theme presets (Slate, Ocean, Forest, Violet, Zinc)
+- ✅ Dark/Light mode toggle
+- ✅ CSS variables design token system
+- ✅ localStorage persistence
+- ✅ Settings page with theme picker
+
+### A. Add More Built-in Themes (10 Total New Themes)
+
+Original 5: `slate`, `ocean`, `forest`, `violet`, `zinc`
+
+```typescript
+// useTheme.ts - expand to 15 themes total
+const themes = [
+  // Existing (5)
+  'slate', 'ocean', 'forest', 'violet', 'zinc',
+  // New themes (10)
+  'rose',      // Pink/red - warm, friendly
+  'amber',     // Orange/gold - energetic, creative
+  'cyan',      // Teal - modern tech
+  'emerald',   // Rich green - growth
+  'indigo',    // Deep blue-purple - professional
+  'mono',      // Black/white high contrast - developer-focused
+  'neon',      // High-saturation accent, dark background
+  'pastel',    // Soft hues - Figma-style
+  'terminal',  // Green-on-black hacker theme
+  'latte',     // Warm beige - Notion/Arc aesthetic
+] as const;
+```
+
+```css
+/* index.css - all new theme definitions */
+
+/* Rose theme - Warm, friendly (Consumer apps) */
+.theme-rose {
+  --primary: 346 77% 50%;
+  --primary-foreground: 210 40% 98%;
+  --accent: 350 89% 60%;
+  --accent-foreground: 210 40% 98%;
+}
+
+/* Amber theme - Energetic (Creative tools) */
+.theme-amber {
+  --primary: 38 92% 50%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --accent: 43 96% 56%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+}
+
+/* Cyan theme - Modern tech (SaaS) */
+.theme-cyan {
+  --primary: 187 85% 43%;
+  --primary-foreground: 210 40% 98%;
+  --accent: 192 91% 36%;
+  --accent-foreground: 210 40% 98%;
+}
+
+/* Emerald theme - Growth (Productivity) */
+.theme-emerald {
+  --primary: 160 84% 39%;
+  --primary-foreground: 210 40% 98%;
+  --accent: 158 64% 52%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+}
+
+/* Indigo theme - Professional (Enterprise) */
+.theme-indigo {
+  --primary: 239 84% 67%;
+  --primary-foreground: 210 40% 98%;
+  --accent: 243 75% 59%;
+  --accent-foreground: 210 40% 98%;
+}
+
+/* Mono theme - High contrast developer-focused */
+.theme-mono {
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 98%;
+  --accent: 0 0% 20%;
+  --accent-foreground: 0 0% 98%;
+  --muted: 0 0% 96%;
+  --border: 0 0% 90%;
+}
+
+.dark.theme-mono {
+  --primary: 0 0% 98%;
+  --primary-foreground: 0 0% 9%;
+  --accent: 0 0% 80%;
+  --accent-foreground: 0 0% 9%;
+  --muted: 0 0% 15%;
+  --border: 0 0% 20%;
+}
+
+/* Neon theme - High saturation, cyberpunk style */
+.theme-neon {
+  --primary: 280 100% 60%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 180 100% 50%;
+  --accent-foreground: 0 0% 0%;
+}
+
+.dark.theme-neon {
+  --background: 270 50% 5%;
+  --primary: 300 100% 50%;
+  --accent: 180 100% 50%;
+}
+
+/* Pastel theme - Soft Figma-style */
+.theme-pastel {
+  --background: 210 40% 98%;
+  --primary: 262 52% 65%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 339 76% 75%;
+  --accent-foreground: 0 0% 100%;
+  --muted: 210 40% 94%;
+}
+
+/* Terminal theme - Green-on-black hacker */
+.dark.theme-terminal {
+  --background: 120 10% 5%;
+  --foreground: 120 100% 50%;
+  --primary: 120 100% 40%;
+  --primary-foreground: 0 0% 0%;
+  --accent: 120 80% 60%;
+  --muted: 120 20% 15%;
+  --border: 120 50% 20%;
+}
+
+/* Latte theme - Warm beige, Notion/Arc style */
+.theme-latte {
+  --background: 40 30% 96%;
+  --foreground: 30 10% 20%;
+  --card: 40 30% 98%;
+  --primary: 25 60% 45%;
+  --primary-foreground: 40 30% 98%;
+  --accent: 35 70% 50%;
+  --muted: 40 20% 90%;
+  --border: 40 20% 85%;
+}
+```
+
+### B. Custom Theme Editor
+
+```
+ui/contact-app/src/
+├── components/
+│   └── settings/
+│       ├── ThemeEditor.tsx        # Full theme customization UI
+│       ├── ColorPicker.tsx        # HSL color picker component
+│       ├── ThemePreview.tsx       # Live preview panel
+│       ├── ThemeExportImport.tsx  # Export/import buttons
+│       ├── ContrastChecker.tsx    # WCAG contrast validation
+│       ├── FontSelector.tsx       # Font family dropdown
+│       ├── SpacingSelector.tsx    # Spacing scale picker
+│       └── RadiusSelector.tsx     # Border radius picker
+```
+
+#### Theme Editor Form Fields
+
+The settings page theme editor should include:
+
+| Field | Input Type | Options/Range |
+|-------|------------|---------------|
+| Theme Name | Text input | User-defined name |
+| Background Color | Color picker | Any color |
+| Text Color (Foreground) | Color picker | Any color |
+| Primary/Accent Color | Color picker | Any color |
+| Border Color | Color picker | Any color |
+| Muted Color | Color picker | Any color |
+| Destructive Color | Color picker | Red variants |
+| Font Family | Dropdown select | System UI, Inter, Roboto, Mono, Custom |
+| Spacing Scale | Segmented control | Compact / Normal / Relaxed |
+| Border Radius | Slider | 0px (flat) → 16px (rounded) |
+
+#### Live Preview Panel
+
+Show a mini version of UI elements so user sees changes in real-time:
+
+```tsx
+// ThemePreview.tsx - shows sample UI with current theme
+function ThemePreview({ theme }: { theme: CustomTheme }) {
+  return (
+    <div
+      className="border rounded-lg p-4 space-y-4"
+      style={themeToStyles(theme)}
+    >
+      {/* Sample Card */}
+      <div className="bg-card border rounded-lg p-4">
+        <h3 className="font-semibold">Sample Card</h3>
+        <p className="text-muted-foreground text-sm">
+          This is how your cards will look.
+        </p>
+      </div>
+
+      {/* Sample Buttons */}
+      <div className="flex gap-2">
+        <button className="bg-primary text-primary-foreground px-4 py-2 rounded">
+          Primary
+        </button>
+        <button className="bg-secondary text-secondary-foreground px-4 py-2 rounded">
+          Secondary
+        </button>
+        <button className="bg-destructive text-destructive-foreground px-4 py-2 rounded">
+          Delete
+        </button>
+      </div>
+
+      {/* Sample Table Row */}
+      <div className="border rounded">
+        <div className="flex items-center justify-between p-3 hover:bg-muted">
+          <span>Sample row item</span>
+          <span className="text-muted-foreground">Action</span>
+        </div>
+      </div>
+
+      {/* Sample Input */}
+      <input
+        className="w-full border rounded px-3 py-2 bg-input"
+        placeholder="Sample input field"
+      />
+    </div>
+  );
+}
+```
+
+#### Full Theme Type Definition
+
+```tsx
+// types/theme.ts
+interface CustomTheme {
+  name: string;
+  colors: {
+    background: string;      // Page background
+    foreground: string;      // Default text color
+    card: string;            // Card backgrounds
+    cardForeground: string;  // Card text
+    primary: string;         // Primary buttons/links
+    primaryForeground: string;
+    secondary: string;       // Secondary elements
+    secondaryForeground: string;
+    muted: string;           // Muted backgrounds
+    mutedForeground: string; // Muted text
+    accent: string;          // Accent highlights
+    accentForeground: string;
+    border: string;          // Border color
+    input: string;           // Input backgrounds
+    ring: string;            // Focus rings
+    destructive: string;     // Delete/error actions
+    destructiveForeground: string;
+  };
+  typography: {
+    fontFamily: 'system-ui' | 'inter' | 'roboto' | 'mono' | string;
+    baseFontSize: string;    // e.g., '16px'
+    headingFontSize: string; // e.g., '1.5rem'
+  };
+  spacing: {
+    scale: 'compact' | 'normal' | 'relaxed';
+    small: string;   // e.g., '0.5rem'
+    medium: string;  // e.g., '1rem'
+    large: string;   // e.g., '2rem'
+  };
+  radii: {
+    base: string;    // e.g., '0.5rem'
+    card: string;    // e.g., '1rem'
+    button: string;  // e.g., '0.375rem'
+    input: string;   // e.g., '0.375rem'
+  };
+}
+```
+
+```tsx
+// ThemeEditor.tsx - full implementation
+function ThemeEditor() {
+  const [customTheme, setCustomTheme] = useState<CustomTheme>(defaultTheme);
+  const [contrastWarning, setContrastWarning] = useState<string | null>(null);
+
+  // Check WCAG contrast when colors change
+  useEffect(() => {
+    const ratio = getContrastRatio(
+      customTheme.colors.background,
+      customTheme.colors.foreground
+    );
+    if (ratio < 4.5) {
+      setContrastWarning(
+        `Low contrast (${ratio.toFixed(1)}:1). WCAG AA requires 4.5:1 minimum.`
+      );
+    } else {
+      setContrastWarning(null);
+    }
+  }, [customTheme.colors.background, customTheme.colors.foreground]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Custom Theme</CardTitle>
+        <CardDescription>Create your own color scheme</CardDescription>
+      </CardHeader>
+      <CardContent className="grid grid-cols-2 gap-6">
+        {/* Left: All controls */}
+        <div className="space-y-6">
+          {/* Theme Name */}
+          <div className="space-y-2">
+            <Label>Theme Name</Label>
+            <Input
+              value={customTheme.name}
+              onChange={(e) => setCustomTheme(t => ({ ...t, name: e.target.value }))}
+              placeholder="My Custom Theme"
+            />
+          </div>
+
+          {/* Color Pickers */}
+          <div className="space-y-4">
+            <Label>Colors</Label>
+            <ColorPicker
+              label="Background"
+              value={customTheme.colors.background}
+              onChange={(v) => updateColor('background', v)}
+            />
+            <ColorPicker
+              label="Text (Foreground)"
+              value={customTheme.colors.foreground}
+              onChange={(v) => updateColor('foreground', v)}
+            />
+            <ColorPicker
+              label="Primary / Accent"
+              value={customTheme.colors.primary}
+              onChange={(v) => updateColor('primary', v)}
+            />
+            <ColorPicker
+              label="Border"
+              value={customTheme.colors.border}
+              onChange={(v) => updateColor('border', v)}
+            />
+            <ColorPicker
+              label="Muted"
+              value={customTheme.colors.muted}
+              onChange={(v) => updateColor('muted', v)}
+            />
+          </div>
+
+          {/* Contrast Warning */}
+          {contrastWarning && (
+            <Alert variant="warning">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{contrastWarning}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Font Family */}
+          <div className="space-y-2">
+            <Label>Font Family</Label>
+            <Select
+              value={customTheme.typography.fontFamily}
+              onValueChange={(v) => updateTypography('fontFamily', v)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="system-ui">System UI</SelectItem>
+                <SelectItem value="inter">Inter</SelectItem>
+                <SelectItem value="roboto">Roboto</SelectItem>
+                <SelectItem value="mono">Monospace</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Spacing Scale */}
+          <div className="space-y-2">
+            <Label>Spacing</Label>
+            <div className="flex gap-2">
+              {(['compact', 'normal', 'relaxed'] as const).map((scale) => (
+                <Button
+                  key={scale}
+                  variant={customTheme.spacing.scale === scale ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => updateSpacing('scale', scale)}
+                >
+                  {scale.charAt(0).toUpperCase() + scale.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Border Radius */}
+          <div className="space-y-2">
+            <Label>Border Radius: {customTheme.radii.base}</Label>
+            <Slider
+              value={[parseFloat(customTheme.radii.base)]}
+              min={0}
+              max={16}
+              step={1}
+              onValueChange={([v]) => updateRadii('base', `${v}px`)}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Flat</span>
+              <span>Rounded</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Live preview */}
+        <ThemePreview theme={customTheme} />
+      </CardContent>
+
+      <CardFooter className="flex justify-between">
+        <Button variant="outline" onClick={resetToDefault}>
+          Reset to Default
+        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => exportTheme(customTheme)}>
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+          <Button variant="outline" onClick={triggerImport}>
+            <Upload className="mr-2 h-4 w-4" />
+            Import
+          </Button>
+          <Button
+            onClick={saveTheme}
+            disabled={!!contrastWarning}
+          >
+            Save Theme
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
+```
+
+### C. Theme Export/Import
+
+```typescript
+// Theme export - download as JSON
+function exportTheme(theme: CustomTheme) {
+  const blob = new Blob([JSON.stringify(theme, null, 2)], {
+    type: 'application/json'
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${theme.name.toLowerCase().replace(/\s+/g, '-')}-theme.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Theme import - upload JSON file
+function importTheme(file: File): Promise<CustomTheme> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const theme = JSON.parse(reader.result as string) as CustomTheme;
+        // Validate theme structure
+        if (validateTheme(theme)) {
+          resolve(theme);
+        } else {
+          reject(new Error('Invalid theme structure'));
+        }
+      } catch {
+        reject(new Error('Invalid JSON file'));
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
+// Apply custom theme dynamically
+function applyCustomTheme(theme: CustomTheme) {
+  const root = document.documentElement;
+  Object.entries(theme.colors).forEach(([key, value]) => {
+    // Convert camelCase to kebab-case for CSS variables
+    const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+    root.style.setProperty(cssVar, value);
+  });
+  root.style.setProperty('--radius', theme.radius);
+}
+```
+
+### D. Theme Validation & Safety
+
+When users import arbitrary JSON or create custom themes, validate to prevent issues:
+
+```typescript
+// themeValidation.ts
+
+// Validate theme structure before applying
+function validateTheme(theme: unknown): theme is CustomTheme {
+  if (typeof theme !== 'object' || theme === null) return false;
+
+  const t = theme as Record<string, unknown>;
+
+  // Check required fields exist
+  if (typeof t.name !== 'string') return false;
+  if (typeof t.colors !== 'object' || t.colors === null) return false;
+
+  // Validate colors are valid CSS values
+  const colors = t.colors as Record<string, string>;
+  const colorKeys = ['background', 'foreground', 'primary', 'border'];
+  for (const key of colorKeys) {
+    if (!isValidColor(colors[key])) return false;
+  }
+
+  return true;
+}
+
+// Check if string is a valid CSS color
+function isValidColor(color: string): boolean {
+  if (!color) return false;
+  // Accept hex, rgb, hsl, or CSS color names
+  const s = new Option().style;
+  s.color = color;
+  return s.color !== '';
+}
+
+// WCAG contrast ratio calculator
+function getContrastRatio(bg: string, fg: string): number {
+  const bgLum = getLuminance(bg);
+  const fgLum = getLuminance(fg);
+  const lighter = Math.max(bgLum, fgLum);
+  const darker = Math.min(bgLum, fgLum);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function getLuminance(color: string): number {
+  // Convert color to RGB, then calculate relative luminance
+  // Per WCAG 2.0 formula
+  const rgb = parseColorToRGB(color);
+  const [r, g, b] = rgb.map((c) => {
+    c = c / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+```
+
+#### ⚠️ Caveats & Best Practices
+
+| Issue | Risk | Mitigation |
+|-------|------|------------|
+| Poor contrast | Text becomes unreadable | Add WCAG contrast checker, warn before save |
+| Too much freedom | Users create unusable themes | Limit to safe tokens (bg, fg, accent, radius, spacing) |
+| Invalid JSON import | App crashes or behaves oddly | Validate schema before applying |
+| Malicious JSON | XSS or injection attacks | Sanitize all values, only allow CSS color formats |
+| Theme breaks components | Styling inconsistencies | Test all themes against all components |
+| Performance | Large theme objects slow down | Keep theme JSON small (~1KB), use CSS variables not inline styles |
+| localStorage limits | Storage quota exceeded (5-10MB) | Theme JSON is small, but monitor if storing many themes |
+
+```tsx
+// Safe theme application with fallbacks
+function applyThemeSafely(theme: CustomTheme) {
+  const root = document.documentElement;
+
+  // Default fallbacks for missing tokens
+  const defaults: Partial<CustomTheme['colors']> = {
+    background: '0 0% 100%',
+    foreground: '222.2 84% 4.9%',
+    primary: '222.2 47.4% 11.2%',
+    border: '214.3 31.8% 91.4%',
+  };
+
+  // Apply colors with fallback
+  Object.entries(theme.colors).forEach(([key, value]) => {
+    const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+    const safeValue = value || defaults[key as keyof typeof defaults] || '';
+    root.style.setProperty(cssVar, safeValue);
+  });
+}
+```
+
+### E. Backend Persistence (Optional)
+
+```java
+// User preferences stored in database
+// Add to User.java or create UserPreferences entity
+private String themePreferences;  // JSON blob of custom theme
+```
+
+```
+POST /api/auth/me/preferences
+{ "theme": { ... custom theme object ... } }
+
+GET /api/auth/me/preferences
+Returns user's saved theme preferences
+```
+
+#### Storage Strategy
+
+| User State | Storage Location | Persistence |
+|------------|------------------|-------------|
+| Anonymous | localStorage | Browser only |
+| Logged in | Backend database | Cross-device |
+| Logged in + offline | localStorage cache | Syncs on reconnect |
+
+```typescript
+// Hybrid storage strategy
+async function saveTheme(theme: CustomTheme) {
+  // Always save to localStorage for immediate access
+  localStorage.setItem('contactAppTheme', JSON.stringify(theme));
+
+  // If logged in, also persist to backend
+  if (isAuthenticated()) {
+    try {
+      await api.post('/auth/me/preferences', { theme });
+    } catch (error) {
+      console.warn('Failed to sync theme to server', error);
+      // Theme still saved locally, will sync later
+    }
+  }
+}
+
+// Load theme on app start
+async function loadTheme(): Promise<CustomTheme | null> {
+  // If logged in, prefer server version
+  if (isAuthenticated()) {
+    try {
+      const { data } = await api.get('/auth/me/preferences');
+      if (data.theme) {
+        // Update local cache
+        localStorage.setItem('contactAppTheme', JSON.stringify(data.theme));
+        return data.theme;
+      }
+    } catch {
+      // Fall through to localStorage
+    }
+  }
+
+  // Fall back to localStorage
+  const stored = localStorage.getItem('contactAppTheme');
+  return stored ? JSON.parse(stored) : null;
+}
+```
+
+### Updated Settings Page Structure
+
+```tsx
+// SettingsPage.tsx - expanded
+<Tabs defaultValue="appearance">
+  <TabsList>
+    <TabsTrigger value="profile">Profile</TabsTrigger>
+    <TabsTrigger value="appearance">Appearance</TabsTrigger>
+    <TabsTrigger value="custom-theme">Custom Theme</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="appearance">
+    {/* Existing: Dark mode toggle + preset themes */}
+  </TabsContent>
+
+  <TabsContent value="custom-theme">
+    <ThemeEditor />
+  </TabsContent>
+</Tabs>
+```
+
+### Effort Estimate: 2-3 days
+
+---
+
+## Phase UI-3: Advanced Frontend Features
+
+**Goal:** Professional SaaS-level interactions and functionality
+
+### A. Command Palette (⌘K / Ctrl+K)
+
+```bash
+npm install cmdk
+```
+
+```tsx
+// CommandPalette.tsx
+import { Command } from 'cmdk';
+
+function CommandPalette() {
+  const [open, setOpen] = useState(false);
+
+  // Toggle with keyboard shortcut
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setOpen((o) => !o);
+      }
+    };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
+
+  return (
+    <Command.Dialog open={open} onOpenChange={setOpen}>
+      <Command.Input placeholder="Search everything..." />
+      <Command.List>
+        <Command.Group heading="Navigation">
+          <Command.Item onSelect={() => navigate('/contacts')}>
+            <Users className="mr-2 h-4 w-4" />
+            Go to Contacts
+          </Command.Item>
+          <Command.Item onSelect={() => navigate('/tasks')}>
+            <CheckSquare className="mr-2 h-4 w-4" />
+            Go to Tasks
+          </Command.Item>
+        </Command.Group>
+        <Command.Group heading="Actions">
+          <Command.Item onSelect={createContact}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Contact
+          </Command.Item>
+          <Command.Item onSelect={createTask}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Task
+          </Command.Item>
+        </Command.Group>
+        <Command.Group heading="Recent">
+          {recentItems.map(item => (
+            <Command.Item key={item.id}>
+              {item.name}
+            </Command.Item>
+          ))}
+        </Command.Group>
+      </Command.List>
+    </Command.Dialog>
+  );
+}
+```
+
+### B. Keyboard Shortcuts
+
+```typescript
+// useKeyboardShortcuts.ts
+const shortcuts = {
+  'g h': () => navigate('/'),           // Go home
+  'g c': () => navigate('/contacts'),   // Go contacts
+  'g t': () => navigate('/tasks'),      // Go tasks
+  'g p': () => navigate('/projects'),   // Go projects
+  'c': () => openCreateDialog(),        // Create new
+  '?': () => openShortcutsHelp(),       // Show shortcuts
+  'Escape': () => closeAllDialogs(),
+};
+
+// Shortcuts help modal
+function ShortcutsHelpDialog() {
+  return (
+    <Dialog>
+      <DialogContent>
+        <DialogHeader>Keyboard Shortcuts</DialogHeader>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <h4 className="font-medium">Navigation</h4>
+            <ul className="text-sm">
+              <li><kbd>g</kbd> then <kbd>h</kbd> - Dashboard</li>
+              <li><kbd>g</kbd> then <kbd>c</kbd> - Contacts</li>
+              <li><kbd>g</kbd> then <kbd>t</kbd> - Tasks</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-medium">Actions</h4>
+            <ul className="text-sm">
+              <li><kbd>c</kbd> - Create new item</li>
+              <li><kbd>⌘</kbd> <kbd>k</kbd> - Command palette</li>
+              <li><kbd>?</kbd> - Show this help</li>
+            </ul>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+### C. Animations with Framer Motion
+
+```bash
+npm install framer-motion
+```
+
+```tsx
+// Animated page transitions
+import { motion, AnimatePresence } from 'framer-motion';
+
+const pageVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -20 }
+};
+
+function AnimatedPage({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      variants={pageVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={{ duration: 0.2 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// Animated list items
+const listItemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: { delay: i * 0.05 }
+  })
+};
+
+// Animated table rows
+{tasks.map((task, i) => (
+  <motion.tr
+    key={task.id}
+    custom={i}
+    variants={listItemVariants}
+    initial="hidden"
+    animate="visible"
+    className="hover:bg-muted/50"
+  >
+    {/* ... */}
+  </motion.tr>
+))}
+```
+
+### D. Dashboard Charts
+
+Already have `--chart-*` CSS variables defined. Use them with a charting library:
+
+```bash
+npm install recharts
+```
+
+```tsx
+// Dashboard enhancement with charts
+import { LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
+
+function DashboardCharts() {
+  const { data: stats } = useQuery(['dashboard-stats'], fetchDashboardStats);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+      {/* Tasks created over time */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Task Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <LineChart data={stats?.taskActivity}>
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip />
+            <Line
+              type="monotone"
+              dataKey="created"
+              stroke="hsl(var(--chart-1))"
+            />
+            <Line
+              type="monotone"
+              dataKey="completed"
+              stroke="hsl(var(--chart-2))"
+            />
+          </LineChart>
+        </CardContent>
+      </Card>
+
+      {/* Task distribution pie chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Task Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PieChart data={stats?.statusDistribution}>
+            {/* ... */}
+          </PieChart>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+### E. Bulk Operations
+
+```tsx
+// Table with row selection
+function ContactsTable() {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(contacts.map(c => c.id)));
+  };
+
+  return (
+    <>
+      {/* Bulk action bar - appears when items selected */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-4 p-4 bg-muted rounded-lg mb-4">
+          <span className="text-sm font-medium">
+            {selectedIds.size} selected
+          </span>
+          <Button variant="outline" size="sm" onClick={bulkDelete}>
+            <Trash className="mr-2 h-4 w-4" />
+            Delete
+          </Button>
+          <Button variant="outline" size="sm" onClick={bulkExport}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-12">
+              <Checkbox
+                checked={selectedIds.size === contacts.length}
+                onCheckedChange={selectAll}
+              />
+            </TableHead>
+            {/* ... other headers */}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {contacts.map(contact => (
+            <TableRow key={contact.id}>
+              <TableCell>
+                <Checkbox
+                  checked={selectedIds.has(contact.id)}
+                  onCheckedChange={() => toggleSelect(contact.id)}
+                />
+              </TableCell>
+              {/* ... other cells */}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </>
+  );
+}
+```
+
+### F. CSV Export
+
+```typescript
+// Export utility
+function exportToCSV<T extends Record<string, any>>(
+  data: T[],
+  filename: string,
+  columns: { key: keyof T; header: string }[]
+) {
+  const headers = columns.map(c => c.header).join(',');
+  const rows = data.map(item =>
+    columns.map(c => {
+      const value = item[c.key];
+      // Escape commas and quotes
+      const str = String(value ?? '');
+      return str.includes(',') || str.includes('"')
+        ? `"${str.replace(/"/g, '""')}"`
+        : str;
+    }).join(',')
+  );
+
+  const csv = [headers, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${filename}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Usage
+exportToCSV(contacts, 'contacts-export', [
+  { key: 'contactId', header: 'ID' },
+  { key: 'firstName', header: 'First Name' },
+  { key: 'lastName', header: 'Last Name' },
+  { key: 'phone', header: 'Phone' },
+  { key: 'address', header: 'Address' },
+]);
+```
+
+### G. Calendar View for Appointments
+
+```bash
+npm install @fullcalendar/react @fullcalendar/daygrid @fullcalendar/interaction
+```
+
+```tsx
+// CalendarView.tsx
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+
+function CalendarView() {
+  const { data: appointments } = useQuery(['appointments'], fetchAppointments);
+
+  const events = appointments?.map(apt => ({
+    id: apt.appointmentId,
+    title: apt.description,
+    date: apt.appointmentDate,
+    className: apt.archived ? 'opacity-50' : ''
+  }));
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <FullCalendar
+          plugins={[dayGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          events={events}
+          eventClick={(info) => openAppointmentDialog(info.event.id)}
+          dateClick={(info) => openCreateDialog(info.dateStr)}
+          headerToolbar={{
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,dayGridWeek'
+          }}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+### H. PWA Support (Progressive Web App)
+
+```typescript
+// vite.config.ts
+import { VitePWA } from 'vite-plugin-pwa';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      manifest: {
+        name: 'ContactApp',
+        short_name: 'ContactApp',
+        theme_color: '#0f172a',
+        icons: [
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }
+        ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+      }
+    })
+  ]
+});
+```
+
+### I. Responsive / Mobile-Friendly Layout
+
+```tsx
+// Ensure tables behave well on mobile
+// Use responsive table wrapper
+function ResponsiveTable({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="overflow-x-auto -mx-4 sm:mx-0">
+      <div className="inline-block min-w-full align-middle">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Mobile-first card layout for small screens
+function ContactsList({ contacts }: { contacts: Contact[] }) {
+  const isMobile = useMediaQuery('(max-width: 640px)');
+
+  if (isMobile) {
+    return (
+      <div className="space-y-4">
+        {contacts.map(c => (
+          <Card key={c.id} className="p-4">
+            <div className="font-medium">{c.firstName} {c.lastName}</div>
+            <div className="text-sm text-muted-foreground">{c.phone}</div>
+            <div className="text-sm text-muted-foreground">{c.address}</div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  return <ContactsTable contacts={contacts} />;
+}
+```
+
+### J. Onboarding Tour (First-time Users)
+
+```bash
+npm install @reactour/tour
+```
+
+```tsx
+// OnboardingTour.tsx
+import { TourProvider, useTour } from '@reactour/tour';
+
+const tourSteps = [
+  {
+    selector: '[data-tour="sidebar"]',
+    content: 'Navigate between Contacts, Tasks, Projects, and Appointments here.',
+  },
+  {
+    selector: '[data-tour="create-button"]',
+    content: 'Click here to create a new item.',
+  },
+  {
+    selector: '[data-tour="search"]',
+    content: 'Search and filter your data using this search bar.',
+  },
+  {
+    selector: '[data-tour="theme-toggle"]',
+    content: 'Switch between light and dark mode here.',
+  },
+  {
+    selector: '[data-tour="settings"]',
+    content: 'Customize themes and preferences in Settings.',
+  },
+];
+
+// Show on first login
+function useShowOnboarding() {
+  const { setIsOpen } = useTour();
+
+  useEffect(() => {
+    const hasSeenTour = localStorage.getItem('hasSeenOnboarding');
+    if (!hasSeenTour) {
+      setIsOpen(true);
+      localStorage.setItem('hasSeenOnboarding', 'true');
+    }
+  }, []);
+}
+```
+
+### K. Accessibility (a11y) Improvements
+
+```tsx
+// Ensure all interactive elements are keyboard accessible
+
+// Skip link for keyboard users (already have SkipLink.tsx)
+<SkipLink href="#main-content">Skip to main content</SkipLink>
+
+// ARIA labels on icon-only buttons
+<Button variant="ghost" size="icon" aria-label="Edit contact">
+  <Pencil className="h-4 w-4" />
+</Button>
+
+// Focus visible rings (already in Tailwind)
+className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+
+// Announce dynamic content changes
+import { useAnnounce } from '@/hooks/useAnnounce';
+const announce = useAnnounce();
+// After delete:
+announce('Contact deleted successfully');
+
+// Color contrast checker
+// Ensure all text meets WCAG AA (4.5:1 for normal text, 3:1 for large)
+```
+
+### L. Performance Optimizations
+
+```tsx
+// 1. Code-splitting routes
+const ContactsPage = React.lazy(() => import('@/pages/ContactsPage'));
+const TasksPage = React.lazy(() => import('@/pages/TasksPage'));
+
+<Suspense fallback={<PageSkeleton />}>
+  <Routes>
+    <Route path="/contacts" element={<ContactsPage />} />
+    <Route path="/tasks" element={<TasksPage />} />
+  </Routes>
+</Suspense>
+
+// 2. Virtualization for large lists
+import { useVirtualizer } from '@tanstack/react-virtual';
+
+function VirtualizedTable({ rows }: { rows: Contact[] }) {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 48, // row height
+  });
+
+  return (
+    <div ref={parentRef} className="h-[600px] overflow-auto">
+      <div style={{ height: `${virtualizer.getTotalSize()}px` }}>
+        {virtualizer.getVirtualItems().map((virtualRow) => (
+          <TableRow key={virtualRow.key} data={rows[virtualRow.index]} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 3. Memoization for expensive renders
+const MemoizedRow = React.memo(({ contact }: { contact: Contact }) => (
+  <TableRow>...</TableRow>
+));
+
+// 4. Debounced search input
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+const [search, setSearch] = useState('');
+const debouncedSearch = useDebouncedValue(search, 300);
+// Only fetch when debouncedSearch changes
+```
+
+### Feature Summary
+
+| Feature | Library | Effort | Impact |
+|---------|---------|--------|--------|
+| Command Palette | cmdk | Low | High |
+| Keyboard Shortcuts | Custom hook | Low | Medium |
+| Page Animations | framer-motion | Medium | High |
+| Dashboard Charts | recharts | Medium | High |
+| Bulk Operations | TanStack Table | Medium | High |
+| CSV Export | Native JS | Low | Medium |
+| Calendar View | FullCalendar | Medium | High |
+| PWA Support | vite-plugin-pwa | Low | Medium |
+| Responsive Layout | useMediaQuery | Low | High |
+| Onboarding Tour | @reactour/tour | Low | Medium |
+| Accessibility (a11y) | Native + ARIA | Low | High |
+| Virtualized Lists | @tanstack/react-virtual | Medium | High |
+| Code Splitting | React.lazy | Low | Medium |
+| Debounced Search | Custom hook | Low | Medium |
+
+### Effort Estimate: 2-3 weeks (all features)
+
+---
+
 ## Phase 12: Reporting & Analytics
 
 **Goal:** Data-driven insights for teams
@@ -587,7 +1977,7 @@ GET /api/v1/projects/{id}/reports/export?format=csv
 // Notification.java
 public class Notification {
     private Long id;
-    private Long userId;              // Recipient
+    private UUID userId;              // Recipient - UUID per ADR-0052
     private NotificationType type;
     private String title;
     private String message;
@@ -599,10 +1989,10 @@ public class Notification {
 // NotificationService.java
 @Service
 public class NotificationService {
-    public void notify(Long userId, NotificationType type, String message);
+    public void notify(UUID userId, NotificationType type, String message);  // UUID per ADR-0052
     public void notifyAssignee(Task task, String message);
     public void notifyMentioned(Comment comment);
-    public List<Notification> getUnread(Long userId);
+    public List<Notification> getUnread(UUID userId);  // UUID per ADR-0052
     public void markAsRead(Long notificationId);
 }
 ```
@@ -740,18 +2130,31 @@ GET    /api/v1/tasks/{id}/blocks                      - What does this block?
 
 ## Implementation Priority Matrix
 
-| Phase | Business Value | Technical Effort | Priority |
-|-------|---------------|------------------|----------|
-| 8: Task Enhancements | HIGH | MEDIUM | **P1** |
-| 9: Sprint Management | HIGH | MEDIUM | **P1** |
-| 10: Activity & Comments | HIGH | MEDIUM | **P1** |
-| 11: Kanban Board | VERY HIGH | HIGH | **P1** |
-| 12: Reporting | MEDIUM | MEDIUM | **P2** |
-| 13: Notifications | MEDIUM | HIGH | **P2** |
-| 14: Epic & Roadmap | MEDIUM | HIGH | **P2** |
-| 15: Custom Workflows | MEDIUM | VERY HIGH | **P3** |
-| 16: Integrations | HIGH | HIGH | **P3** |
-| 17: Teams | MEDIUM | HIGH | **P3** |
+| Phase | Business Value | Technical Effort | Priority | Timeline |
+|-------|---------------|------------------|----------|----------|
+| **UI-1: Frontend Polish** | HIGH | LOW | **P0** | 1-2 days |
+| **UI-2: Theme System** | MEDIUM | MEDIUM | **P1** | 2-3 days |
+| 8: Task Enhancements | HIGH | MEDIUM | **P1** | 1 week |
+| 9: Sprint Management | HIGH | MEDIUM | **P1** | 1 week |
+| 10: Activity & Comments | HIGH | MEDIUM | **P1** | 1 week |
+| 11: Kanban Board | VERY HIGH | HIGH | **P1** | 2 weeks |
+| **UI-3: Advanced Frontend** | HIGH | MEDIUM | **P2** | 1-2 weeks |
+| 12: Reporting | MEDIUM | MEDIUM | **P2** | 1 week |
+| 13: Notifications | MEDIUM | HIGH | **P2** | 2 weeks |
+| 14: Epic & Roadmap | MEDIUM | HIGH | **P2** | 2 weeks |
+| 15: Custom Workflows | MEDIUM | VERY HIGH | **P3** | 3+ weeks |
+| 16: Integrations | HIGH | HIGH | **P3** | 2+ weeks |
+| 17: Teams | MEDIUM | HIGH | **P3** | 2+ weeks |
+
+### Recommended Implementation Order
+
+```
+Week 1:     UI-1 (Quick Wins) → Immediate visual impact
+Week 2:     UI-2 (Theme System) → User customization
+Week 3-4:   Phase 8 (Task Enhancements) → Core functionality
+Week 5-6:   Phase 9 (Sprint Management) → Agile features
+Week 7-8:   Phase 11 (Kanban Board) + UI-3 (Advanced Frontend)
+```
 
 ---
 
@@ -794,6 +2197,14 @@ GET    /api/v1/tasks/{id}/blocks                      - What does this block?
 | Assignees | Task.assigneeId | ✅ Done |
 | Status workflow | TaskStatus enum | ✅ Done |
 | Due dates | Task.dueDate | ✅ Done |
+| Dark/Light mode | CSS variables + useTheme | ✅ Done |
+| Theme presets | 5 color schemes | ✅ Done |
+| **Skeleton loaders** | TanStack Query | **UI-1** |
+| **Tooltips** | Radix Tooltip | **UI-1** |
+| **Hover states** | CSS transitions | **UI-1** |
+| **10 new themes** | CSS variables | **UI-2** |
+| **Custom themes** | Theme editor | **UI-2** |
+| **Theme export/import** | JSON blob | **UI-2** |
 | Issue types | TaskType enum | Phase 8 |
 | Priority | Priority enum | Phase 8 |
 | Story points | Task.storyPoints | Phase 8 |
@@ -805,7 +2216,18 @@ GET    /api/v1/tasks/{id}/blocks                      - What does this block?
 | Comments | Comment entity | Phase 10 |
 | Activity log | ActivityEntry | Phase 10 |
 | Kanban board | React DnD UI | Phase 11 |
-| Burndown charts | Chart.js/Recharts | Phase 12 |
+| **Command palette** | cmdk library | **UI-3** |
+| **Keyboard shortcuts** | Custom hooks | **UI-3** |
+| **Calendar view** | FullCalendar | **UI-3** |
+| **Bulk operations** | Row selection | **UI-3** |
+| **CSV export** | Native JS | **UI-3** |
+| **Page animations** | framer-motion | **UI-3** |
+| **Responsive layout** | useMediaQuery | **UI-3** |
+| **Onboarding tour** | @reactour/tour | **UI-3** |
+| **Accessibility (a11y)** | ARIA + focus | **UI-3** |
+| **Virtualized lists** | @tanstack/react-virtual | **UI-3** |
+| **PWA support** | vite-plugin-pwa | **UI-3** |
+| Burndown charts | Recharts | Phase 12 |
 | Notifications | WebSocket + DB | Phase 13 |
 | Epics | Task with type=EPIC | Phase 14 |
 | Dependencies | TaskDependency | Phase 14 |
@@ -819,10 +2241,10 @@ GET    /api/v1/tasks/{id}/blocks                      - What does this block?
 
 1. **Review this roadmap** with stakeholders
 2. **Prioritize Phase 8** (Task Enhancements) as first iteration
-3. **Create ADR-0050** for Phase 8 design decisions
+3. **Create ADR for Phase 8** design decisions (ADR-0050 is Domain Reconstitution Pattern, ADR-0051 is CLI Tool; use ADR-0052+)
 4. **Estimate effort** for each phase
 5. **Begin implementation** following established patterns
 
 ---
 
-*This roadmap builds on the solid foundation of 49 ADRs, 1,026 tests, and enterprise-grade CI/CD already in place.*
+*This roadmap builds on the solid foundation of 54 ADRs, 1109 tests, production-grade auth (ADR-0052), and enterprise CI/CD. UI phases (UI-1 through UI-3) were added 2025-12-03 based on screenshot analysis and best practices research.*

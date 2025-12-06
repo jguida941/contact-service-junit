@@ -132,6 +132,7 @@ public class JpaAppointmentStore implements AppointmentStore {
     }
 
     @Override
+    @Deprecated(since = "1.0", forRemoval = true)
     public List<Appointment> findAll() {
         return repository.findAll().stream()
                 .map(mapper::toDomain)
@@ -162,5 +163,41 @@ public class JpaAppointmentStore implements AppointmentStore {
     @Override
     public void deleteAll() {
         repository.deleteAll();
+    }
+
+    /**
+     * Finds all appointments associated with a specific project for a user.
+     *
+     * <p>This method pushes filtering to the database level for better performance.
+     *
+     * @param projectId the project ID to filter by
+     * @param user the user who owns the appointments
+     * @return list of appointments for the specified project
+     */
+    public List<Appointment> findByProjectId(final String projectId, final User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("user must not be null");
+        }
+        return repository.findByProjectIdAndUser(projectId, user).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    /**
+     * Finds all appointments associated with a specific task for a user.
+     *
+     * <p>This method pushes filtering to the database level for better performance.
+     *
+     * @param taskId the task ID to filter by
+     * @param user the user who owns the appointments
+     * @return list of appointments for the specified task
+     */
+    public List<Appointment> findByTaskId(final String taskId, final User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("user must not be null");
+        }
+        return repository.findByTaskIdAndUser(taskId, user).stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 }

@@ -2,7 +2,10 @@
 
 **Status:** Accepted | **Date:** 2025-12-01 | **Owners:** Justin Guida
 
-**Related:** [ADR-0049 Spring Security 7 SPA CSRF](ADR-0049-spring-security-7-spa-csrf.md) (CSRF implementation details for Spring Boot 4.0+)
+**Related:** [ADR-0049 Spring Security 7 SPA CSRF](ADR-0049-spring-security-7-spa-csrf.md) (CSRF implementation details for Spring Boot 4.0+),
+[ADR-0052 Production Auth System](ADR-0052-production-auth-system.md) (401/403 handling, JWT hardening)
+
+> **Update (2025-12-03):** ADR-0052 Batch 1 enhanced 401 vs 403 handling. Frontend now differentiates: 401 triggers logout, 403 shows "Access Denied" without clearing session.
 
 ## Context
 
@@ -28,6 +31,12 @@ Migrate from localStorage-based Bearer token authentication to HttpOnly cookie-b
 2. **JwtAuthenticationFilter.java**:
 * Now extracts JWT from cookie first, falls back to Authorization header
 * Maintains backward compatibility for API clients using Bearer tokens
+
+3. **Token use separation (update)**:
+* Tokens include `token_use` claim:
+  * `session`: browser flow, fingerprint-bound via cookie (`fph` claim required)
+  * `api`: programmatic flow, no fingerprint claim, header-only; filter rejects any API token that carries `fph`
+* `/api/auth/api-token` issues API tokens without setting cookies; `/api/auth/login|register|refresh` issue session tokens with fingerprint cookies.
 
 3. **application.yml**:
 - Added cookie security configuration

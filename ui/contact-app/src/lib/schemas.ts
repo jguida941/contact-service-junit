@@ -64,9 +64,11 @@ export const taskSchema = z.object({
   status: TaskStatusEnum,
   dueDate: z.string().optional().nullable(),
   projectId: z.string().optional().nullable(),
-  assigneeId: z.number().optional().nullable(),
+  assigneeId: z.string().optional().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  isOverdue: z.boolean().optional(),
+  archived: z.boolean().optional(),
 });
 
 export const taskRequestSchema = z.object({
@@ -85,7 +87,7 @@ export const taskRequestSchema = z.object({
   status: TaskStatusEnum.default('TODO'),
   dueDate: z.string().optional().nullable(),
   projectId: z.string().optional().nullable(),
-  assigneeId: z.number().optional().nullable(),
+  assigneeId: z.string().optional().nullable(),
 });
 
 export type Task = z.infer<typeof taskSchema>;
@@ -105,6 +107,8 @@ export const appointmentSchema = z.object({
     .max(ValidationLimits.MAX_DESCRIPTION_LENGTH, `Description must be at most ${ValidationLimits.MAX_DESCRIPTION_LENGTH} characters`),
   projectId: z.string().optional().nullable(),
   taskId: z.string().optional().nullable(),
+  isPast: z.boolean().optional(),
+  archived: z.boolean().optional(),
 });
 
 export const appointmentRequestSchema = z.object({

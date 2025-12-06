@@ -69,8 +69,10 @@ static {
 
 **Why mutation testing matters**: Line coverage (JaCoCo) shows what code executes, not whether tests catch bugs. A test that runs code but never asserts anything still counts as "covered". Mutation testing proves tests actually work by injecting faults and verifying tests fail.
 
-**Current metrics**:
-- ~83% mutation kill rate
+**Current metrics** (as of latest improvements):
+- **84% overall mutation coverage**
+- **94% test strength** (mutations killed / mutations covered)
+- TaskService: 77% mutation coverage
 - +71 mutation-focused tests targeting boundary conditions and comparison operators
 
 **Mutation patterns targeted**:
@@ -81,6 +83,24 @@ static {
 - Conditional removals: verifying validation is actually called
 
 See [ADR-0031](../../adrs/ADR-0031-mutation-testing-for-test-quality.md) for the full rationale.
+
+### Two-Tier Service Testing Strategy
+
+To maximize both mutation coverage and real-world correctness, service layer tests use a dual approach:
+
+**1. Integration Tests** (e.g., `TaskServiceTest`)
+- Uses `@SpringBootTest` with full Spring context
+- Tests against **JPA/PostgreSQL** via Testcontainers
+- Validates actual database interactions, query correctness, and transaction behavior
+- Ensures realistic persistence layer integration
+
+**2. Unit Tests** (e.g., `TaskServiceValidationTest`)
+- Uses `InMemoryTaskStore` for fast, isolated validation
+- Provides **legacy path coverage** for code branches not exercised by integration tests
+- Focuses on edge cases, validation logic, and boundary conditions
+- Complements integration tests without duplicating effort
+
+**Key insight**: `InMemoryTaskStore.save()` was fixed to properly support **updates** (previously only inserts worked). This fix enabled unit tests to cover update scenarios that were previously unreachable, directly improving mutation coverage of TaskService update operations.
 
 ## Checkstyle Rules
 

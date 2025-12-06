@@ -3,6 +3,7 @@ package contactapp.domain;
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import contactapp.support.TestDates;
@@ -824,5 +825,443 @@ public class TaskTest {
         assertThatThrownBy(() -> task.update("N", "D", TaskStatus.TODO, LocalDate.now().minusDays(5)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("dueDate must not be in the past");
+    }
+
+    // ==================== Tests for reconstitute() and isOverdue() ====================
+
+    /**
+     * Tests reconstitute with an overdue (past) due date succeeds.
+     *
+     * <p><b>Why this test exists:</b> reconstitute() is for loading existing tasks from
+     * persistence. Tasks naturally become overdue over time, so we must allow past due dates
+     * when reconstituting from the database.
+     */
+    @Test
+    void reconstitute_withOverdueDueDate_shouldSucceed() {
+        final LocalDate pastDate = pastDueDate();
+        final Instant createdAt = Instant.now().minusSeconds(3600);
+        final Instant updatedAt = Instant.now().minusSeconds(1800);
+
+        final Task task = Task.reconstitute(
+                "1",
+                "Overdue task",
+                "This task is past its due date",
+                TaskStatus.TODO,
+                pastDate,
+                null,
+                null,
+                createdAt,
+                updatedAt,
+                false);
+
+        assertThat(task.getTaskId()).isEqualTo("1");
+        assertThat(task.getName()).isEqualTo("Overdue task");
+        assertThat(task.getDescription()).isEqualTo("This task is past its due date");
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.TODO);
+        assertThat(task.getDueDate()).isEqualTo(pastDate);
+        assertThat(task.getCreatedAt()).isEqualTo(createdAt);
+        assertThat(task.getUpdatedAt()).isEqualTo(updatedAt);
+    }
+
+    /**
+     * Tests reconstitute with a future due date succeeds.
+     *
+     * <p><b>Why this test exists:</b> Ensures reconstitute() works correctly with
+     * future due dates, which is the normal case for active tasks.
+     */
+    @Test
+    void reconstitute_withFutureDueDate_shouldSucceed() {
+        final LocalDate futureDate = validDueDate();
+        final Instant createdAt = Instant.now().minusSeconds(7200);
+        final Instant updatedAt = Instant.now().minusSeconds(3600);
+        final UUID assigneeId = UUID.randomUUID();
+
+        final Task task = Task.reconstitute(
+                "2",
+                "Future task",
+                "This task is due in the future",
+                TaskStatus.IN_PROGRESS,
+                futureDate,
+                "proj-1",
+                assigneeId,
+                createdAt,
+                updatedAt,
+                false);
+
+        assertThat(task.getTaskId()).isEqualTo("2");
+        assertThat(task.getName()).isEqualTo("Future task");
+        assertThat(task.getDescription()).isEqualTo("This task is due in the future");
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(task.getDueDate()).isEqualTo(futureDate);
+        assertThat(task.getProjectId()).isEqualTo("proj-1");
+        assertThat(task.getAssigneeId()).isEqualTo(assigneeId);
+        assertThat(task.getCreatedAt()).isEqualTo(createdAt);
+        assertThat(task.getUpdatedAt()).isEqualTo(updatedAt);
+    }
+
+    /**
+     * Tests reconstitute with null due date succeeds.
+     *
+     * <p><b>Why this test exists:</b> Due date is optional, so reconstitute() must
+     * handle null due dates correctly.
+     */
+    @Test
+    void reconstitute_withNullDueDate_shouldSucceed() {
+        final Instant createdAt = Instant.now().minusSeconds(3600);
+        final Instant updatedAt = Instant.now().minusSeconds(1800);
+
+        final Task task = Task.reconstitute(
+                "3",
+                "No deadline",
+                "This task has no due date",
+                TaskStatus.DONE,
+                null,
+                null,
+                null,
+                createdAt,
+                updatedAt,
+                false);
+
+        assertThat(task.getTaskId()).isEqualTo("3");
+        assertThat(task.getName()).isEqualTo("No deadline");
+        assertThat(task.getDescription()).isEqualTo("This task has no due date");
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.DONE);
+        assertThat(task.getDueDate()).isNull();
+        assertThat(task.getCreatedAt()).isEqualTo(createdAt);
+        assertThat(task.getUpdatedAt()).isEqualTo(updatedAt);
+    }
+
+    /**
+     * Tests reconstitute preserves all fields including timestamps.
+     *
+     * <p><b>Why this test exists:</b> Ensures that reconstitute() correctly preserves
+     * all fields including timestamps, projectId, and assigneeId without modification.
+     */
+    @Test
+    void reconstitute_preservesAllFields() {
+        final LocalDate dueDate = validDueDate();
+        final Instant createdAt = Instant.parse("2024-01-15T10:30:00Z");
+        final Instant updatedAt = Instant.parse("2024-01-20T14:45:00Z");
+        final UUID assigneeId = UUID.randomUUID();
+
+        final Task task = Task.reconstitute(
+                "task-123",
+                "Important task",
+                "Must be done carefully",
+                TaskStatus.IN_PROGRESS,
+                dueDate,
+                "project-456",
+                assigneeId,
+                createdAt,
+                updatedAt,
+                false);
+
+        assertThat(task.getTaskId()).isEqualTo("task-123");
+        assertThat(task.getName()).isEqualTo("Important task");
+        assertThat(task.getDescription()).isEqualTo("Must be done carefully");
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(task.getDueDate()).isEqualTo(dueDate);
+        assertThat(task.getProjectId()).isEqualTo("project-456");
+        assertThat(task.getAssigneeId()).isEqualTo(assigneeId);
+        assertThat(task.getCreatedAt()).isEqualTo(createdAt);
+        assertThat(task.getUpdatedAt()).isEqualTo(updatedAt);
+    }
+
+    /**
+     * Tests isOverdue returns true for past due dates.
+     *
+     * <p><b>Why this test exists:</b> Verifies that isOverdue() correctly identifies
+     * tasks with due dates in the past.
+     */
+    @Test
+    void isOverdue_withPastDueDate_shouldReturnTrue() {
+        final LocalDate pastDate = pastDueDate();
+        final Instant createdAt = Instant.now().minusSeconds(3600);
+        final Instant updatedAt = Instant.now().minusSeconds(1800);
+
+        final Task task = Task.reconstitute(
+                "1",
+                "Overdue task",
+                "This is overdue",
+                TaskStatus.TODO,
+                pastDate,
+                null,
+                null,
+                createdAt,
+                updatedAt,
+                false);
+
+        assertThat(task.isOverdue()).isTrue();
+    }
+
+    /**
+     * Tests isOverdue returns false for future due dates.
+     *
+     * <p><b>Why this test exists:</b> Verifies that isOverdue() returns false
+     * for tasks with due dates in the future.
+     */
+    @Test
+    void isOverdue_withFutureDueDate_shouldReturnFalse() {
+        final LocalDate futureDate = validDueDate();
+        final Task task = new Task("1", "Future task", "Not overdue", TaskStatus.TODO, futureDate);
+
+        assertThat(task.isOverdue()).isFalse();
+    }
+
+    /**
+     * Tests isOverdue returns false when due date is null.
+     *
+     * <p><b>Why this test exists:</b> Verifies that isOverdue() returns false
+     * for tasks with no due date. A task without a deadline cannot be overdue.
+     */
+    @Test
+    void isOverdue_withNullDueDate_shouldReturnFalse() {
+        final Task task = new Task("1", "No deadline", "No due date", TaskStatus.TODO, null);
+
+        assertThat(task.isOverdue()).isFalse();
+    }
+
+    /**
+     * Tests copy works even when due date is past.
+     *
+     * <p><b>Why this test exists:</b> Verifies that copy() uses reconstitute() internally
+     * and can therefore copy tasks with past due dates without throwing an exception.
+     */
+    @Test
+    void copy_withOverdueDueDate_shouldSucceed() {
+        final LocalDate pastDate = pastDueDate();
+        final Instant createdAt = Instant.now().minusSeconds(7200);
+        final Instant updatedAt = Instant.now().minusSeconds(3600);
+        final UUID assigneeId = UUID.randomUUID();
+
+        final Task original = Task.reconstitute(
+                "1",
+                "Overdue original",
+                "Past due date",
+                TaskStatus.TODO,
+                pastDate,
+                "project-1",
+                assigneeId,
+                createdAt,
+                updatedAt,
+                false);
+
+        final Task copy = original.copy();
+
+        assertThat(copy.getTaskId()).isEqualTo("1");
+        assertThat(copy.getName()).isEqualTo("Overdue original");
+        assertThat(copy.getDescription()).isEqualTo("Past due date");
+        assertThat(copy.getStatus()).isEqualTo(TaskStatus.TODO);
+        assertThat(copy.getDueDate()).isEqualTo(pastDate);
+        assertThat(copy.getProjectId()).isEqualTo("project-1");
+        assertThat(copy.getAssigneeId()).isEqualTo(assigneeId);
+        assertThat(copy.getCreatedAt()).isEqualTo(createdAt);
+        assertThat(copy.getUpdatedAt()).isEqualTo(updatedAt);
+        assertThat(copy).isNotSameAs(original);
+        assertThat(copy.isOverdue()).isTrue();
+    }
+
+    // ==================== Tests for archived field =====================
+
+    /**
+     * Tests that newly created tasks are not archived by default.
+     *
+     * <p><b>Why this test exists:</b> Ensures that the default state of a new task
+     * is not archived, which is the expected behavior for newly created tasks.
+     *
+     * <p><b>Mutants killed:</b>
+     * <ul>
+     *   <li>Changed default value of archived field</li>
+     * </ul>
+     */
+    @Test
+    void constructor_createsNonArchivedTaskByDefault() {
+        final Task task = new Task("1", "New task", "Description");
+
+        assertThat(task.isArchived()).isFalse();
+    }
+
+    /**
+     * Tests that setArchived(true) correctly sets the archived state.
+     *
+     * <p><b>Why this test exists:</b> Ensures that setArchived(true) actually
+     * changes the archived state to true and isArchived() returns true.
+     * This test kills the mutant that replaces true returns with false.
+     *
+     * <p><b>Mutants killed:</b>
+     * <ul>
+     *   <li>BooleanFalseReturnValsMutator: replaced boolean return with false</li>
+     * </ul>
+     */
+    @Test
+    void setArchived_withTrue_makesIsArchivedReturnTrue() {
+        final Task task = new Task("1", "Task", "Description");
+
+        task.setArchived(true);
+
+        assertThat(task.isArchived()).isTrue();
+    }
+
+    /**
+     * Tests that setArchived(false) correctly unarchives the task.
+     *
+     * <p><b>Why this test exists:</b> Ensures that a previously archived task
+     * can be unarchived by calling setArchived(false).
+     *
+     * <p><b>Mutants killed:</b>
+     * <ul>
+     *   <li>BooleanTrueReturnValsMutator: replaced boolean return with true</li>
+     * </ul>
+     */
+    @Test
+    void setArchived_withFalse_makesIsArchivedReturnFalse() {
+        final Task task = new Task("1", "Task", "Description");
+        task.setArchived(true);
+        assertThat(task.isArchived()).isTrue(); // Precondition
+
+        task.setArchived(false);
+
+        assertThat(task.isArchived()).isFalse();
+    }
+
+    /**
+     * Tests that setArchived updates the updatedAt timestamp.
+     *
+     * <p><b>Why this test exists:</b> Ensures that changing the archived state
+     * is considered a modification and updates the updatedAt timestamp.
+     *
+     * <p><b>Mutants killed:</b>
+     * <ul>
+     *   <li>VoidMethodCallMutator: removed timestamp update call</li>
+     * </ul>
+     */
+    @Test
+    void setArchived_updatesUpdatedAtTimestamp() throws InterruptedException {
+        final Task task = new Task("1", "Task", "Description");
+        final Instant originalUpdatedAt = task.getUpdatedAt();
+
+        Thread.sleep(10);
+        task.setArchived(true);
+
+        assertThat(task.getUpdatedAt()).isAfter(originalUpdatedAt);
+    }
+
+    /**
+     * Tests that reconstitute correctly accepts archived=true.
+     *
+     * <p><b>Why this test exists:</b> Ensures that reconstitute() correctly
+     * creates a task with archived=true when loading from persistence.
+     */
+    @Test
+    void reconstitute_withArchivedTrue_setsArchivedTrue() {
+        final Instant createdAt = Instant.now().minusSeconds(3600);
+        final Instant updatedAt = Instant.now().minusSeconds(1800);
+
+        final Task task = Task.reconstitute(
+                "1",
+                "Archived task",
+                "This task is archived",
+                TaskStatus.DONE,
+                null,
+                null,
+                null,
+                createdAt,
+                updatedAt,
+                true);
+
+        assertThat(task.isArchived()).isTrue();
+    }
+
+    /**
+     * Tests that reconstitute correctly accepts archived=false.
+     *
+     * <p><b>Why this test exists:</b> Ensures that reconstitute() correctly
+     * creates a task with archived=false when loading from persistence.
+     */
+    @Test
+    void reconstitute_withArchivedFalse_setsArchivedFalse() {
+        final Instant createdAt = Instant.now().minusSeconds(3600);
+        final Instant updatedAt = Instant.now().minusSeconds(1800);
+
+        final Task task = Task.reconstitute(
+                "1",
+                "Active task",
+                "This task is not archived",
+                TaskStatus.TODO,
+                null,
+                null,
+                null,
+                createdAt,
+                updatedAt,
+                false);
+
+        assertThat(task.isArchived()).isFalse();
+    }
+
+    /**
+     * Tests that copy preserves archived=true state.
+     *
+     * <p><b>Why this test exists:</b> Ensures that copying an archived task
+     * correctly preserves the archived state.
+     *
+     * <p><b>Mutants killed:</b>
+     * <ul>
+     *   <li>Changed archived argument in copy constructor</li>
+     * </ul>
+     */
+    @Test
+    void copy_preservesArchivedTrueState() {
+        final Instant createdAt = Instant.now().minusSeconds(3600);
+        final Instant updatedAt = Instant.now().minusSeconds(1800);
+
+        final Task original = Task.reconstitute(
+                "1",
+                "Archived task",
+                "This task is archived",
+                TaskStatus.DONE,
+                null,
+                null,
+                null,
+                createdAt,
+                updatedAt,
+                true);
+
+        final Task copy = original.copy();
+
+        assertThat(copy.isArchived()).isTrue();
+        assertThat(copy).isNotSameAs(original);
+    }
+
+    /**
+     * Tests that copy preserves archived=false state.
+     *
+     * <p><b>Why this test exists:</b> Ensures that copying a non-archived task
+     * correctly preserves the non-archived state.
+     */
+    @Test
+    void copy_preservesArchivedFalseState() {
+        final Task original = new Task("1", "Active task", "Not archived");
+
+        final Task copy = original.copy();
+
+        assertThat(copy.isArchived()).isFalse();
+        assertThat(copy).isNotSameAs(original);
+    }
+
+    /**
+     * Tests that modifying archived on copy doesn't affect original.
+     *
+     * <p><b>Why this test exists:</b> Ensures that copy() creates an independent
+     * copy where changing archived on the copy doesn't affect the original.
+     */
+    @Test
+    void copy_modificationsToArchivedDontAffectOriginal() {
+        final Task original = new Task("1", "Task", "Description");
+        final Task copy = original.copy();
+
+        copy.setArchived(true);
+
+        assertThat(original.isArchived()).isFalse();
+        assertThat(copy.isArchived()).isTrue();
     }
 }

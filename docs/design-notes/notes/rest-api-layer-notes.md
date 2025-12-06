@@ -27,7 +27,7 @@
 |----------------------------|------------------------|--------------------------------|------------------------------------------|
 | `GET /api/v1/tasks`        | `?projectId={id}`      | Filter tasks by project        | `/api/v1/tasks?projectId=PROJ001`        |
 | `GET /api/v1/tasks`        | `?projectId=none`      | Get unassigned tasks           | `/api/v1/tasks?projectId=none`           |
-| `GET /api/v1/tasks`        | `?assigneeId={userId}` | Filter tasks by assignee       | `/api/v1/tasks?assigneeId=123`           |
+| `GET /api/v1/tasks`        | `?assigneeId={userId}` | Filter tasks by assignee (UUID) | `/api/v1/tasks?assigneeId=550e8400-e29b-41d4-a716-446655440000` |
 | `GET /api/v1/tasks`        | `?status={status}`     | Filter tasks by status         | `/api/v1/tasks?status=TODO`              |
 | `GET /api/v1/appointments` | `?taskId={id}`         | Filter appointments by task    | `/api/v1/appointments?taskId=TASK001`    |
 | `GET /api/v1/appointments` | `?projectId={id}`      | Filter appointments by project | `/api/v1/appointments?projectId=PROJ001` |

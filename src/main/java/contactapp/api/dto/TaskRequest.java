@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.UUID;
 import static contactapp.domain.Validation.MAX_DESCRIPTION_LENGTH;
 import static contactapp.domain.Validation.MAX_ID_LENGTH;
 import static contactapp.domain.Validation.MAX_TASK_NAME_LENGTH;
@@ -66,6 +67,6 @@ public record TaskRequest(
         String projectId,
 
         @Schema(description = "Assignee user ID (optional)")
-        Long assigneeId
+        UUID assigneeId
 ) {
 }
