@@ -96,9 +96,14 @@ csp:
 # REQUIRED: JWT_SECRET must be set via environment variable.
 # No default value - application will fail to start without it.
 # Generate with: openssl rand -base64 32
+#
+# FINGERPRINTING: Enabled in production to bind JWTs to browser sessions.
+# Prevents token theft/replay even if JWT is stolen (attacker lacks cookie).
+# See ADR-0052 Phase C for implementation details.
 # -----------------------------------------------------------------------------
 jwt:
   secret: ${JWT_SECRET}
+  require-fingerprint: true
 
 # -----------------------------------------------------------------------------
 # Actuator Configuration
