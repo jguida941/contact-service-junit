@@ -8,7 +8,7 @@
 [ADR-0018](ADR-0018-authentication-and-authorization-model.md),
 [ADR-0052](ADR-0052-production-auth-system.md) (User.id UUID migration),
 [V4__create_users_table.sql](../../src/main/resources/db/migration/common/V4__create_users_table.sql),
-[V15__users_uuid_id.sql](../../src/main/resources/db/migration/) (Postgres/H2 UUID migration)
+[V15__users_uuid_id.sql](../../src/main/resources/db/migration/h2/V15__users_uuid_id.sql) (H2), [V15__users_uuid_id.sql](../../src/main/resources/db/migration/postgresql/V15__users_uuid_id.sql) (PostgreSQL)
 
 > **Update (2025-12-03):** User.id type changed from Long to UUID per ADR-0052 Phase 0.5. See V15 migration for data-preserving UUID conversion.
 

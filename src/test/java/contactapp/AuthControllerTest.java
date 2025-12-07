@@ -241,29 +241,29 @@ class AuthControllerTest extends SecuredMockMvcTest {
 
     static Stream<Arguments> invalidRegisterInputs() {
         return Stream.of(
-                // Username validation
+                // Username validation - humanized field name is "Username"
                 Arguments.of("username (blank)", """
                     {"username": "", "email": "test@example.com", "password": "Password123"}
-                    """, "username"),
+                    """, "Username"),
                 Arguments.of("username (too long)", """
                     {"username": "a".repeat(51), "email": "test@example.com", "password": "Password123"}
-                    """.replace("\"a\".repeat(51)", "\"" + "a".repeat(51) + "\""), "username"),
+                    """.replace("\"a\".repeat(51)", "\"" + "a".repeat(51) + "\""), "Username"),
 
-                // Email validation
+                // Email validation - humanized field name is "Email"
                 Arguments.of("email (blank)", """
                     {"username": "testuser", "email": "", "password": "Password123"}
-                    """, "email"),
+                    """, "Email"),
                 Arguments.of("email (invalid format)", """
                     {"username": "testuser", "email": "notanemail", "password": "Password123"}
-                    """, "email"),
+                    """, "Email"),
 
-                // Password validation - length
+                // Password validation - length - humanized field name is "Password"
                 Arguments.of("password (blank)", """
                     {"username": "testuser", "email": "test@example.com", "password": ""}
-                    """, "password"),
+                    """, "Password"),
                 Arguments.of("password (too short)", """
                     {"username": "testuser", "email": "test@example.com", "password": "Short1"}
-                    """, "password"),
+                    """, "Password"),
 
                 // Password validation - strength (must have uppercase, lowercase, digit)
                 Arguments.of("password (no uppercase)", """
@@ -298,12 +298,13 @@ class AuthControllerTest extends SecuredMockMvcTest {
 
     static Stream<Arguments> invalidLoginInputs() {
         return Stream.of(
+                // Humanized field names: "Username" and "Password"
                 Arguments.of("username (blank)", """
                     {"username": "", "password": "password123"}
-                    """, "username"),
+                    """, "Username"),
                 Arguments.of("password (blank)", """
                     {"username": "testuser", "password": ""}
-                    """, "password")
+                    """, "Password")
         );
     }
 

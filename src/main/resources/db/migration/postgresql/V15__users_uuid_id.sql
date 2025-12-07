@@ -1,4 +1,4 @@
--- V16: Migrate users.id from BIGSERIAL to UUID (data-preserving)
+-- V15: Migrate users.id from BIGSERIAL to UUID (data-preserving)
 -- ADR-0052 Phase 0.5: UUID migration to prevent user enumeration attacks
 --
 -- This migration safely handles existing data in any environment (dev, staging, production).

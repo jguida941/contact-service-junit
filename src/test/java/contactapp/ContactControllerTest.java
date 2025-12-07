@@ -246,48 +246,48 @@ class ContactControllerTest extends SecuredMockMvcTest {
 
     static Stream<Arguments> invalidContactInputs() {
         return Stream.of(
-                // ID validation
+                // ID validation - humanized field name is "ID"
                 Arguments.of("id (blank)", """
                     {"id": "", "firstName": "Test", "lastName": "User", "phone": "1234567890", "address": "Test Addr"}
-                    """, "id"),
+                    """, "ID"),
                 Arguments.of("id (too long)", """
                     {"id": "12345678901", "firstName": "Test", "lastName": "User", "phone": "1234567890", "address": "Test Addr"}
-                    """, "id"),
+                    """, "ID"),
 
-                // firstName validation
+                // firstName validation - humanized field name is "First Name"
                 Arguments.of("firstName (blank)", """
                     {"id": "100", "firstName": "", "lastName": "User", "phone": "1234567890", "address": "Test Addr"}
-                    """, "firstName"),
+                    """, "First Name"),
                 Arguments.of("firstName (too long)", """
                     {"id": "100", "firstName": "12345678901", "lastName": "User", "phone": "1234567890", "address": "Test Addr"}
-                    """, "firstName"),
+                    """, "First Name"),
 
-                // lastName validation
+                // lastName validation - humanized field name is "Last Name"
                 Arguments.of("lastName (blank)", """
                     {"id": "100", "firstName": "Test", "lastName": "", "phone": "1234567890", "address": "Test Addr"}
-                    """, "lastName"),
+                    """, "Last Name"),
                 Arguments.of("lastName (too long)", """
                     {"id": "100", "firstName": "Test", "lastName": "12345678901", "phone": "1234567890", "address": "Test Addr"}
-                    """, "lastName"),
+                    """, "Last Name"),
 
-                // phone validation
+                // phone validation - humanized field name is "Phone"
                 Arguments.of("phone (blank)", """
                     {"id": "100", "firstName": "Test", "lastName": "User", "phone": "", "address": "Test Addr"}
-                    """, "phone"),
+                    """, "Phone"),
                 Arguments.of("phone (non-digits)", """
                     {"id": "100", "firstName": "Test", "lastName": "User", "phone": "123-456-78", "address": "Test Addr"}
-                    """, "phone"),
+                    """, "Phone"),
                 Arguments.of("phone (wrong length)", """
                     {"id": "100", "firstName": "Test", "lastName": "User", "phone": "123456789", "address": "Test Addr"}
-                    """, "phone"),
+                    """, "Phone"),
 
-                // address validation
+                // address validation - humanized field name is "Address"
                 Arguments.of("address (blank)", """
                     {"id": "100", "firstName": "Test", "lastName": "User", "phone": "1234567890", "address": ""}
-                    """, "address"),
+                    """, "Address"),
                 Arguments.of("address (too long)", """
                     {"id": "100", "firstName": "Test", "lastName": "User", "phone": "1234567890", "address": "1234567890123456789012345678901"}
-                    """, "address")
+                    """, "Address")
         );
     }
 
@@ -341,7 +341,7 @@ class ContactControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("id")));
+                        org.hamcrest.Matchers.containsString("ID")));
     }
 
     @Test
@@ -361,7 +361,7 @@ class ContactControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("firstName")));
+                        org.hamcrest.Matchers.containsString("First Name")));
     }
 
     @Test
@@ -381,7 +381,7 @@ class ContactControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("address")));
+                        org.hamcrest.Matchers.containsString("Address")));
     }
 
     @Test
@@ -401,7 +401,7 @@ class ContactControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("phone")));
+                        org.hamcrest.Matchers.containsString("Phone")));
     }
 
     @Test
@@ -421,7 +421,7 @@ class ContactControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("phone")));
+                        org.hamcrest.Matchers.containsString("Phone")));
     }
 
     // ==================== Edge Case Tests ====================

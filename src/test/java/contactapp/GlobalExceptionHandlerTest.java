@@ -100,7 +100,8 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("getById.id: size must be between 0 and 10", response.getBody().message());
+        // Field name is extracted from path (last segment "id") and humanized to "ID"
+        assertEquals("ID: size must be between 0 and 10", response.getBody().message());
     }
 
     @Test

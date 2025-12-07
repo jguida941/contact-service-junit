@@ -10,8 +10,8 @@ Domain objects with temporal validation rules face a fundamental problem when lo
 
 ### The Problem
 
-- **Appointment** enforces `appointmentDate must not be in the past` (validated in constructor and setters)
-- **Task** enforces `dueDate must not be in the past` (validated in constructor and setters)
+- **Appointment** enforces `Appointment Date must not be in the past` (validated in constructor and setters)
+- **Task** enforces `Due Date must not be in the past` (validated in constructor and setters)
 - These validations run every time the object is constructed, including when loading from the database
 - **Result**: Existing records with past dates fail to load from persistence, breaking read/update/delete operations
 
@@ -21,8 +21,8 @@ Domain objects with temporal validation rules face a fundamental problem when lo
 2. Appointment is saved to database
 3. Tomorrow becomes today, then yesterday
 4. Mapper attempts to load the appointment from database
-5. Constructor runs: `Validation.validateDateNotPast(appointmentDate, "appointmentDate")`
-6. Throws `IllegalArgumentException: appointmentDate must not be in the past`
+5. Constructor runs: `Validation.validateDateNotPast(appointmentDate, "Appointment Date")`
+6. Throws `IllegalArgumentException: Appointment Date must not be in the past`
 7. The appointment becomes permanently inaccessible
 
 ### Attempted Solutions
@@ -52,10 +52,10 @@ public static Appointment reconstitute(
         final boolean archived) {
     // Validate ID and description lengths, but NOT the past-date rule
     final String validatedId = Validation.validateTrimmedLength(
-            appointmentId, "appointmentId", MIN_LENGTH, ID_MAX_LENGTH);
-    Validation.validateNotNull(appointmentDate, "appointmentDate");
+            appointmentId, "Appointment ID", MIN_LENGTH, ID_MAX_LENGTH);
+    Validation.validateNotNull(appointmentDate, "Appointment Date");
     final String validatedDesc = Validation.validateTrimmedLength(
-            description, "description", MIN_LENGTH, DESCRIPTION_MAX_LENGTH);
+            description, "Description", MIN_LENGTH, DESCRIPTION_MAX_LENGTH);
 
     // Use private constructor that bypasses past-date validation
     return new Appointment(
@@ -141,8 +141,8 @@ public Appointment toDomain(AppointmentEntity entity) {
 
 | Entity | Temporal Constraint | Factory Method |
 |--------|---------------------|----------------|
-| **Appointment** | `appointmentDate` must not be in past | `reconstitute(..., archived)` |
-| **Task** | `dueDate` must not be in past (optional field) | Uses multi-param constructor with `createdAt`/`updatedAt` for persistence loading (see Task.java lines 116-143). Formal `reconstitute()` method pending. |
+| **Appointment** | `Appointment Date` must not be in past | `reconstitute(..., archived)` |
+| **Task** | `Due Date` must not be in past (optional field) | Uses multi-param constructor with `createdAt`/`updatedAt` for persistence loading (see Task.java lines 116-143). Formal `reconstitute()` method pending. |
 
 **Note**: Task currently uses a multi-parameter constructor for reconstitution (see line 114-141 in Task.java) which accepts `createdAt` and `updatedAt` parameters. The temporal validation for `dueDate` is handled by `Validation.validateOptionalDateNotPast()` which may need similar reconstitution treatment.
 

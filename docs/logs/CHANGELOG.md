@@ -87,7 +87,7 @@ All notable changes to this project will be documented here. Follow the
   - Updated security-infrastructure-notes.md with all ADR-0052 phases
   - Updated ROADMAP.md with ADR-0052 production auth system completion
   - Added ADR-0053 (Timezone-Safe Date Parsing) to ADR README
-  - All documentation now consistent with 1107 tests, 90% line coverage, 85% mutation score
+  - All documentation now consistent with 1107 tests, 90% line coverage, 84% mutation score
 
 ### Added
 - **Task Archive Functionality (2025-12-06)**:
@@ -742,7 +742,7 @@ All notable changes to this project will be documented here. Follow the
   - Added `privateConstructorIsNotAccessible` to `ValidationTest` for line coverage of the utility class private constructor.
   - All tests pass, 100% mutation score, 100% line coverage.
 - **Code review fixes**: Addressed issues identified during pre-Phase-1 code review.
-  - Refactored `ContactService.updateContact()` and `TaskService.updateTask()` to use `computeIfPresent()` for thread-safe atomic lookup and update.
+  - Refactored `ContactService.updateContact()` and `TaskService.updateTask()` to use `findById` then `save` within a transaction for thread-safe atomic lookup and update.
   - Added `final` modifier to `Contact` class (matching `Task` and `Appointment`).
   - Normalized singleton `volatile` usage: removed from `AppointmentService` since `getInstance()` is `synchronized`.
   - Renamed `validateNumeric10` to `validateDigits` for clarity (method accepts `requiredLength` parameter).
@@ -806,7 +806,7 @@ All notable changes to this project will be documented here. Follow the
 - Appointment is now `final`, `Appointment.copy()` validates source state and reuses the public constructor for defensive copies, and `AppointmentServiceTest` uses reflection (instead of subclassing) to simulate a blank ID so SpotBugs remains clean.
 - Documented the shared `validateDateNotPast` helper across README/index/ADR/design notes and expanded `ValidationTest` with future/past-date cases so Appointment docs mirror the code.
 - Appointment update/add logic now validates both fields before mutation, enforces trimmed IDs on add,
-  and uses `computeIfPresent` for updates; README/architecture/design notes updated accordingly.
+  and uses `findById` then `save` for updates; README/architecture/design notes updated accordingly.
 - AppointmentService normalizes IDs across CRUD and returns an unmodifiable snapshot of defensive copies to prevent external mutation.
 - Simplified CI flow diagram labels for reliable GitHub mermaid rendering.
 - Relocated the README command cheat sheet under the CI/CD section for better flow while keeping all commands visible.

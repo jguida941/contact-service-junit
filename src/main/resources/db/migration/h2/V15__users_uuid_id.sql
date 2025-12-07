@@ -1,4 +1,4 @@
--- V16: Migrate users.id from BIGINT IDENTITY to UUID (data-preserving)
+-- V15: Migrate users.id from BIGINT IDENTITY to UUID (data-preserving)
 -- ADR-0052 Phase 0.5: UUID migration to prevent user enumeration attacks
 --
 -- H2 version: Uses RANDOM_UUID() and subquery syntax for UPDATE

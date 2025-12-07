@@ -48,7 +48,7 @@ Key points:
   - Backing store `ConcurrentHashMap<String, Appointment>` for add/update/delete.
   - `addAppointment(Appointment)` enforces unique IDs via `existsById()` check then `save()` (upsert via `put`), rejects null inputs, and validates IDs (already trimmed by the entity) so stored keys match object IDs.
   - `deleteAppointment(String appointmentId)` validates/trims input then removes entry.
-  - `updateAppointment(String appointmentId, Date date, String description)` trims/validates ID and uses `computeIfPresent` to delegate to the Appointment instance without a get-then-mutate race; returns success boolean.
+  - `updateAppointment(String appointmentId, Date date, String description)` trims/validates ID and uses `findById` then `save` within a transaction for atomic updates; returns success boolean.
   - Provide `getDatabase()` snapshot (defensive copies via `Appointment.copy`) and `clearAllAppointments()` for test isolation; add Javadoc consistent with Definition of Done.
 
 ### Phase 3 - Testing & Quality Gates

@@ -232,29 +232,29 @@ class TaskControllerTest extends SecuredMockMvcTest {
 
     static Stream<Arguments> invalidTaskInputs() {
         return Stream.of(
-                // ID validation
+                // ID validation - humanized field name is "ID"
                 Arguments.of("id (blank)", """
                     {"id": "", "name": "Test", "description": "Test description"}
-                    """, "id"),
+                    """, "ID"),
                 Arguments.of("id (too long)", """
                     {"id": "12345678901", "name": "Test", "description": "Test description"}
-                    """, "id"),
+                    """, "ID"),
 
-                // name validation
+                // name validation - humanized field name is "Name"
                 Arguments.of("name (blank)", """
                     {"id": "100", "name": "", "description": "Test description"}
-                    """, "name"),
+                    """, "Name"),
                 Arguments.of("name (too long)", """
                     {"id": "100", "name": "123456789012345678901", "description": "Test description"}
-                    """, "name"),
+                    """, "Name"),
 
-                // description validation
+                // description validation - humanized field name is "Description"
                 Arguments.of("description (blank)", """
                     {"id": "100", "name": "Test", "description": ""}
-                    """, "description"),
+                    """, "Description"),
                 Arguments.of("description (too long)", """
                     {"id": "100", "name": "Test", "description": "123456789012345678901234567890123456789012345678901"}
-                    """, "description")
+                    """, "Description")
         );
     }
 
@@ -292,7 +292,7 @@ class TaskControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("id")));
+                        org.hamcrest.Matchers.containsString("ID")));
     }
 
     @Test
@@ -310,7 +310,7 @@ class TaskControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("name")));
+                        org.hamcrest.Matchers.containsString("Name")));
     }
 
     @Test
@@ -328,7 +328,7 @@ class TaskControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("description")));
+                        org.hamcrest.Matchers.containsString("Description")));
     }
 
     // ==================== Malformed JSON Test ====================

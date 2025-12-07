@@ -9,7 +9,7 @@
 This project is a **full-stack contact management application** built with enterprise-grade architecture patterns. It demonstrates professional software engineering practices including layered architecture, comprehensive testing (90% coverage, 84% mutation score), security hardening, and automated CI/CD pipelines.
 
 **Key Metrics:**
-- **55 Architecture Decision Records** documenting engineering choices
+- **54 Architecture Decision Records** documenting engineering choices
 - **1107 test executions** across the current unit and integration suites
 - **90% code coverage** (JaCoCo) with **84% mutation coverage** (PITest)
 - **7 enforced quality gates** in CI/CD pipeline
@@ -107,6 +107,9 @@ The result:
 │  • Immutable domain objects with constructor validation      │
 │  • Atomic update methods (all-or-nothing semantics)          │
 │  • Centralized validation rules (Validation.java)            │
+│  • Human-readable error labels ("Appointment Date" not code) │
+│  • Clock injection for testable temporal validation          │
+│  • Reconstitution pattern for loading aged records           │
 ├──────────────────────────────────────────────────────────────┤
 │  PERSISTENCE LAYER (JPA Entities, Repositories, Mappers)     │
 │  • Spring Data repositories (auto-generated CRUD)            │
@@ -467,7 +470,7 @@ Built-in lifecycle management for time-sensitive entities:
 - Domain-Driven Design principles (immutable entities, validation in constructors)
 - Repository pattern with Store abstraction for testability
 - Reconstitution pattern for loading temporal data from persistence
-- Comprehensive ADR documentation (53 records)
+- Comprehensive ADR documentation (54 records)
 
 ### Testing Excellence
 - 1107 test executions with 90% line coverage

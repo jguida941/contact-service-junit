@@ -21,7 +21,7 @@
   reuses the public constructor for the clone) to prevent external mutation.
 - `addAppointment` rejects null inputs, validates IDs provided by the entity (already trimmed), and refuses to overwrite existing IDs;
   `deleteAppointment` trims/validates IDs; `updateAppointment` trims/validates IDs and delegates field validation
-  to `Appointment.update(...)` via `computeIfPresent` to avoid a get-then-mutate race.
+  to `Appointment.update(...)` via `findById` then `save` within a transaction for atomic updates.
 - Provide `clearAllAppointments()` so tests can isolate state.
 - Validate behavior in `AppointmentServiceTest`:
   - Future dates are generated relative to “now” to keep the “not in the past” rule time-stable.
@@ -33,7 +33,7 @@
 
 ## Consequences
 - Shared singleton state requires explicit test resets but keeps API surface consistent with other services; update
-  now uses `computeIfPresent` to remove the get-then-mutate window.
+  now uses `findById` then `save` within a transaction for atomic updates.
 - **Spring Boot Test Considerations (Added 2025-12-02)**: When using `@SpringBootTest`, static singleton instances persist across test executions while Spring reuses the `ApplicationContext`. This caused `DuplicateResourceException` failures until `TestCleanupUtility` was introduced to reset singletons via reflection before clearing data. See ADR-0047.
 - Boolean contracts simplify caller logic for missing/duplicate IDs, but rely on tests to prevent accidental overwrites.
 - Defensive copies from `getDatabase()` add minor allocation overhead but protect internal state.

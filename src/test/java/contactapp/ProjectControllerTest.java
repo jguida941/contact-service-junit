@@ -288,31 +288,31 @@ class ProjectControllerTest extends SecuredMockMvcTest {
 
     static Stream<Arguments> invalidProjectInputs() {
         return Stream.of(
-                // ID validation
+                // ID validation - humanized field name is "ID"
                 Arguments.of("id (blank)", """
                     {"id": "", "name": "Test", "description": "Desc", "status": "ACTIVE"}
-                    """, "id"),
+                    """, "ID"),
                 Arguments.of("id (too long)", """
                     {"id": "12345678901", "name": "Test", "description": "Desc", "status": "ACTIVE"}
-                    """, "id"),
+                    """, "ID"),
 
-                // name validation
+                // name validation - humanized field name is "Name"
                 Arguments.of("name (blank)", """
                     {"id": "100", "name": "", "description": "Desc", "status": "ACTIVE"}
-                    """, "name"),
+                    """, "Name"),
                 Arguments.of("name (too long)", """
                     {"id": "100", "name": "123456789012345678901234567890123456789012345678901", "description": "Desc", "status": "ACTIVE"}
-                    """, "name"),
+                    """, "Name"),
 
-                // description validation (max length)
+                // description validation (max length) - humanized field name is "Description"
                 Arguments.of("description (too long)", """
                     {"id": "100", "name": "Test", "description": "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901", "status": "ACTIVE"}
-                    """, "description"),
+                    """, "Description"),
 
-                // status validation
+                // status validation - humanized field name is "Status"
                 Arguments.of("status (null)", """
                     {"id": "100", "name": "Test", "description": "Desc", "status": null}
-                    """, "status"),
+                    """, "Status"),
                 // Invalid enum values fail at Jackson deserialization, not Bean Validation
                 Arguments.of("status (invalid)", """
                     {"id": "100", "name": "Test", "description": "Desc", "status": "INVALID_STATUS"}
@@ -368,7 +368,7 @@ class ProjectControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("id")));
+                        org.hamcrest.Matchers.containsString("ID")));
     }
 
     @Test
@@ -387,7 +387,7 @@ class ProjectControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("name")));
+                        org.hamcrest.Matchers.containsString("Name")));
     }
 
     @Test
@@ -406,7 +406,7 @@ class ProjectControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("description")));
+                        org.hamcrest.Matchers.containsString("Description")));
     }
 
     // ==================== Edge Case Tests ====================

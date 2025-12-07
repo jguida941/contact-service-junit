@@ -28,7 +28,7 @@ Related: [Appointment.java](../../../src/main/java/contactapp/domain/Appointment
 ## Service summary
 - `AppointmentService` is a lazy singleton backed by `ConcurrentHashMap<String, Appointment>` in the legacy implementation. The current production system uses JPA persistence with `AppointmentStore` abstraction (see ADR-0024).
 - `addAppointment` rejects null, validates IDs (already trimmed by the entity), checks `existsById()` for uniqueness, then calls `save()` (upsert via `put`).
-- `updateAppointment` uses `computeIfPresent` to combine lookup/update without a race window.
+- `updateAppointment` uses `findById` then `save` within a transaction for atomic lookup + update.
 - `deleteAppointment`/`updateAppointment` trim/validate IDs; updates delegate to `Appointment.update(...)`.
 - `getDatabase()` returns an unmodifiable map of defensive copies (via `Appointment.copy()`, which validates the source and uses `reconstitute()` to preserve past dates); `clearAllAppointments()` (package-private) resets state for tests, preventing accidental production use while allowing test access from the same package.
 

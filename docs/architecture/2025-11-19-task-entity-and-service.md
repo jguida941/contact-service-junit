@@ -18,7 +18,7 @@ Implemented in:
 Key points:
 - Task fields and limits mirror the requirements (id 1–10 chars, name 1–20, description 1–50, status enum, optional dueDate) and reuse the shared `Validation` helpers including `validateNotNull` for enum and `validateOptionalDateNotPast` for dueDate.
 - `Task.update(...)` validates both mutable fields first so updates remain atomic and exception-safe.
-- `TaskService` is a lazy singleton backed by `ConcurrentHashMap`, with `add`/`delete`/`update` returning booleans; `addTask` relies on the Task constructor having already trimmed the ID, while `deleteTask` and `updateTask` explicitly trim their ID parameters; `updateTask` uses `computeIfPresent` for thread-safe atomic lookup + update.
+- `TaskService` is a lazy singleton backed by `ConcurrentHashMap`, with `add`/`delete`/`update` returning booleans; `addTask` relies on the Task constructor having already trimmed the ID, while `deleteTask` and `updateTask` explicitly trim their ID parameters; `updateTask` uses `findById` then `save` within a transaction for atomic lookup + update.
 - `getDatabase()` returns defensive copies (via `Task.copy()`) in an unmodifiable map, preventing external mutation of internal state.
 - Tests cover constructor trimming, negative validation cases, singleton behavior, duplicate handling, defensive copy verification, and the `clearAllTasks()` reset hook (needed for PIT).
 

@@ -31,15 +31,18 @@ graph TD
 
 ### Error Message Philosophy
 
+**Domain Layer** (this file focuses on domain):
 ```java
 // Bad
 throw new IllegalArgumentException("Invalid input");
 
 // Good
-throw new IllegalArgumentException("firstName length must be between 1 and 10");
+throw new IllegalArgumentException("First Name length must be between 1 and 10");
 ```
 
 Specific, label-driven messages make debugging easier and double as documentation. Tests assert on the message text so regressions are caught immediately.
+
+> **Note**: Both domain and API layers now use human-readable labels (e.g., `"First Name"` not `"firstName"`). See [two-layer-validation-notes.md](two-layer-validation-notes.md) for details on the two-layer validation strategy.
 
 ### Exception Strategy
 

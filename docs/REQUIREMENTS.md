@@ -114,7 +114,7 @@ Fixes implemented:
 
 ### Phase 1: Backend scaffold ✅ (Completed)
 Implementation details:
-- Added Spring Boot 3.4.12 parent POM with starter-web, actuator, and validation dependencies.
+- Added Spring Boot 4.0.0 parent POM with starter-web, actuator, and validation dependencies.
 - Created `Application.java` Spring Boot entrypoint with `@SpringBootApplication`.
 - Reorganized packages into layered architecture:
   - `contactapp.domain` - Domain entities (Contact, Task, Appointment, Validation)

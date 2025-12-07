@@ -148,7 +148,7 @@ mvn package -DskipTests && java -jar target/*.jar
 
 Open the folder in IntelliJ/VS Code for IDE assistance—the Maven project model is auto-detected.
 
-**Planning note**: Phases 0-7 complete. **1107 tests** (latest Linux full suite) cover the JPA path, legacy singleton fallbacks, JWT auth, User entity validation, Project CRUD, and validation helpers (PIT mutation coverage 85% with 90% line coverage). See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for details.
+**Planning note**: Phases 0-7 complete. **1107 tests** (latest Linux full suite) cover the JPA path, legacy singleton fallbacks, JWT auth, User entity validation, Project CRUD, and validation helpers (PIT mutation coverage 84% with 90% line coverage). See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for details.
 
 ## CLI Tool
 
@@ -448,7 +448,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`docs/showcase/`](docs/showcase/)                                                                                                   | Project showcase materials for recruiters and portfolio.                                                                          |
 | [`docs/architecture/2025-11-19-task-entity-and-service.md`](docs/architecture/2025-11-19-task-entity-and-service.md)                 | Task entity/service design plan with Definition of Done and phased approach.                                                      |
 | [`docs/architecture/2025-11-24-appointment-entity-and-service.md`](docs/architecture/2025-11-24-appointment-entity-and-service.md)   | Appointment entity/service implementation record.                                                                                 |
-| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                                         | Architecture Decision Record index: CS320 Foundation + Production Auth + Frontend fixes (ADR-0001-0053) and Jira-like Evolution (ADR-0054+). |
+| [`docs/adrs/README.md`](docs/adrs/README.md)                                                                                         | Architecture Decision Record index: CS320 Foundation + Production Auth + Frontend fixes + Security Audit (ADR-0001-0054). |
 | [`Dockerfile`](Dockerfile)                                                                                                           | Multi-stage production Docker image (Eclipse Temurin 17, non-root user, layered JAR).                                             |
 | [`docker-compose.yml`](docker-compose.yml)                                                                                           | Production-like stack (Postgres + App + optional pgAdmin) with health checks.                                                     |
 | [`docs/operations/`](docs/operations/)                                                                                               | Operations docs: Docker setup guide, Actuator endpoints reference, deployment guides.                                             |
@@ -470,6 +470,9 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 ## Design Decisions & Highlights
 - **Immutable identifiers** - `contactId` is set once in the constructor and never mutates, which keeps map keys stable and mirrors real-world record identifiers.
 - **Centralized validation** - Every constructor/setter call funnels through `Validation.validateNotBlank`, `validateLength`, `validateDigits`, and (for appointments) `validateDateNotPast`, so IDs, names, phones, addresses, and dates all share one enforcement pipeline.
+- **Human-readable validation labels** - All validation messages use human-readable labels (e.g., "Appointment Date must not be in the past" instead of "appointmentDate must not be in the past"). This applies to both domain-layer validation (`Validation.java`) and DTO-layer Bean Validation annotations (`@NotNull`, `@NotBlank`, `@Size` messages).
+- **Clock injection for temporal validation** - Temporal validators accept an optional `Clock` parameter for deterministic testing. Production code uses the default `Clock.systemUTC()`, while tests inject fixed clocks to verify boundary conditions without flakiness. See [ADR-0053](docs/adrs/ADR-0053-timezone-safe-date-parsing.md).
+- **Reconstitution pattern** - Domain objects with temporal constraints (Appointment, Task) provide static `reconstitute()` factory methods that skip past-date validation when loading from the database. This allows naturally-aged records to be read/updated/deleted while still blocking creation of new past-dated records via the API. See [ADR-0050](docs/adrs/ADR-0050-domain-reconstitution-pattern.md).
 - **Fail-fast IllegalArgumentException** - Invalid input is a caller bug, so we throw standard JDK exceptions with precise messages and assert on them in tests.
 - **DomainDataStore persistence strategy** - Services depend on store interfaces implemented by Spring Data JPA (contacts/tasks/appointments live in Postgres via Flyway migrations) while legacy `getInstance()` callers automatically fall back to in-memory stores. New code always goes through Spring DI so repositories/mappers enforce the same validation.
 - **Legacy singleton compatibility** - `getInstance()` now simply returns the Spring-managed proxy once the context is available (or the in-memory fallback before boot) so we no longer unwrap proxies manually. Tests assert shared behavior/state across both access paths instead of brittle reference equality checks. When every caller uses DI we will delete the static entry points and in-memory stores (see backlog).
@@ -569,6 +572,8 @@ graph TD
 - Because the constructor routes through the setters, the exact same pipeline applies whether the object is being created or updated.
 
 ##### Error Message Philosophy
+
+**Domain Layer** (IllegalArgumentException):
 ```java
 // Bad
 throw new IllegalArgumentException("Invalid input");
@@ -577,6 +582,15 @@ throw new IllegalArgumentException("Invalid input");
 throw new IllegalArgumentException("firstName length must be between 1 and 10");
 ```
 - Specific, label-driven messages make debugging easier and double as documentation. Tests assert on the message text so regressions are caught immediately.
+
+**API Layer** (`GlobalExceptionHandler`): Humanizes field names for user-facing errors:
+| Java Field | API Error Prefix |
+|------------|------------------|
+| `firstName` | `First Name:` |
+| `appointmentDate` | `Appointment Date:` |
+| `id` | `ID:` |
+
+This keeps domain messages developer-friendly while API responses are user-friendly.
 
 ##### Exception Strategy
 | Exception Type | Use Case           | Recovery? | Our Choice |
@@ -1540,9 +1554,9 @@ flowchart TD
 ```
 
 ### Local Dev Script
-- Use `python scripts/dev_stack.py` to launch Spring Boot (`mvn spring-boot:run`) and the Vite UI (`npm run dev -- --port 5173`) in one terminal; add `--database postgres` to have it start Docker Compose (auto-detects `docker compose` vs `docker-compose`), enable the `dev` profile, and wire datasource env vars automatically.
+- **Recommended**: Use `./scripts/run dev` to launch Spring Boot and the Vite UI in one terminal; add `--db postgres` to start Docker Compose with Postgres.
+- **Alternative**: Use `python scripts/dev_stack.py` directly for advanced options like `--frontend-port 4000`, `--backend-goal`, `--skip-frontend-install`, `--docker-compose-file`, `--postgres-url`, etc.
 - The helper polls `http://localhost:8080/actuator/health` before starting the frontend, installs `ui/contact-app` dependencies if `node_modules` is missing, and shuts everything down on Ctrl+C.
-- Flags: `--frontend-port 4000`, `--backend-goal "spring-boot:run -Dspring-boot.run.profiles=dev"`, `--skip-frontend-install`, `--database postgres`, `--docker-compose-file ./docker-compose.dev.yml`, `--postgres-url jdbc:postgresql://localhost:5432/contactapp`, `--postgres-username contactapp`, `--postgres-password contactapp`, and `--postgres-profile dev` keep it flexible for custom setups.
 
 
 ### App Shell Layout

@@ -33,7 +33,7 @@ Related: [Task.java](../../../src/main/java/contactapp/domain/Task.java), [TaskS
 ## Service summary
 - `TaskService` is a lazy singleton backed by `ConcurrentHashMap<String, Task>` in the legacy implementation. The current production system uses JPA persistence with `TaskStore` abstraction (see ADR-0024).
 - `addTask` rejects null, checks `existsById()` for uniqueness, then calls `save()` (upsert via `put`).
-- `deleteTask` trims/validates IDs before removal; `updateTask` uses `computeIfPresent` for thread-safe atomic lookup + update, then delegates to `Task.update(name, description, status, dueDate)`.
+- `deleteTask` trims/validates IDs before removal; `updateTask` uses `findById` then `save` within a transaction for atomic lookup + update, then delegates to `Task.update(name, description, status, dueDate)`.
 - `getDatabase()` returns defensive copies of each Task (via `copy()`) in an unmodifiable map; `clearAllTasks()` (package-private) resets state for tests, preventing accidental production use while allowing test access from the same package.
 - `copy()` validates source state and uses `reconstitute()` to preserve overdue tasks and existing timestamps, keeping defensive copies aligned with validation rules.
 

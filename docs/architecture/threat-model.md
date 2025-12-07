@@ -281,7 +281,7 @@ CREATE TABLE contacts (
 - **SAST**: CodeQL analysis in CI
 - **SCA**: OWASP Dependency-Check in CI
 - **API Fuzzing**: Schemathesis (30,000+ requests)
-- **Unit Tests**: 578 tests including security scenarios
+- **Unit Tests**: 1107 tests including security scenarios
 
 ### Planned Testing
 - **DAST**: OWASP ZAP baseline scans land in Phase 5.5 (scheduled two sprints before the GA

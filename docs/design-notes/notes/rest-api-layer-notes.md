@@ -72,7 +72,7 @@ All errors return consistent JSON:
 ```json
 {
   "error": "Bad Request",
-  "message": "contactId length must be between 1 and 10",
+  "message": "Contact ID length must be between 1 and 10",
   "timestamp": "2025-12-03T10:15:30Z",
   "path": "/api/v1/contacts"
 }

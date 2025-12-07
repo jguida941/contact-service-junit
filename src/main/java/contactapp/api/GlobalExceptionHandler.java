@@ -62,7 +62,7 @@ public class GlobalExceptionHandler {
      * Handles Bean Validation errors from @Valid annotations.
      *
      * <p>Extracts the first field error message to keep the response simple.
-     * Format: "fieldName: validation message"
+     * Format: "Human Field Name: validation message"
      *
      * @param ex the validation exception containing field errors
      * @return 400 Bad Request with the first validation error
@@ -70,10 +70,43 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(final MethodArgumentNotValidException ex) {
         final String message = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .map(error -> humanizeFieldName(error.getField()) + ": " + error.getDefaultMessage())
                 .findFirst()
                 .orElse("Validation failed");
         return ResponseEntity.badRequest().body(new ErrorResponse(message));
+    }
+
+    /**
+     * Converts a camelCase field name to a human-readable label.
+     *
+     * <p>Examples:
+     * <ul>
+     *   <li>"appointmentDate" → "Appointment Date"</li>
+     *   <li>"firstName" → "First Name"</li>
+     *   <li>"id" → "ID"</li>
+     * </ul>
+     *
+     * @param fieldName the camelCase field name
+     * @return a human-readable label
+     */
+    private String humanizeFieldName(final String fieldName) {
+        if (fieldName == null || fieldName.isEmpty()) {
+            return fieldName;
+        }
+        // Special case for common abbreviations
+        if ("id".equalsIgnoreCase(fieldName)) {
+            return "ID";
+        }
+        // Insert space before each uppercase letter, then capitalize first letter
+        final StringBuilder result = new StringBuilder();
+        for (int i = 0; i < fieldName.length(); i++) {
+            final char c = fieldName.charAt(i);
+            if (i > 0 && Character.isUpperCase(c)) {
+                result.append(' ');
+            }
+            result.append(i == 0 ? Character.toUpperCase(c) : c);
+        }
+        return result.toString();
     }
 
     /**
@@ -89,7 +122,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(final ConstraintViolationException ex) {
         final String message = ex.getConstraintViolations().stream()
-                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .map(violation -> {
+                    // PropertyPath is like "methodName.parameterName" - extract last segment
+                    final String path = violation.getPropertyPath().toString();
+                    final int lastDot = path.lastIndexOf('.');
+                    final String fieldName = lastDot >= 0 ? path.substring(lastDot + 1) : path;
+                    return humanizeFieldName(fieldName) + ": " + violation.getMessage();
+                })
                 .findFirst()
                 .orElse("Validation failed");
         return ResponseEntity.badRequest().body(new ErrorResponse(message));

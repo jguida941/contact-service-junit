@@ -149,9 +149,15 @@ export function ProjectsPage() {
   const handleQuickArchive = (project: Project) => {
     if (updateMutation.isPending) return; // Prevent duplicate API calls
     const newStatus = project.status === 'ARCHIVED' ? 'ACTIVE' : 'ARCHIVED';
+    // Send ALL project fields - backend PUT expects complete ProjectRequest
     updateMutation.mutate({
       id: project.id,
-      data: { status: newStatus },
+      data: {
+        id: project.id,
+        name: project.name,
+        description: project.description ?? '',
+        status: newStatus,
+      },
     });
   };
 

@@ -277,21 +277,21 @@ class AppointmentControllerTest extends SecuredMockMvcTest {
         final String futureDate = DATE_FORMATTER.format(Instant.now().plus(1, ChronoUnit.DAYS));
 
         return Stream.of(
-                // ID validation
+                // ID validation - humanized field name is "ID"
                 Arguments.of("id (blank)", String.format("""
                     {"id": "", "appointmentDate": "%s", "description": "Test description"}
-                    """, futureDate), "id"),
+                    """, futureDate), "ID"),
                 Arguments.of("id (too long)", String.format("""
                     {"id": "12345678901", "appointmentDate": "%s", "description": "Test description"}
-                    """, futureDate), "id"),
+                    """, futureDate), "ID"),
 
-                // description validation
+                // description validation - humanized field name is "Description"
                 Arguments.of("description (blank)", String.format("""
                     {"id": "100", "appointmentDate": "%s", "description": ""}
-                    """, futureDate), "description"),
+                    """, futureDate), "Description"),
                 Arguments.of("description (too long)", String.format("""
                     {"id": "100", "appointmentDate": "%s", "description": "123456789012345678901234567890123456789012345678901"}
-                    """, futureDate), "description")
+                    """, futureDate), "Description")
         );
     }
 
@@ -311,7 +311,7 @@ class AppointmentControllerTest extends SecuredMockMvcTest {
                             """, pastDate)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("appointmentDate")));
+                        org.hamcrest.Matchers.containsString("Appointment Date")));
     }
 
     @Test
@@ -328,7 +328,7 @@ class AppointmentControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("appointmentDate")));
+                        org.hamcrest.Matchers.containsString("Appointment Date")));
     }
 
     // ==================== Boundary Tests (Bean Validation accuracy) ====================
@@ -365,7 +365,7 @@ class AppointmentControllerTest extends SecuredMockMvcTest {
                             """, futureDate)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("id")));
+                        org.hamcrest.Matchers.containsString("ID")));
     }
 
     @Test
@@ -383,7 +383,7 @@ class AppointmentControllerTest extends SecuredMockMvcTest {
                             """, futureDate)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("description")));
+                        org.hamcrest.Matchers.containsString("Description")));
     }
 
     // ==================== Archive/Unarchive Tests ====================
