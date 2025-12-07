@@ -58,7 +58,7 @@ Based on OWASP best practices and industry standards:
 3. **Database-backed refresh tokens** - with rotation on each use
 4. **Proper cookie flags** - `HttpOnly; Secure; SameSite=Lax; __Secure-` prefix
    > **Cookie Policy:** `SameSite=Lax` is the default for all auth-related cookies (access, refresh, fingerprint). CSRF tokens provide a second layer of defense.
-5. **CLI setup command** - `./cs setup-ssl` generates certs automatically
+5. **CLI setup command** - `./scripts/run setup-ssl` generates certs automatically
 6. **Token use separation** - `token_use=session` (browser) vs `token_use=api` (programmatic):
    - Session tokens carry `fph` and are enforced with fingerprint cookies; default for legacy tokens when claim absent.
    - API tokens omit `fph`, are header-only, and are rejected by the filter if an `fph` claim is present.
@@ -66,7 +66,7 @@ Based on OWASP best practices and industry standards:
 
 ### Production TLS Strategy
 
-**Development:** Self-signed cert via `./cs setup-ssl` (stays local, gitignored)
+**Development:** Self-signed cert via `./scripts/run setup-ssl` (stays local, gitignored)
 
 **Production:** TLS terminated at edge (recommended industry pattern)
 
@@ -420,7 +420,7 @@ The refresh token already has a unique identifier (`token` column in DB). For ac
 
 ## Phase 1: HTTPS Setup with Self-Signed Certificate
 
-### 1.1 CLI Command: `./cs setup-ssl`
+### 1.1 CLI Command: `./scripts/run setup-ssl`
 
 **File:** `scripts/cs_cli.py` - Add new command
 
@@ -966,11 +966,11 @@ server:
 
 ```bash
 # One-time setup
-./cs setup-ssl                    # Generate certificate
+./scripts/run setup-ssl                    # Generate certificate
 # Import certs/local-cert.crt to browser/OS trust store
 
 # Start development (now uses HTTPS)
-./cs dev                          # https://localhost:8443
+./scripts/run dev                          # https://localhost:8443
 ```
 
 ---
@@ -981,7 +981,7 @@ To reduce risk and complexity, implement in phases:
 
 ### Phase A: HTTPS + 401 Entry Point
 
-- Add `./cs setup-ssl` command
+- Add `./scripts/run setup-ssl` command
 - Configure Spring Boot SSL
 - Add AuthenticationEntryPoint for proper 401 responses
 - Keep current single JWT cookie (no refresh yet)
@@ -1356,7 +1356,7 @@ def test_setup_ssl_shows_trust_instructions(tmp_path, monkeypatch):
 ### 1. HTTPS + Self-Signed Cert ✅
 
 **What we're doing:**
-- `./cs setup-ssl` generates a PKCS12 keystore with a self-signed cert for localhost
+- `./scripts/run setup-ssl` generates a PKCS12 keystore with a self-signed cert for localhost
 - Spring Boot is wired to use `server.ssl.*` with `SSL_ENABLED` and `local-ssl.p12`
 - Dev profile can turn SSL on by default, prod can terminate TLS at the proxy
 
@@ -1416,7 +1416,7 @@ These are implementation details, not architecture changes. **Read these careful
 
 ### 1. HTTPS and Self-Signed Cert
 
-The `./cs setup-ssl` + `server.ssl.*` configuration is exactly how Spring Boot is normally wired for HTTPS with a self-signed PKCS12 keystore created by keytool.
+The `./scripts/run setup-ssl` + `server.ssl.*` configuration is exactly how Spring Boot is normally wired for HTTPS with a self-signed PKCS12 keystore created by keytool.
 
 **Critical implementation details:**
 - Add `local-ssl.p12` to `.gitignore` so the dev keystore never ends up in the repo
@@ -1710,7 +1710,7 @@ The phased rollout keeps each step debuggable without compromising the architect
 | `AuthController.java` | Sliding-window refresh | DB-backed refresh tokens |
 | `JwtAuthenticationFilter.java` | No fingerprint check | Add fingerprint verification |
 | `runtime_env.py` | Hardcoded dev secret | Use `secrets.token_hex(32)` |
-| `cs_cli.py` | No SSL command | Add `./cs setup-ssl` |
+| `cs_cli.py` | No SSL command | Add `./scripts/run setup-ssl` |
 | `RefreshToken.java` | Does not exist | Create entity + migration |
 | `TokenFingerprintService.java` | Does not exist | Create service |
 
@@ -1941,7 +1941,7 @@ server:
   src/main/resources/local-ssl.p12
   certs/
   ```
-- [ ] **No secrets committed** - Dev keystore generated per-developer via `./cs setup-ssl`
+- [ ] **No secrets committed** - Dev keystore generated per-developer via `./scripts/run setup-ssl`
 
 ### Frontend Behavior
 
@@ -1972,7 +1972,7 @@ server:
 | Phase 0: Critical Fixes | ✅ Complete | @JsonIgnore, AccessDeniedHandler, clock skew, 403 fix (Batch 1 - 2025-12-03) |
 | Phase 0.5: UUID + Claims | ✅ Complete | User.id → UUID, issuer/audience claims (Batch 1 - 2025-12-03) |
 | Phase 0.6: UUID Cascade | ✅ Complete | Task.assigneeId → UUID, UserRepository → UUID, test fixes (Batch 2 - 2025-12-03) |
-| Phase A: HTTPS Setup | ✅ Complete | ./cs setup-ssl, SSL config in application.yml (Batch 3 - 2025-12-03) |
+| Phase A: HTTPS Setup | ✅ Complete | ./scripts/run setup-ssl, SSL config in application.yml (Batch 3 - 2025-12-03) |
 | Phase B: Refresh Tokens | ✅ Complete | RefreshToken entity, RefreshTokenService, V16 migration, token rotation, scheduled cleanup (Batches 6-7 - 2025-12-03) |
 | Phase C: Token Fingerprinting | ✅ Complete | TokenFingerprintService, JwtService fingerprint binding, JwtAuthenticationFilter verification (Batch 4 - 2025-12-03) |
 | Phase C.5: Call Site Migration | ✅ Complete | Deleted old generateToken overloads, migrated AuthController (3 sites) and JwtServiceTest (18+ calls) to fingerprint-aware signature (Batch 5 - 2025-12-03) |

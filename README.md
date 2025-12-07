@@ -77,17 +77,17 @@ The easiest way to get started is with the unified CLI tool:
 pip install -r scripts/requirements.txt
 
 # Start development environment (backend + frontend)
-./cs dev                    # H2 in-memory database (fastest)
-./cs dev --db postgres      # Postgres via Docker (data persists)
+./scripts/run dev                    # H2 in-memory database (fastest)
+./scripts/run dev --db postgres      # Postgres via Docker (data persists)
 
 # Check service health
-./cs health
+./scripts/run health
 
 # Run all tests
-./cs test
+./scripts/run test
 ```
 
-> **Development URLs** (when running `./cs dev`):
+> **Development URLs** (when running `./scripts/run dev`):
 > | URL | Purpose |
 > |-----|---------|
 > | **http://localhost:5173** | React UI (use this for the web app) |
@@ -122,18 +122,18 @@ If you prefer direct commands over the CLI tool:
 The default profile uses in-memory H2, so data disappears when the backend stops. For persistent data:
 
 ```bash
-./cs dev --db postgres      # CLI tool handles Docker + env vars automatically
+./scripts/run dev --db postgres      # CLI tool handles Docker + env vars automatically
 ```
 
 Or manually:
 ```bash
-./cs db start               # Start Postgres container
+./scripts/run db start               # Start Postgres container
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 ### Production Build
 ```bash
-./cs prod-local             # Build JAR + run with production settings
+./scripts/run prod-local             # Build JAR + run with production settings
 # Or manually:
 mvn package -DskipTests && java -jar target/*.jar
 ```
@@ -141,9 +141,9 @@ mvn package -DskipTests && java -jar target/*.jar
 ### Test Profiles
 | Command | Description |
 |---------|-------------|
-| `./cs test` | Run all quality checks |
-| `./cs test --unit` | JUnit unit tests only |
-| `./cs test --fast` | Skip slow tests (mutation, fuzzing) |
+| `./scripts/run test` | Run all quality checks |
+| `./scripts/run test --unit` | JUnit unit tests only |
+| `./scripts/run test --fast` | Skip slow tests (mutation, fuzzing) |
 | `mvn test -Plegacy-singleton` | Legacy `getInstance()` suites |
 
 Open the folder in IntelliJ/VS Code for IDE assistance—the Maven project model is auto-detected.
@@ -152,44 +152,44 @@ Open the folder in IntelliJ/VS Code for IDE assistance—the Maven project model
 
 ## CLI Tool
 
-The Contact Suite CLI (`./cs`) provides a unified developer experience with predictable commands for local development, testing, and database management. See [`docs/design-notes/notes/clitool.md`](docs/design-notes/notes/clitool.md) for the full design document.
+The Contact Suite CLI (`./scripts/run`) provides a unified developer experience with predictable commands for local development, testing, and database management. See [`docs/design-notes/notes/clitool.md`](docs/design-notes/notes/clitool.md) for the full design document.
 
 ### Why a CLI Tool?
 Before the CLI, developers needed to remember multiple fragmented commands:
 
 | Old Way | New Way |
 |---------|---------|
-| `python scripts/dev_stack.py --database postgres` | `./cs dev --db postgres` |
-| `docker compose -f docker-compose.dev.yml up -d` | `./cs db start` |
-| `mvn test && mvn pitest:mutationCoverage` | `./cs test` |
-| `python scripts/api_fuzzing.py --start-app` | `./cs test --security` |
-| `python scripts/serve_quality_dashboard.py` | `./cs qa-dashboard` |
+| `python scripts/dev_stack.py --database postgres` | `./scripts/run dev --db postgres` |
+| `docker compose -f docker-compose.dev.yml up -d` | `./scripts/run db start` |
+| `mvn test && mvn pitest:mutationCoverage` | `./scripts/run test` |
+| `python scripts/api_fuzzing.py --start-app` | `./scripts/run test --security` |
+| `python scripts/serve_quality_dashboard.py` | `./scripts/run qa-dashboard` |
 
 ### Command Reference
 
 | Command | Description |
 |---------|-------------|
-| `./cs dev` | Start development environment (backend + frontend) |
-| `./cs dev --db postgres` | Start with Postgres instead of H2 |
-| `./cs prod-local` | Build and run production-like JAR |
-| `./cs test` | Run all quality checks |
-| `./cs test --fast` | Skip slow tests (mutation, fuzzing) |
-| `./cs qa-dashboard` | View quality metrics in browser |
-| `./cs db start` | Start Postgres container |
-| `./cs db stop` | Stop Postgres container |
-| `./cs db status` | Check database status |
-| `./cs db reset` | Reset database (destructive) |
-| `./cs ci-local` | Reproduce CI pipeline locally |
-| `./cs health` | Check service health |
-| `./cs dashboard` | Open DevOps dashboard in browser |
-| `./cs setup-ssl` | Generate local SSL keystore for HTTPS |
+| `./scripts/run dev` | Start development environment (backend + frontend) |
+| `./scripts/run dev --db postgres` | Start with Postgres instead of H2 |
+| `./scripts/run prod-local` | Build and run production-like JAR |
+| `./scripts/run test` | Run all quality checks |
+| `./scripts/run test --fast` | Skip slow tests (mutation, fuzzing) |
+| `./scripts/run qa-dashboard` | View quality metrics in browser |
+| `./scripts/run db start` | Start Postgres container |
+| `./scripts/run db stop` | Stop Postgres container |
+| `./scripts/run db status` | Check database status |
+| `./scripts/run db reset` | Reset database (destructive) |
+| `./scripts/run ci-local` | Reproduce CI pipeline locally |
+| `./scripts/run health` | Check service health |
+| `./scripts/run dashboard` | Open DevOps dashboard in browser |
+| `./scripts/run setup-ssl` | Generate local SSL keystore for HTTPS |
 
 ### CLI Architecture
 
 ```mermaid
 graph TD
-    subgraph CLI["./cs (Shell Shim)"]
-        A[./cs] --> B[cs_cli.py]
+    subgraph CLI["./scripts/run (Shell Shim)"]
+        A[./scripts/run] --> B[cs_cli.py]
     end
 
     subgraph Commands["Commands"]
@@ -222,10 +222,10 @@ graph TD
 ```mermaid
 flowchart LR
     A[Developer] --> B{Task?}
-    B -->|Start coding| C["./cs dev"]
-    B -->|Run tests| D["./cs test"]
-    B -->|Check health| E["./cs health"]
-    B -->|View metrics| F["./cs qa-dashboard"]
+    B -->|Start coding| C["./scripts/run dev"]
+    B -->|Run tests| D["./scripts/run test"]
+    B -->|Check health| E["./scripts/run health"]
+    B -->|View metrics| F["./scripts/run qa-dashboard"]
 
     C --> G[Backend + Frontend running]
     D --> H[JUnit + Vitest + PITest + Fuzzing]
@@ -237,7 +237,7 @@ flowchart LR
 
 The CLI automatically configures environment variables based on the command:
 
-#### `./cs dev` Environment
+#### `./scripts/run dev` Environment
 | Variable | Value | Purpose |
 |----------|-------|---------|
 | `APP_AUTH_COOKIE_SECURE` | `false` | HTTP works on localhost |
@@ -245,7 +245,7 @@ The CLI automatically configures environment variables based on the command:
 | `SPRING_PROFILES_ACTIVE` | `default`/`dev` | Development settings |
 | `CSP_RELAXED` | `true` | Vite HMR needs inline scripts |
 
-#### `./cs prod-local` Environment
+#### `./scripts/run prod-local` Environment
 | Variable | Value | Purpose |
 |----------|-------|---------|
 | `APP_AUTH_COOKIE_SECURE` | `true` | Simulates production |
@@ -259,10 +259,10 @@ For testing secure cookie behavior or API calls over TLS locally:
 
 ```bash
 # 1. Generate self-signed certificate (one-time setup)
-./cs setup-ssl
+./scripts/run setup-ssl
 
 # 2. Start with HTTPS enabled
-SSL_ENABLED=true ./cs dev
+SSL_ENABLED=true ./scripts/run dev
 # → App runs at https://localhost:8080
 
 # 3. Test with curl (use -k to skip certificate verification)
@@ -279,32 +279,32 @@ curl -k https://localhost:8080/actuator/health
 
 The CLI includes safety features:
 
-- **`./cs db stop`** prompts: "Stop Postgres container? Data will persist. [y/N]"
-- **`./cs db reset`** prompts: "This will DELETE ALL DATA. Are you sure? [y/N]"
-- **`./cs prod-local`** aborts if `JWT_SECRET` is not set or is the dev default
-- **`./cs ci-local`** warns if `NVD_API_KEY` is not set (OWASP scans slower)
+- **`./scripts/run db stop`** prompts: "Stop Postgres container? Data will persist. [y/N]"
+- **`./scripts/run db reset`** prompts: "This will DELETE ALL DATA. Are you sure? [y/N]"
+- **`./scripts/run prod-local`** aborts if `JWT_SECRET` is not set or is the dev default
+- **`./scripts/run ci-local`** warns if `NVD_API_KEY` is not set (OWASP scans slower)
 
 ### Testing the CLI
 
 ```bash
 # Verify CLI is working
-./cs --help
+./scripts/run --help
 
 # Check service health
-./cs health
+./scripts/run health
 
 # Run quick tests
-./cs test --fast
+./scripts/run test --fast
 
 # Full CI pipeline locally
-./cs ci-local
+./scripts/run ci-local
 ```
 
 ### CLI Files
 
 | File | Purpose |
 |------|---------|
-| [`./cs`](cs) | Shell shim (entry point) |
+| [`./scripts/run`](cs) | Shell shim (entry point) |
 | [`scripts/cs_cli.py`](scripts/cs_cli.py) | Main CLI implementation (typer-based) |
 | [`scripts/runtime_env.py`](scripts/runtime_env.py) | Environment configuration helpers |
 | [`scripts/requirements.txt`](scripts/requirements.txt) | Python dependencies |

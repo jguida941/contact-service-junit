@@ -54,7 +54,7 @@ while refresh tokens require more infrastructure (new DB table, cookie scope cha
 
 | Item | Status | Details |
 |------|--------|---------|
-| SSL keystore generation | ✅ Done | `./cs setup-ssl` command implemented |
+| SSL keystore generation | ✅ Done | `./scripts/run setup-ssl` command implemented |
 | Spring Boot SSL config | ✅ Done | Port 8443, PKCS12 keystore support |
 | Dev profile HTTPS | ✅ Done | SSL enabled by default in dev mode |
 | Certificate export | ✅ Done | Browser trust instructions provided |
@@ -117,7 +117,7 @@ Based on OWASP best practices and industry standards:
 2. **Token fingerprinting** - SHA256 hash prevents stolen token reuse (OWASP sidejacking prevention)
 3. **Database-backed refresh tokens** - with rotation on each use
 4. **Proper cookie flags** - `HttpOnly; Secure; SameSite=Lax; __Secure-` prefix
-5. **CLI setup command** - `./cs setup-ssl` generates certs automatically
+5. **CLI setup command** - `./scripts/run setup-ssl` generates certs automatically
 
 **Sources:**
 - [OWASP JWT Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html)
@@ -128,7 +128,7 @@ Based on OWASP best practices and industry standards:
 
 ## Phase 1: HTTPS Setup with Self-Signed Certificate
 
-### 1.1 CLI Command: `./cs setup-ssl`
+### 1.1 CLI Command: `./scripts/run setup-ssl`
 
 **File:** `scripts/cs_cli.py` - Add new command
 
@@ -615,11 +615,11 @@ server:
 
 ```bash
 # One-time setup
-./cs setup-ssl                    # Generate certificate
+./scripts/run setup-ssl                    # Generate certificate
 # Import certs/local-cert.crt to browser/OS trust store
 
 # Start development (now uses HTTPS)
-./cs dev                          # https://localhost:8443
+./scripts/run dev                          # https://localhost:8443
 ```
 
 ---
@@ -629,7 +629,7 @@ server:
 To reduce risk and complexity, implement in phases:
 
 ### Phase A: HTTPS + 401 Entry Point ✅ COMPLETE (Batch 1-3, 2025-12-03)
-- ✅ Add `./cs setup-ssl` command
+- ✅ Add `./scripts/run setup-ssl` command
 - ✅ Configure Spring Boot SSL
 - ✅ Add `AuthenticationEntryPoint` for proper 401 responses
 - ✅ Keep current single JWT cookie (no refresh yet)
@@ -727,7 +727,7 @@ The existing JWT authentication had several security gaps:
 
 Implement a production-grade authentication system following OWASP JWT best practices:
 
-1. **HTTPS Everywhere**: Self-signed certificates for dev via `./cs setup-ssl`
+1. **HTTPS Everywhere**: Self-signed certificates for dev via `./scripts/run setup-ssl`
 2. **Token Fingerprinting**: SHA256 hash of random value stored in JWT, raw value in `__Secure-Fgp` HttpOnly cookie
 3. **Dual Token Architecture**:
    - Short-lived access token (15 min) in HttpOnly cookie
@@ -777,14 +777,14 @@ This application uses a production-grade JWT authentication system following [OW
 
 ```bash
 # Generate SSL certificate (one-time)
-./cs setup-ssl
+./scripts/run setup-ssl
 
 # Trust the certificate:
 # macOS: open certs/local-cert.crt → Keychain → Always Trust
 # Windows: certutil -addstore root certs\local-cert.crt
 
 # Start development server (HTTPS)
-./cs dev
+./scripts/run dev
 # Access: https://localhost:8443
 ```
 

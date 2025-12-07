@@ -85,7 +85,7 @@ This file defines how AI agents should implement ADR-0052 in safe, reviewable ba
 | `.gitignore`      | Add `local-ssl.p12`, `certs/`          |
 
 **Agent goals:**
-- `./cs setup-ssl` generates keystore + exports cert
+- `./scripts/run setup-ssl` generates keystore + exports cert
 - SSL disabled by default (`SSL_ENABLED=false`), enabled in dev profile
 - Keystore never committed to git
 
@@ -266,7 +266,7 @@ This file defines how AI agents should implement ADR-0052 in safe, reviewable ba
 - [x] `mvn test` passes (947 tests)
 
 ### Batch 3 Checklist (Completed 2025-12-03)
-- [x] `./cs setup-ssl` runs without error
+- [x] `./scripts/run setup-ssl` runs without error
 - [x] Creates `src/main/resources/local-ssl.p12`
 - [x] Creates `certs/local-cert.crt`
 - [x] `local-ssl.p12` is in `.gitignore`
@@ -370,7 +370,7 @@ If a batch breaks production:
 | 2025-12-03 | v1.1    | Claude | Fixed batch order, ADR path, V16 data-preserving, adapter pattern |
 | 2025-12-03 | Batch 1 | Claude | ✅ Phase 0 complete: @JsonIgnore, UUID migration, 401/403, JWT claims, frontend fix |
 | 2025-12-03 | Batch 2 | Claude | ✅ UUID cascade: UserRepository, Task.assigneeId, WithMockAppUser, test fixes |
-| 2025-12-03 | Batch 3 | Claude | ✅ HTTPS setup: ./cs setup-ssl, server.ssl config, .gitignore for keystores |
+| 2025-12-03 | Batch 3 | Claude | ✅ HTTPS setup: ./scripts/run setup-ssl, server.ssl config, .gitignore for keystores |
 | 2025-12-03 | Batch 4 | Claude | ✅ Phase C fingerprinting: TokenFingerprintService, JwtService overload, filter verification |
 | 2025-12-03 | Batch 5 | Claude | ✅ Cleanup: deleted legacy overloads, migrated JwtServiceTest, fixed cookie max-age alignment |
 

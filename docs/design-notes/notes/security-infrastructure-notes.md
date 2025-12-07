@@ -44,7 +44,7 @@ All phases of ADR-0052 are now implemented. 1107 tests pass with 90% line covera
 
 | Component | Description |
 |-----------|-------------|
-| **./cs setup-ssl** | CLI command to generate self-signed SSL keystore |
+| **./scripts/run setup-ssl** | CLI command to generate self-signed SSL keystore |
 | **application.yml** | `server.ssl.*` configuration block (disabled by default) |
 | **SSL_ENABLED** | Environment variable to enable HTTPS on port 8080 |
 

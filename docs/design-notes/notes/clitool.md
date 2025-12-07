@@ -243,10 +243,10 @@ scripts/
 ├── ci_metrics_summary.py      # EXISTING - Called by cs qa-dashboard
 └── serve_quality_dashboard.py # EXISTING - Called by cs qa-dashboard
 
-./cs                           # NEW - Shell shim at project root
+./scripts/run                           # NEW - Shell shim at project root
 ```
 
-### Shell Shim (`./cs`)
+### Shell Shim (`./scripts/run`)
 
 ```bash
 #!/usr/bin/env bash
@@ -326,16 +326,16 @@ from scripts.dev_stack import (
 ## Quick Start
 
 # Start development environment
-./cs dev
+./scripts/run dev
 
 # Run all tests
-./cs test
+./scripts/run test
 
 # View quality dashboard
-./cs qa-dashboard
+./scripts/run qa-dashboard
 
 # Simulate production locally
-./cs prod-local
+./scripts/run prod-local
 ```
 
 ### Developer Onboarding
@@ -344,10 +344,10 @@ Replace raw commands with CLI equivalents:
 
 | Before | After |
 |--------|-------|
-| `python scripts/dev_stack.py --database postgres` | `./cs dev --db postgres` |
-| `mvn test && mvn pitest:mutationCoverage` | `./cs test` |
-| `docker compose -f docker-compose.dev.yml up -d` | `./cs db start` |
-| `python scripts/serve_quality_dashboard.py` | `./cs qa-dashboard` |
+| `python scripts/dev_stack.py --database postgres` | `./scripts/run dev --db postgres` |
+| `mvn test && mvn pitest:mutationCoverage` | `./scripts/run test` |
+| `docker compose -f docker-compose.dev.yml up -d` | `./scripts/run db start` |
+| `python scripts/serve_quality_dashboard.py` | `./scripts/run qa-dashboard` |
 
 ---
 
@@ -357,7 +357,7 @@ Replace raw commands with CLI equivalents:
 
 1. [x] Extract reusable helpers from `dev_stack.py` into `scripts/runtime_env.py`
 2. [x] Create `scripts/cs_cli.py` with typer skeleton
-3. [x] Create `./cs` shell shim at project root
+3. [x] Create `./scripts/run` shell shim at project root
 4. [x] Implement `cs dev` (reuse `dev_stack.py` functions)
 5. [x] Implement `cs db start|stop|status`
 6. [x] Implement `cs health`

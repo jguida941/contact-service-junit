@@ -30,7 +30,7 @@ Test fixtures now reset stale SecurityContext entries and recreate the seed user
 - **Phase A (UUID Migration)**: User.id migrated from Long to UUID via V16 migration, Task.assigneeId updated
 - **Phase B (Refresh Tokens)**: RefreshToken entity, single-session model, token rotation, V17 migration
 - **Phase C (Token Fingerprinting)**: TokenFingerprintService with SHA-256 binding, OWASP sidejacking prevention
-- **Phase D (HTTPS Setup)**: `./cs setup-ssl` command, self-signed cert generation for dev
+- **Phase D (HTTPS Setup)**: `./scripts/run setup-ssl` command, self-signed cert generation for dev
 - **Additional**: JWT claim hardening (issuer/audience), 60s clock skew tolerance, proper 401/403 separation
 
 **Project/Task Tracker Evolution (Phases 1-6 Complete - 2025-12-02).** ADR-0045 documents the evolution plan. All phases are complete and production-ready:

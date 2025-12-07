@@ -112,7 +112,7 @@ All 54 foundation ADRs are **complete** and document the journey from a simple c
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| [ADR-0051](ADR-0051-unified-cli-tool.md) | Unified CLI Tool (`./cs`) | Accepted |
+| [ADR-0051](ADR-0051-unified-cli-tool.md) | Unified CLI Tool (`./scripts/run`) | Accepted |
 
 ### Production Security (ADR-0052)
 

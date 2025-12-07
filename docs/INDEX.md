@@ -32,7 +32,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 
 | Path | Purpose |
 |------|---------|
-| [`../cs`](../cs) | Shell shim entry point |
+| [`../scripts/run`](../scripts/run) | Shell shim entry point |
 | [`../scripts/cs_cli.py`](../scripts/cs_cli.py) | Main CLI implementation (typer-based) |
 | [`../scripts/runtime_env.py`](../scripts/runtime_env.py) | Environment configuration helpers |
 | [`design-notes/notes/clitool.md`](design-notes/notes/clitool.md) | CLI design document |

@@ -8,10 +8,10 @@ Quick reference for showcasing the project to recruiters.
 
 ```bash
 # Start everything (backend + frontend) - ONE COMMAND
-./cs dev
+./scripts/run dev
 
 # Or with persistent Postgres database
-./cs dev --db postgres
+./scripts/run dev --db postgres
 
 # Access points:
 # - API: http://localhost:8080
@@ -19,7 +19,7 @@ Quick reference for showcasing the project to recruiters.
 # - React UI: http://localhost:5173
 
 # Check service health
-./cs health
+./scripts/run health
 ```
 
 ---
@@ -28,10 +28,10 @@ Quick reference for showcasing the project to recruiters.
 
 ```bash
 # Run full build with all quality gates
-./cs test
+./scripts/run test
 
 # Launch QA Dashboard (React app with all metrics)
-./cs qa-dashboard
+./scripts/run qa-dashboard
 
 # Or view individual reports:
 open target/site/jacoco/index.html      # 90% coverage
@@ -45,16 +45,16 @@ open target/spotbugs.html               # Static analysis
 
 ```bash
 # Run all quality checks (1107 tests)
-./cs test
+./scripts/run test
 
 # Quick tests only (skip mutation/fuzzing)
-./cs test --fast
+./scripts/run test --fast
 
 # Individual test types:
-./cs test --unit           # JUnit unit tests
-./cs test --integration    # Real PostgreSQL via Testcontainers
-./cs test --mutation       # PITest mutation testing
-./cs test --security       # API fuzzing (30,000+ requests)
+./scripts/run test --unit           # JUnit unit tests
+./scripts/run test --integration    # Real PostgreSQL via Testcontainers
+./scripts/run test --mutation       # PITest mutation testing
+./scripts/run test --security       # API fuzzing (30,000+ requests)
 ```
 
 ---
@@ -89,21 +89,21 @@ curl -s http://localhost:8080/api/auth/csrf-token | jq
 
 ```bash
 # Database management via CLI
-./cs db start      # Start Postgres container
-./cs db status     # Check database status
-./cs db logs       # View database logs
-./cs db stop       # Stop container (data persists)
-./cs db reset      # Reset database (destructive)
+./scripts/run db start      # Start Postgres container
+./scripts/run db status     # Check database status
+./scripts/run db logs       # View database logs
+./scripts/run db stop       # Stop container (data persists)
+./scripts/run db reset      # Reset database (destructive)
 
 # Full production simulation
-./cs prod-local    # Build JAR + run with prod settings
+./scripts/run prod-local    # Build JAR + run with prod settings
 
 # Access pgAdmin (if using docker-compose directly)
 docker-compose up -d pgadmin
 open http://localhost:5050  # admin@contactapp.local / admin
 
 # Cleanup
-./cs db stop
+./scripts/run db stop
 ```
 
 ---

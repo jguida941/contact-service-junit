@@ -11,7 +11,6 @@ Materials for demonstrating the project to recruiters, interviewers, and portfol
 
 ## Quick Links
 
-- **Quick Summary**: [`/PROJECT_SUMMARY.md`](../../PROJECT_SUMMARY.md) (root) - 1-page project overview
 - **Demo Cheat Sheet**: [DEMO.md](DEMO.md) - Quick commands for live demos
 - **Full Showcase**: [PROJECT_SHOWCASE.md](PROJECT_SHOWCASE.md) - Detailed guide with demos
 - **Technical Docs**: [`/docs/INDEX.md`](../INDEX.md) - All documentation

@@ -1,4 +1,4 @@
-# ADR-0051: Unified CLI Tool (`./cs`)
+# ADR-0051: Unified CLI Tool (`./scripts/run`)
 
 **Status**: Implemented | **Date**: 2025-12-03 | **Owners**: Justin Guida
 
@@ -28,11 +28,11 @@ The Contact Suite project had accumulated multiple entry points for common devel
 
 ## Decision
 
-Create a unified CLI tool (`./cs`) that provides a small set of predictable commands covering 80% of daily developer needs. The CLI wraps Maven, npm, Docker, and existing scripts so new contributors don't need to learn all internal commands.
+Create a unified CLI tool (`./scripts/run`) that provides a small set of predictable commands covering 80% of daily developer needs. The CLI wraps Maven, npm, Docker, and existing scripts so new contributors don't need to learn all internal commands.
 
 ### Design Principles
 
-1. **Opinionated Defaults**: Sensible defaults that work out of the box (`./cs dev` just works)
+1. **Opinionated Defaults**: Sensible defaults that work out of the box (`./scripts/run dev` just works)
 2. **Guard Rails Baked In**: Environment variables set automatically per mode (dev vs prod-local)
 3. **Reuse Existing Code**: Import from `dev_stack.py` rather than rewriting
 4. **Safety Prompts**: Destructive operations require confirmation
@@ -41,16 +41,16 @@ Create a unified CLI tool (`./cs`) that provides a small set of predictable comm
 ### Command Surface
 
 ```bash
-./cs dev                    # Start development environment
-./cs dev --db postgres      # With Postgres instead of H2
-./cs prod-local             # Simulate production locally
-./cs test                   # Run all quality checks
-./cs test --fast            # Skip slow tests
-./cs qa-dashboard           # View quality metrics
-./cs db start|stop|status   # Database management
-./cs ci-local               # Reproduce CI pipeline
-./cs health                 # Check service health
-./cs dashboard              # Open admin dashboard
+./scripts/run dev                    # Start development environment
+./scripts/run dev --db postgres      # With Postgres instead of H2
+./scripts/run prod-local             # Simulate production locally
+./scripts/run test                   # Run all quality checks
+./scripts/run test --fast            # Skip slow tests
+./scripts/run qa-dashboard           # View quality metrics
+./scripts/run db start|stop|status   # Database management
+./scripts/run ci-local               # Reproduce CI pipeline
+./scripts/run health                 # Check service health
+./scripts/run dashboard              # Open admin dashboard
 ```
 
 ### Implementation
@@ -65,7 +65,7 @@ scripts/
 ├── api_fuzzing.py      # Existing - called by cs test
 └── requirements.txt    # CLI dependencies (typer, httpx)
 
-./cs                    # Shell shim at project root
+./scripts/run                    # Shell shim at project root
 ```
 
 ### Environment Configuration
@@ -82,7 +82,7 @@ The `runtime_env.py` module provides environment builders that validate and conf
 
 ### Positive
 
-- **Onboarding Simplified**: New contributors run `./cs dev` instead of learning 5+ commands
+- **Onboarding Simplified**: New contributors run `./scripts/run dev` instead of learning 5+ commands
 - **Cookie Bug Fixed**: `APP_AUTH_COOKIE_SECURE=false` set automatically for dev mode
 - **Consistent Environments**: Each command mode has validated, documented environment settings
 - **Safety by Default**: Destructive operations prompt for confirmation
@@ -98,7 +98,7 @@ The `runtime_env.py` module provides environment builders that validate and conf
 
 - **Not Replacing Makefile**: The 80+ Makefile targets remain for advanced users; CLI provides simpler subset
 - **Not Building Desktop GUI**: PyQt6 dashboard is out of scope for v1 (Phase 5 in roadmap)
-- **Admin Backend Missing**: The `./cs dashboard` command opens admin page, but backend needs separate implementation
+- **Admin Backend Missing**: The `./scripts/run dashboard` command opens admin page, but backend needs separate implementation
 
 ## Testing
 
@@ -118,13 +118,13 @@ The CLI tool includes:
 
 | Old Command                                       | New Command               |
 |---------------------------------------------------|---------------------------|
-| `python scripts/dev_stack.py`                     | `./cs dev`                |
-| `python scripts/dev_stack.py --database postgres` | `./cs dev --db postgres`  |
-| `docker compose -f docker-compose.dev.yml up -d`  | `./cs db start`           |
-| `docker compose -f docker-compose.dev.yml down`   | `./cs db stop`            |
-| `mvn test`                                        | `./cs test --unit`        |
-| `mvn verify -DskipITs=false`                      | `./cs test --integration` |
-| `mvn pitest:mutationCoverage`                     | `./cs test --mutation`    |
-| `python scripts/api_fuzzing.py --start-app`       | `./cs test --security`    |
-| `python scripts/serve_quality_dashboard.py`       | `./cs qa-dashboard`       |
-| `mvn package && java -jar target/*.jar`           | `./cs prod-local`         |
+| `python scripts/dev_stack.py`                     | `./scripts/run dev`                |
+| `python scripts/dev_stack.py --database postgres` | `./scripts/run dev --db postgres`  |
+| `docker compose -f docker-compose.dev.yml up -d`  | `./scripts/run db start`           |
+| `docker compose -f docker-compose.dev.yml down`   | `./scripts/run db stop`            |
+| `mvn test`                                        | `./scripts/run test --unit`        |
+| `mvn verify -DskipITs=false`                      | `./scripts/run test --integration` |
+| `mvn pitest:mutationCoverage`                     | `./scripts/run test --mutation`    |
+| `python scripts/api_fuzzing.py --start-app`       | `./scripts/run test --security`    |
+| `python scripts/serve_quality_dashboard.py`       | `./scripts/run qa-dashboard`       |
+| `mvn package && java -jar target/*.jar`           | `./scripts/run prod-local`         |

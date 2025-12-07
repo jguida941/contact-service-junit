@@ -150,7 +150,7 @@ All notable changes to this project will be documented here. Follow the
   - **Log Files**: Added `logs/` directory to `.gitignore`
   - **CSP frame-ancestors**: Fixed production CSP to use `frame-ancestors 'none'` (was `'self'`), now matches X-Frame-Options DENY
   - **Debug Logging**: Removed debug `console.log` statements from `AppointmentsPage.tsx`
-  - **CLI Robustness**: Added error handling to `./cs db reset` and mutually exclusive flag validation to `./cs dev`
+  - **CLI Robustness**: Added error handling to `./scripts/run db reset` and mutually exclusive flag validation to `./scripts/run dev`
   - **SameSite Test**: `SecurityConfigIntegrationTest` now properly asserts `SameSite=Lax` attribute on CSRF cookie
   - **NaN Handling**: Added `parseInt` NaN validation in `api.ts` for corrupted sessionStorage values
   - **SameSite Docs**: Fixed `production-auth-system-plan.md` code examples to use `SameSite=Lax` (was incorrectly `Strict`)
@@ -190,7 +190,7 @@ All notable changes to this project will be documented here. Follow the
   - Completes Phase C fingerprint implementation - all tokens now include fingerprint binding
 
 - **ADR-0052 Batch 3: HTTPS Setup (2025-12-03)**:
-  - Added `./cs setup-ssl` command to generate self-signed SSL keystore
+  - Added `./scripts/run setup-ssl` command to generate self-signed SSL keystore
   - Added `server.ssl.*` configuration block to `application.yml`
   - SSL disabled by default (`SSL_ENABLED=false`), opt-in for local HTTPS testing
   - Updated `.gitignore` for SSL keystores and certificates
