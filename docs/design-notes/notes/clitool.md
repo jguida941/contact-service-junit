@@ -21,7 +21,7 @@ There are too many entry points right now:
 | `make test` | Run all tests | Unix only, 80+ targets to learn |
 | `python scripts/api_fuzzing.py --start-app` | API fuzzing | Requires manual app management |
 
-**Goal**: One CLI (`cs`) that provides a small set of predictable commands for local dev, local prod simulation, tests, and DB management.
+**Goal**: One CLI (`./scripts/run`) that provides a small set of predictable commands for local dev, local prod simulation, tests, and DB management.
 
 > The CLI provides a single entry point for running, testing, and inspecting the Contact Suite locally. It wraps Maven, npm, Docker, and existing scripts so new contributors do not need to know all the internal commands.
 
@@ -29,15 +29,15 @@ There are too many entry points right now:
 
 ## Command Surface (v1)
 
-### `cs dev`
+### `./scripts/run dev`
 
 Start everything for local development.
 
 ```bash
-cs dev                    # H2 in-memory database (fastest)
-cs dev --db postgres      # Postgres via Docker
-cs dev --backend-only     # Skip frontend
-cs dev --frontend-only    # Skip backend (assumes backend already running)
+./scripts/run dev                    # H2 in-memory database (fastest)
+./scripts/run dev --db postgres      # Postgres via Docker
+./scripts/run dev --backend-only     # Skip frontend
+./scripts/run dev --frontend-only    # Skip backend (assumes backend already running)
 ```
 
 **What it does**:
@@ -57,14 +57,14 @@ CSP_RELAXED=true                # Vite HMR needs inline scripts
 
 ---
 
-### `cs prod-local`
+### `./scripts/run prod-local`
 
 Simulate production environment locally.
 
 ```bash
-cs prod-local                   # Build JAR, run with prod settings
-cs prod-local --skip-build      # Use existing JAR in target/
-cs prod-local --https           # Use self-signed cert (Phase 2 - not yet implemented)
+./scripts/run prod-local                   # Build JAR, run with prod settings
+./scripts/run prod-local --skip-build      # Use existing JAR in target/
+./scripts/run prod-local --https           # Use self-signed cert (Phase 2 - not yet implemented)
 ```
 
 **What it does**:
@@ -88,18 +88,18 @@ REQUIRE_SSL=false               # No TLS locally (use --https for TLS)
 
 ---
 
-### `cs test`
+### `./scripts/run test`
 
 Run all quality checks.
 
 ```bash
-cs test                   # Run everything
-cs test --unit            # JUnit unit tests only
-cs test --integration     # Testcontainers integration tests only
-cs test --frontend        # Vitest + Playwright
-cs test --mutation        # PITest mutation testing
-cs test --security        # OWASP dependency check + API fuzzing
-cs test --fast            # Skip slow tests (mutation, fuzzing)
+./scripts/run test                   # Run everything
+./scripts/run test --unit            # JUnit unit tests only
+./scripts/run test --integration     # Testcontainers integration tests only
+./scripts/run test --frontend        # Vitest + Playwright
+./scripts/run test --mutation        # PITest mutation testing
+./scripts/run test --security        # OWASP dependency check + API fuzzing
+./scripts/run test --fast            # Skip slow tests (mutation, fuzzing)
 ```
 
 **What it does** (full run):
@@ -116,13 +116,13 @@ cs test --fast            # Skip slow tests (mutation, fuzzing)
 
 ---
 
-### `cs qa-dashboard`
+### `./scripts/run qa-dashboard`
 
 View quality metrics in browser.
 
 ```bash
-cs qa-dashboard           # Build reports if needed, open browser
-cs qa-dashboard --no-open # Just start server, don't open browser
+./scripts/run qa-dashboard           # Build reports if needed, open browser
+./scripts/run qa-dashboard --no-open # Just start server, don't open browser
 ```
 
 **What it does**:
@@ -132,32 +132,32 @@ cs qa-dashboard --no-open # Just start server, don't open browser
 
 ---
 
-### `cs db`
+### `./scripts/run db`
 
 Manage the development database.
 
 ```bash
-cs db start               # Start Postgres container
-cs db stop                # Stop Postgres container (with confirmation)
-cs db status              # Show container status and connection info
-cs db reset               # Drop and recreate database (with confirmation)
-cs db logs                # Tail Postgres logs
-cs db migrate             # Run Flyway migrations manually
+./scripts/run db start               # Start Postgres container
+./scripts/run db stop                # Stop Postgres container (with confirmation)
+./scripts/run db status              # Show container status and connection info
+./scripts/run db reset               # Drop and recreate database (with confirmation)
+./scripts/run db logs                # Tail Postgres logs
+./scripts/run db migrate             # Run Flyway migrations manually
 ```
 
 **Guard rails**:
-- `cs db stop` prompts: "Stop Postgres container? Data will persist. [y/N]"
-- `cs db reset` prompts: "This will DELETE ALL DATA. Are you sure? [y/N]"
+- `./scripts/run db stop` prompts: "Stop Postgres container? Data will persist. [y/N]"
+- `./scripts/run db reset` prompts: "This will DELETE ALL DATA. Are you sure? [y/N]"
 
 ---
 
-### `cs ci-local`
+### `./scripts/run ci-local`
 
 Reproduce CI pipeline locally.
 
 ```bash
-cs ci-local               # Run same steps as GitHub Actions (ubuntu + JDK 17)
-cs ci-local --fast        # Skip slow steps (mutation testing, OWASP scan)
+./scripts/run ci-local               # Run same steps as GitHub Actions (ubuntu + JDK 17)
+./scripts/run ci-local --fast        # Skip slow steps (mutation testing, OWASP scan)
 ```
 
 **What it does** (mirrors `.github/workflows/java-ci.yml`):
@@ -174,13 +174,13 @@ NVD_API_KEY=${NVD_API_KEY}      # Optional, speeds up OWASP scans
 
 ---
 
-### `cs health`
+### `./scripts/run health`
 
 Quick health check of all services.
 
 ```bash
-cs health                 # Check all services once
-cs health --watch         # Continuous monitoring (refresh every 5s)
+./scripts/run health                 # Check all services once
+./scripts/run health --watch         # Continuous monitoring (refresh every 5s)
 ```
 
 **Output**:
@@ -199,16 +199,16 @@ cs health --watch         # Continuous monitoring (refresh every 5s)
 
 ---
 
-### `cs dashboard`
+### `./scripts/run dashboard`
 
 Open the web-based DevOps dashboard.
 
 ```bash
-cs dashboard              # Open browser to /admin/devops
+./scripts/run dashboard              # Open browser to /admin/devops
 ```
 
 **Note**: Requires ADMIN user login. The dashboard displays:
-- Service health (same data as `cs health`)
+- Service health (same data as `./scripts/run health`)
 - GitHub CI status
 - Quality metrics (coverage, mutation score)
 - Application logs (streaming)
@@ -223,7 +223,7 @@ These are explicitly **not** included in the first version:
 - Docker image building/pushing (use `docker build` directly)
 - GitHub Actions triggering (use `gh workflow run` directly)
 - Production deployment (out of scope for local CLI)
-- PyQt6 desktop dashboard via `cs dashboard --desktop` (Phase 2 feature)
+- PyQt6 desktop dashboard via `./scripts/run dashboard --desktop` (Phase 2 feature)
 - DevOps dashboard backend/frontend (separate work item)
 
 ---
@@ -289,7 +289,7 @@ from scripts.dev_stack import (
 
 ## Security & Profile Rules
 
-### `cs dev` Environment
+### `./scripts/run dev` Environment
 
 | Variable | Value | Reason |
 |----------|-------|--------|
@@ -299,7 +299,7 @@ from scripts.dev_stack import (
 | `CSP_RELAXED` | `true` | Vite HMR needs inline scripts |
 | `JWT_SECRET` | dev default OK | Not security-critical locally |
 
-### `cs prod-local` Environment
+### `./scripts/run prod-local` Environment
 
 | Variable | Value | Reason |
 |----------|-------|--------|
@@ -309,7 +309,7 @@ from scripts.dev_stack import (
 | `CSP_RELAXED` | `false` | Strict CSP like production |
 | `JWT_SECRET` | **REQUIRED** | Abort if missing or dev default |
 
-### `cs ci-local` Environment
+### `./scripts/run ci-local` Environment
 
 | Variable | Value | Reason |
 |----------|-------|--------|
@@ -358,19 +358,19 @@ Replace raw commands with CLI equivalents:
 1. [x] Extract reusable helpers from `dev_stack.py` into `scripts/runtime_env.py`
 2. [x] Create `scripts/cs_cli.py` with typer skeleton
 3. [x] Create `./scripts/run` shell shim at project root
-4. [x] Implement `cs dev` (reuse `dev_stack.py` functions)
-5. [x] Implement `cs db start|stop|status`
-6. [x] Implement `cs health`
+4. [x] Implement `./scripts/run dev` (reuse `dev_stack.py` functions)
+5. [x] Implement `./scripts/run db start|stop|status`
+6. [x] Implement `./scripts/run health`
 
 ### Phase 2: Testing & Quality ✅ Complete
 
-7. [x] Implement `cs test` (wrap Maven + npm + fuzzing scripts)
-8. [x] Implement `cs qa-dashboard` (wrap existing script)
-9. [x] Implement `cs ci-local`
+7. [x] Implement `./scripts/run test` (wrap Maven + npm + fuzzing scripts)
+8. [x] Implement `./scripts/run qa-dashboard` (wrap existing script)
+9. [x] Implement `./scripts/run ci-local`
 
 ### Phase 3: Production Simulation ✅ Complete
 
-10. [x] Implement `cs prod-local`
+10. [x] Implement `./scripts/run prod-local`
 11. [x] Add JWT_SECRET validation with clear error messages
 12. [ ] Add `--https` flag with self-signed cert (optional, deferred)
 
@@ -385,7 +385,7 @@ Replace raw commands with CLI equivalents:
 
 17. [ ] Build missing Admin backend (AdminController, AdminService)
 18. [ ] Add DevOps tab to Admin dashboard (web)
-19. [x] Implement `cs dashboard` to open browser
+19. [x] Implement `./scripts/run dashboard` to open browser
 20. [ ] Optional: PyQt6 desktop version
 
 ---
@@ -402,11 +402,11 @@ The `AdminDashboard.tsx` frontend exists and is fully implemented, but the backe
 | `GET /api/v1/admin/stats` | ❌ 404 - No controller |
 | `GET /api/v1/admin/audit-log` | ❌ 404 - No controller |
 
-**Decision**: This is tracked separately. The CLI `cs dashboard` will open the admin page, but the admin backend is a prerequisite that needs to be built first.
+**Decision**: This is tracked separately. The CLI `./scripts/run dashboard` will open the admin page, but the admin backend is a prerequisite that needs to be built first.
 
 ### Cookie Security Bug (FIXED)
 
-The `dev_stack.py` script was missing `APP_AUTH_COOKIE_SECURE=false`, causing 403 Forbidden errors on localhost HTTP. This has been fixed and will be properly handled in `cs dev`.
+The `dev_stack.py` script was missing `APP_AUTH_COOKIE_SECURE=false`, causing 403 Forbidden errors on localhost HTTP. This has been fixed and will be properly handled in `./scripts/run dev`.
 
 ---
 
@@ -414,19 +414,19 @@ The `dev_stack.py` script was missing `APP_AUTH_COOKIE_SECURE=false`, causing 40
 
 | Command | Description |
 |---------|-------------|
-| `cs dev` | Start development environment (backend + frontend) |
-| `cs dev --db postgres` | Start with Postgres instead of H2 |
-| `cs prod-local` | Build and run production-like JAR |
-| `cs test` | Run all quality checks |
-| `cs test --fast` | Skip slow tests (mutation, fuzzing) |
-| `cs qa-dashboard` | View quality metrics in browser |
-| `cs db start` | Start Postgres container |
-| `cs db stop` | Stop Postgres container |
-| `cs db status` | Check database status |
-| `cs db reset` | Reset database (destructive) |
-| `cs ci-local` | Reproduce CI pipeline locally |
-| `cs health` | Check service health |
-| `cs dashboard` | Open DevOps dashboard in browser |
+| `./scripts/run dev` | Start development environment (backend + frontend) |
+| `./scripts/run dev --db postgres` | Start with Postgres instead of H2 |
+| `./scripts/run prod-local` | Build and run production-like JAR |
+| `./scripts/run test` | Run all quality checks |
+| `./scripts/run test --fast` | Skip slow tests (mutation, fuzzing) |
+| `./scripts/run qa-dashboard` | View quality metrics in browser |
+| `./scripts/run db start` | Start Postgres container |
+| `./scripts/run db stop` | Stop Postgres container |
+| `./scripts/run db status` | Check database status |
+| `./scripts/run db reset` | Reset database (destructive) |
+| `./scripts/run ci-local` | Reproduce CI pipeline locally |
+| `./scripts/run health` | Check service health |
+| `./scripts/run dashboard` | Open DevOps dashboard in browser |
 
 ---
 

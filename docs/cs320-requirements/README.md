@@ -28,4 +28,4 @@ The project has evolved **far beyond** these original requirements:
 For current project requirements and implementation details, see:
 - [`../REQUIREMENTS.md`](../REQUIREMENTS.md) - Master requirements document
 - [`../roadmaps/ROADMAP.md`](../roadmaps/ROADMAP.md) - Implementation phases
-- [`../adrs/README.md`](../adrs/README.md) - All 49 Architecture Decision Records
+- [`../adrs/README.md`](../adrs/README.md) - All 55 Architecture Decision Records

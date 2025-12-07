@@ -304,7 +304,7 @@ The CLI includes safety features:
 
 | File | Purpose |
 |------|---------|
-| [`./scripts/run`](cs) | Shell shim (entry point) |
+| [`./scripts/run`](scripts/run) | Shell shim (entry point) |
 | [`scripts/cs_cli.py`](scripts/cs_cli.py) | Main CLI implementation (typer-based) |
 | [`scripts/runtime_env.py`](scripts/runtime_env.py) | Environment configuration helpers |
 | [`scripts/requirements.txt`](scripts/requirements.txt) | Python dependencies |
@@ -323,7 +323,7 @@ The phased plan in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) governs scope.
 | 4 | Complete | React SPA | CRUD UI with TanStack Query + Vite/Tailwind stack; Vitest + Playwright suites |
 | 5 | Complete | Security & observability | JWT auth, per-user tenancy, rate limiting, sanitized logging, Prometheus |
 | 5.5 | Complete | CI security gates | ZAP DAST scans, password strength validation, CSP/Permissions-Policy headers |
-| 6 | Complete | Packaging + CI | Makefile (30+ targets), CI docker-build job, GHCR push, health checks |
+| 6 | Complete | Packaging + CI | Makefile (55 targets), CI docker-build job, GHCR push, health checks |
 | 7 | Complete | UX polish + Project Tracker (ADR-0045 Phases 1-5) | Search/pagination/sorting, toasts, empty states, admin dashboard; Project CRUD with status tracking, task status/due dates/project linking, appointment linking, task assignment with access control |
 
 ### Key Capabilities

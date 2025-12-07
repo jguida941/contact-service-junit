@@ -110,7 +110,7 @@ server:
   # -----------------------------------------------------------------------------
   # SSL/TLS Configuration (ADR-0052 Phase A)
   # Disabled by default. Enable with: export SSL_ENABLED=true
-  # Generate keystore with: ./cs setup-ssl
+  # Generate keystore with: ./scripts/run setup-ssl
   # -----------------------------------------------------------------------------
   ssl:
     enabled: ${SSL_ENABLED:false}

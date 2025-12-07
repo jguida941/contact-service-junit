@@ -5,16 +5,17 @@
 # It runs the Python CLI tool from the scripts directory.
 #
 # Usage:
-#   ./cs dev              # Start development environment
-#   ./cs test             # Run all tests
-#   ./cs health           # Check service health
-#   ./cs --help           # Show all commands
+#   ./scripts/run dev              # Start development environment
+#   ./scripts/run test             # Run all tests
+#   ./scripts/run health           # Check service health
+#   ./scripts/run --help           # Show all commands
 
 set -euo pipefail
 
-# Get the directory where this script lives (project root)
+# Get the project root directory (parent of scripts/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Run the CLI using Python module syntax from the project root
-# This ensures the scripts module can be found regardless of current directory
-cd "$SCRIPT_DIR" && exec python3 -m scripts.cs_cli "$@"
+# Run the CLI as a Python module from the project root
+# The -m flag ensures 'scripts' package is found correctly
+cd "$PROJECT_ROOT" && exec python3 -m scripts.cs_cli "$@"

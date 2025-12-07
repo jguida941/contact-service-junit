@@ -6,13 +6,13 @@ One CLI (`cs`) that provides a small set of predictable commands for local dev,
 local prod simulation, tests, and DB management.
 
 Usage:
-    ./cs dev                    # Start development environment
-    ./cs test                   # Run all quality checks
-    ./cs db status              # Check database status
-    ./cs health                 # Check service health
-    ./cs qa-dashboard           # View quality metrics
-    ./cs prod-local             # Simulate production locally
-    ./cs ci-local               # Reproduce CI pipeline locally
+    ./scripts/run dev                    # Start development environment
+    ./scripts/run test                   # Run all quality checks
+    ./scripts/run db status              # Check database status
+    ./scripts/run health                 # Check service health
+    ./scripts/run qa-dashboard           # View quality metrics
+    ./scripts/run prod-local             # Simulate production locally
+    ./scripts/run ci-local               # Reproduce CI pipeline locally
 
 See: docs/design-notes/notes/clitool.md for the full design document.
 """
@@ -69,17 +69,17 @@ FRONTEND_URL = "http://localhost:5173"
 # CLI App
 HELP_TEXT = """Contact Suite CLI - Unified developer experience
 
-[bold yellow]Run commands with:[/bold yellow] ./cs <command>
+[bold yellow]Run commands with:[/bold yellow] ./scripts/run <command>
 
 [bold cyan]Quick Examples:[/bold cyan]
-  ./cs dev            Start dev environment
-  ./cs test           Run all tests
-  ./cs health         Check services
-  ./cs db status      Database info
+  ./scripts/run dev            Start dev environment
+  ./scripts/run test           Run all tests
+  ./scripts/run health         Check services
+  ./scripts/run db status      Database info
 """
 
 app = typer.Typer(
-    name="./cs",
+    name="./scripts/run",
     help=HELP_TEXT,
     no_args_is_help=True,
     rich_markup_mode="rich",
@@ -195,10 +195,10 @@ def dev(
     Start everything for local development.
 
     [bold]Examples:[/bold]
-        ./cs dev                    # H2 in-memory database (fastest)
-        ./cs dev --db postgres      # Postgres via Docker
-        ./cs dev --backend-only     # Skip frontend
-        ./cs dev --frontend-only    # Skip backend (assumes already running)
+        ./scripts/run dev                    # H2 in-memory database (fastest)
+        ./scripts/run dev --db postgres      # Postgres via Docker
+        ./scripts/run dev --backend-only     # Skip frontend
+        ./scripts/run dev --frontend-only    # Skip backend (assumes already running)
     """
     if backend_only and frontend_only:
         console.print("[red]Cannot use --backend-only and --frontend-only together.[/red]")
@@ -305,8 +305,8 @@ def prod_local(
 
     [bold]Examples:[/bold]
         export JWT_SECRET=$(openssl rand -base64 32)
-        ./cs prod-local
-        ./cs prod-local --skip-build    # Use existing JAR
+        ./scripts/run prod-local
+        ./scripts/run prod-local --skip-build    # Use existing JAR
     """
     console.print(Panel.fit(
         "[bold yellow]Production Simulation Mode[/bold yellow]",
@@ -375,10 +375,10 @@ def test(
     Run all quality checks.
 
     [bold]Examples:[/bold]
-        ./cs test                   # Run everything
-        ./cs test --unit            # JUnit unit tests only
-        ./cs test --fast            # Skip slow tests
-        ./cs test --mutation        # Mutation testing only
+        ./scripts/run test                   # Run everything
+        ./scripts/run test --unit            # JUnit unit tests only
+        ./scripts/run test --fast            # Skip slow tests
+        ./scripts/run test --mutation        # Mutation testing only
     """
     console.print(Panel.fit("[bold blue]Running Quality Checks[/bold blue]"))
 
@@ -568,8 +568,8 @@ def health(
     Quick health check of all services.
 
     [bold]Examples:[/bold]
-        ./cs health              # Check all services once
-        ./cs health --watch      # Continuous monitoring
+        ./scripts/run health              # Check all services once
+        ./scripts/run health --watch      # Continuous monitoring
     """
     def print_health_table():
         table = Table(title="Contact Suite Health Check", show_header=True, header_style="bold cyan")
@@ -742,7 +742,7 @@ def setup_ssl(
 
     [bold]Usage after setup:[/bold]
         export SSL_ENABLED=true
-        ./cs dev
+        ./scripts/run dev
 
     [bold]Trust the certificate:[/bold]
         macOS: security add-trusted-cert -p ssl -k ~/Library/Keychains/login.keychain certs/local-cert.crt
@@ -823,7 +823,7 @@ def setup_ssl(
 
     console.print("\n[bold]To enable HTTPS:[/bold]")
     console.print("  export SSL_ENABLED=true")
-    console.print("  ./cs dev")
+    console.print("  ./scripts/run dev")
     console.print("\n[bold]To trust the certificate (macOS):[/bold]")
     console.print(f"  security add-trusted-cert -p ssl -k ~/Library/Keychains/login.keychain {cert_path.relative_to(ROOT)}")
     console.print("\n[bold]To trust the certificate (Linux):[/bold]")
@@ -848,7 +848,7 @@ def dashboard():
     # Check if backend is running
     is_up, _, _ = _check_health(HEALTH_URL)
     if not is_up:
-        console.print("[yellow]Backend not running. Start with: ./cs dev[/yellow]")
+        console.print("[yellow]Backend not running. Start with: ./scripts/run dev[/yellow]")
         raise typer.Exit(1)
 
     url = "http://localhost:8080/admin"

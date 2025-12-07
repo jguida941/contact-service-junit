@@ -9,11 +9,11 @@
 This project is a **full-stack contact management application** built with enterprise-grade architecture patterns. It demonstrates professional software engineering practices including layered architecture, comprehensive testing (90% coverage, 84% mutation score), security hardening, and automated CI/CD pipelines.
 
 **Key Metrics:**
-- **54 Architecture Decision Records** documenting engineering choices
+- **55 Architecture Decision Records** documenting engineering choices
 - **1107 test executions** across the current unit and integration suites
 - **90% code coverage** (JaCoCo) with **84% mutation coverage** (PITest)
 - **7 enforced quality gates** in CI/CD pipeline
-- **17 Flyway migrations** (V1-V14, V16-V18) with multi-tenant schema evolution
+- **17 Flyway migrations** (V1-V17) with multi-tenant schema evolution
 - **Multi-tenant security** with JWT authentication and per-user data isolation
 
 ---

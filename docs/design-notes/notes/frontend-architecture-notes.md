@@ -205,8 +205,8 @@ npm run test:coverage  # Vitest with coverage report
 
 **Start both servers**:
 ```bash
-python scripts/dev_stack.py                    # H2 in-memory
-python scripts/dev_stack.py --database postgres  # Persistent Postgres
+./scripts/run dev                    # H2 in-memory
+./scripts/run dev --db postgres      # Persistent Postgres
 ```
 
 **Manual start**:
