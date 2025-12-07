@@ -12,7 +12,7 @@ Full-stack contact management application built with Spring Boot 4.0.0 and React
 |--------|-------|
 | Java Files | 178 |
 | Test Files | 91 |
-| Test Executions | 1109 |
+| Test Executions | 1107 |
 | Line Coverage | 90% |
 | Mutation Coverage | 84% |
 | TypeScript Files | 56 |
@@ -144,7 +144,7 @@ mvn -Ddependency.check.skip=true -Dpit.skip=true verify
 
 ## Recent Changes
 
-- Updated metrics to latest reports (1109 tests, 90% line coverage, 85% mutation)
+- Updated metrics to latest reports (1107 tests, 90% line coverage, 84% mutation)
 - Removed duplicate sections (React UI, Testcontainers Strategy)
 - Added 7 design-notes reference docs
 - Fixed docs/CI-CD link case sensitivity (git tracked as CI-CD, not ci-cd)

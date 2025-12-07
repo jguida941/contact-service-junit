@@ -120,7 +120,7 @@ All 54 foundation ADRs are **complete** and document the journey from a simple c
 |-----|-------|--------|
 | [ADR-0052](ADR-0052-production-auth-system.md) | Production-Grade Secure Authentication System | Implemented |
 
-> **Implementation Complete (2025-12-06):** All phases implemented - UUID migration, JWT hardening, HTTPS setup, refresh tokens, token fingerprinting. 1109 tests pass.
+> **Implementation Complete (2025-12-06):** All phases implemented - UUID migration, JWT hardening, HTTPS setup, refresh tokens, token fingerprinting. 1107 tests pass.
 
 ### Frontend Improvements (ADR-0053)
 

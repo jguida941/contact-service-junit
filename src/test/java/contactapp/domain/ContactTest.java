@@ -93,23 +93,23 @@ public class ContactTest {
     @CsvSource(
             value = {
                     // contactId validation
-                    "' ', firstName, lastName, 1234567890, '7622 Main Street', 'contactId must not be null or blank'"
-                    , "'', firstName, lastName, 1234567890, '7622 Main Street', 'contactId must not be null or blank'"
-                    , "null, firstName, lastName, 1234567890, '7622 Main Street', 'contactId must not be null or blank'"
-                    , "12345678901, firstName, lastName, 1234567890, '7622 Main Street', 'contactId length must be between 1 and 10'"
+                    "' ', firstName, lastName, 1234567890, '7622 Main Street', 'Contact ID must not be null or blank'"
+                    , "'', firstName, lastName, 1234567890, '7622 Main Street', 'Contact ID must not be null or blank'"
+                    , "null, firstName, lastName, 1234567890, '7622 Main Street', 'Contact ID must not be null or blank'"
+                    , "12345678901, firstName, lastName, 1234567890, '7622 Main Street', 'Contact ID length must be between 1 and 10'"
 
                     // firstName validation
-                    , "1, ' ', lastName, 1234567890, '7622 Main Street', 'firstName must not be null or blank'"
-                    , "1, '', lastName, 1234567890, '7622 Main Street', 'firstName must not be null or blank'"
-                    , "1, null, lastName, 1234567890, '7622 Main Street', 'firstName must not be null or blank'"
-                    , "1, 'TooLongFirstName', lastName, 1234567890, '7622 Main Street', 'firstName length must be between 1 and 10'"
+                    , "1, ' ', lastName, 1234567890, '7622 Main Street', 'First Name must not be null or blank'"
+                    , "1, '', lastName, 1234567890, '7622 Main Street', 'First Name must not be null or blank'"
+                    , "1, null, lastName, 1234567890, '7622 Main Street', 'First Name must not be null or blank'"
+                    , "1, 'TooLongFirstName', lastName, 1234567890, '7622 Main Street', 'First Name length must be between 1 and 10'"
 
                     // lastName validation
-                    , "1, firstName, ' ' , 1234567890, '7622 Main Street', 'lastName must not be null or blank'"
-                    , "1, firstName, '', 1234567890, '7622 Main Street', 'lastName must not be null or blank'"
-                    , "1, firstName, null, 1234567890, '7622 Main Street', 'lastName must not be null or blank'"
-                    , "1, firstName, 'TooLongLastName', 1234567890, '7622 Main Street', 'lastName length must be between 1 and 10'"
-                    , "1, ' firstNameWithSpaces ', lastName, 1234567890, '7622 Main Street', 'firstName length must be between 1 and 10'"
+                    , "1, firstName, ' ' , 1234567890, '7622 Main Street', 'Last Name must not be null or blank'"
+                    , "1, firstName, '', 1234567890, '7622 Main Street', 'Last Name must not be null or blank'"
+                    , "1, firstName, null, 1234567890, '7622 Main Street', 'Last Name must not be null or blank'"
+                    , "1, firstName, 'TooLongLastName', 1234567890, '7622 Main Street', 'Last Name length must be between 1 and 10'"
+                    , "1, ' firstNameWithSpaces ', lastName, 1234567890, '7622 Main Street', 'First Name length must be between 1 and 10'"
 
                     // phone validation
                     , "1, firstName, lastName, ' ' , '7622 Main Street', 'phone must not be null or blank'"
@@ -155,10 +155,10 @@ public class ContactTest {
      */
     @CsvSource(
             value = {
-                    "' ', 'firstName must not be null or blank'"
-                    , "'', 'firstName must not be null or blank'"
-                    , "null, 'firstName must not be null or blank'"
-                    , "TooLongFirstName, 'firstName length must be between 1 and 10'"
+                    "' ', 'First Name must not be null or blank'"
+                    , "'', 'First Name must not be null or blank'"
+                    , "null, 'First Name must not be null or blank'"
+                    , "TooLongFirstName, 'First Name length must be between 1 and 10'"
             },
             nullValues = "null"
     )
@@ -181,8 +181,8 @@ public class ContactTest {
      */
     private static Stream<Arguments> invalidUpdateValues() {
         return Stream.of(
-                Arguments.of(" ", "lastName", "1234567890", "7622 Main Street", "firstName must not be null or blank"),
-                Arguments.of("firstName", " ", "1234567890", "7622 Main Street", "lastName must not be null or blank"),
+                Arguments.of(" ", "lastName", "1234567890", "7622 Main Street", "First Name must not be null or blank"),
+                Arguments.of("firstName", " ", "1234567890", "7622 Main Street", "Last Name must not be null or blank"),
                 Arguments.of("firstName", "lastName", "12345abcde", "7622 Main Street", "phone must only contain digits 0-9"),
                 Arguments.of("firstName", "lastName", "1234567890", " ", "address must not be null or blank")
         );
@@ -284,7 +284,7 @@ public class ContactTest {
         assertThatThrownBy(() ->
                 new Contact("12345678901", "John", "Doe", "5551234567", "123 Main St"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("contactId length must be between 1 and 10");
+                .hasMessage("Contact ID length must be between 1 and 10");
     }
 
     /**

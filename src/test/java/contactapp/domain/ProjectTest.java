@@ -106,10 +106,10 @@ public class ProjectTest {
     @CsvSource(
             value = {
                     // projectId validation
-                    "' ', 'Project Alpha', 'A test project', ACTIVE, 'projectId must not be null or blank'"
-                    , "'', 'Project Alpha', 'A test project', ACTIVE, 'projectId must not be null or blank'"
-                    , "null, 'Project Alpha', 'A test project', ACTIVE, 'projectId must not be null or blank'"
-                    , "12345678901, 'Project Alpha', 'A test project', ACTIVE, 'projectId length must be between 1 and 10'"
+                    "' ', 'Project Alpha', 'A test project', ACTIVE, 'Project ID must not be null or blank'"
+                    , "'', 'Project Alpha', 'A test project', ACTIVE, 'Project ID must not be null or blank'"
+                    , "null, 'Project Alpha', 'A test project', ACTIVE, 'Project ID must not be null or blank'"
+                    , "12345678901, 'Project Alpha', 'A test project', ACTIVE, 'Project ID length must be between 1 and 10'"
 
                     // name validation
                     , "1, ' ', 'A test project', ACTIVE, 'name must not be null or blank'"
@@ -347,7 +347,7 @@ public class ProjectTest {
         assertThatThrownBy(() ->
                 new Project("12345678901", "Project Name", "Description", ProjectStatus.ACTIVE))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("projectId length must be between 1 and 10");
+                .hasMessage("Project ID length must be between 1 and 10");
     }
 
     /**

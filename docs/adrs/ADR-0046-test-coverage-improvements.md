@@ -145,7 +145,7 @@ void toDomainWithNull() {
 **Overall Impact**:
 - Store coverage improved from **78%** to **96%** (instructions), **73%** to **97%** (branches)
 - Mapper coverage improved to **95%+** across all mappers, with ContactMapper and TaskMapper at **100%**
-- Total test count increased to **1109 tests**
+- Total test count increased to **1107 tests**
 - PITest mutation score was lifted to **94%** (615/656 mutants killed) on the scoped modules; the current expanded suite sits at 80% overall.
 
 ## Implementation Details
@@ -283,7 +283,7 @@ void saveCallsRepositorySave() {
 
 **Total New Tests**: 24 (stores) + 18 (mappers) + 4 (entities) + 4 (filters) = **50 new tests**
 
-**Total Test Count**: **1109 tests** (baseline + store/mapper/entity/filter coverage + security + validation helper tests)
+**Total Test Count**: **1107 tests** (baseline + store/mapper/entity/filter coverage + security + validation helper tests)
 
 ## Mutation Testing Impact
 

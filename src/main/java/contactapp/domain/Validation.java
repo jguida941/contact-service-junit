@@ -262,12 +262,18 @@ public final class Validation {
     /**
      * Validates that a LocalDate is not null and not in the past (inclusive of today).
      *
+     * <p>Uses the system's default timezone to determine "today", ensuring users
+     * can enter dates that are valid in their local timezone. This is the correct
+     * behavior for date-only fields like task due dates where the user enters
+     * a date in their local context.
+     *
      * @param date  the date to validate
      * @param label logical field name
      * @return the same date for fluent usage
+     * @see <a href="docs/adrs/ADR-0053-timezone-safe-date-parsing.md">ADR-0053</a>
      */
     public static LocalDate validateDateNotPast(final LocalDate date, final String label) {
-        return validateDateNotPast(date, label, Clock.systemUTC());
+        return validateDateNotPast(date, label, Clock.systemDefaultZone());
     }
 
     /**
@@ -292,6 +298,26 @@ public final class Validation {
             return null;
         }
         return validateDateNotPast(date, label);
+    }
+
+    /**
+     * Validates an optional LocalDate using the supplied clock (skips validation when null).
+     *
+     * <p>This is the production-grade version that accepts an injected Clock for proper
+     * timezone handling. Use this in service layers where Clock is dependency-injected.
+     *
+     * @param date  the date to validate (nullable)
+     * @param label logical field name for error messages
+     * @param clock the clock to use for determining "today"
+     * @return the same date, or null if input was null
+     * @throws IllegalArgumentException if date is in the past according to the clock's timezone
+     */
+    public static LocalDate validateOptionalDateNotPast(
+            final LocalDate date, final String label, final Clock clock) {
+        if (date == null) {
+            return null;
+        }
+        return validateDateNotPast(date, label, clock);
     }
 
     /**

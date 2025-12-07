@@ -127,6 +127,10 @@ csp:
   relaxed: false
 
 app:
+  # Business timezone for date validation (e.g., "today" for due dates)
+  # Set to your server/business timezone. Empty = JVM default zone.
+  # Examples: America/New_York, America/Los_Angeles, Europe/London, UTC
+  timezone: ${APP_TIMEZONE:}
   auth:
     cookie:
       # Secure cookie flag MUST match SSL_ENABLED to prevent browser rejection

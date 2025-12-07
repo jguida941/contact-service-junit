@@ -6,6 +6,55 @@ All notable changes to this project will be documented here. Follow the
 ## [Unreleased]
 
 ### Fixed
+- **Backend Timezone Validation Fix (2025-12-06)**:
+  - Fixed bug where tasks with "today" as due date were rejected in timezones behind UTC
+  - Root cause: `Validation.validateDateNotPast()` used `Clock.systemUTC()`, causing "today" to be rejected when local time was behind UTC
+  - Solution: Production-grade Clock dependency injection architecture
+  - Created `ClockConfig.java` providing a configurable `Clock` bean via `app.timezone` in application.yml
+  - Modified `TaskService` to inject `Clock` via constructor and validate dates at service layer
+  - Moved "due date must not be in the past" validation from domain to service layer (proper separation of concerns)
+  - Domain objects now only enforce structural validation (length, null checks)
+  - Services enforce business rules with access to injected Clock
+  - Updated ADR-0053 with backend Clock injection architecture details
+  - See ADR-0053 for full technical explanation
+
+- **Human-Readable Validation Error Labels (2025-12-06)**:
+  - Changed validation error labels from camelCase to human-readable format across both layers:
+  - **Domain layer**: Updated `Validation.java` helper calls with human-readable labels
+  - **DTO layer**: Updated Bean Validation messages in all Request DTOs:
+    - `AppointmentRequest`: `Appointment ID`, `Appointment Date`, `Description`
+    - `TaskRequest`: `Task ID`, `Task Name`, `Task Description`
+    - `ContactRequest`: `Contact ID`, `First Name`, `Last Name`, `Phone`, `Address`
+    - `ProjectRequest`: `Project ID`, `Project Name`, `Description`, `Status`
+    - `RegisterRequest`: `Username`, `Email`, `Password`
+  - Error messages now display as "Appointment Date must not be in the past" instead of "appointmentDate must not be in the past"
+
+- **Documentation Accuracy Audit (2025-12-06)**:
+  - Ran parallel documentation audit agents to verify accuracy across all docs
+  - **README.md fixes**:
+    - Fixed migration version range: "V1-V14, V16-V18" → "V1-V17"
+    - Fixed mutation score: "85%" → "84%" (matches actual badge value)
+    - Fixed Task archive migration reference: "(V18)" → "(V17)"
+  - **ADR-0050 status update**: Changed from "Partially Implemented" to "Implemented" (Task.reconstitute() is fully implemented)
+  - **PROJECT_SUMMARY.md**: Fixed mutation percentage "85%" → "84%"
+  - **REQUIREMENTS.md**: Fixed ADR range "ADR-0001–0049" → "ADR-0001–0054"
+  - **INDEX.md**: Fixed ADR range "ADR-0001-0053" → "ADR-0001-0054"
+
+- **AppointmentsPage Missing Error Handlers (2025-12-06)**:
+  - Fixed silent failures on duplicate appointment ID and other errors
+  - Root cause: `createMutation`, `updateMutation`, and `deleteMutation` in AppointmentsPage.tsx were missing `onError` handlers
+  - Backend correctly threw `DuplicateResourceException` (HTTP 409), but frontend never displayed the error
+  - Added `onError` handlers with `toast.error(getErrorMessage())` to all three mutations
+  - Added `toast.success()` calls on successful create/update/delete operations
+  - Now duplicate IDs show error toast: "Appointment with id 'xyz' already exists"
+
+- **CSRF Token Validation Fix (2025-12-06)**:
+  - Fixed 403 Forbidden on POST/PUT/DELETE requests when user was logged in
+  - Root cause: SecurityConfig was using `XorCsrfTokenRequestAttributeHandler` which XOR-unmasked tokens that were never XOR-masked
+  - Solution: Changed to `SpaCsrfTokenRequestHandler` which accepts raw tokens from headers (SPA) while preserving XOR masking for form parameters (SSR)
+  - Updated ADR-0049 to reflect the explicit handler configuration (vs `.spa()` method)
+  - See ADR-0049 for full technical details
+
 - **CodeRabbit Audit Fixes (2025-12-06)**:
   - ADR-0050: Changed status from "Implemented" to "Partially Implemented" (Task reconstitute() pending)
   - Added JavaDoc to deprecated `findAll()` methods explaining user isolation bypass and ADR-0054 reference
@@ -38,7 +87,7 @@ All notable changes to this project will be documented here. Follow the
   - Updated security-infrastructure-notes.md with all ADR-0052 phases
   - Updated ROADMAP.md with ADR-0052 production auth system completion
   - Added ADR-0053 (Timezone-Safe Date Parsing) to ADR README
-  - All documentation now consistent with 1109 tests, 90% line coverage, 85% mutation score
+  - All documentation now consistent with 1107 tests, 90% line coverage, 85% mutation score
 
 ### Added
 - **Task Archive Functionality (2025-12-06)**:

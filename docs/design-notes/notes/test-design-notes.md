@@ -49,7 +49,7 @@ void reset() {
 
 ### Impact
 - ✅ Eliminated 8 test failures across service test suites
-- ✅ All 1109 tests now run reliably without order dependencies
+- ✅ All 1107 tests now run reliably without order dependencies
 - ✅ Single line in `@BeforeEach` replaces manual cleanup boilerplate
 - ✅ Consistent isolation pattern across all Spring Boot integration tests
 

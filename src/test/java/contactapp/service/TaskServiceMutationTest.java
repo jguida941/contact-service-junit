@@ -45,7 +45,8 @@ class TaskServiceMutationTest {
 
     @Test
     void getAllTasksAllUsersThrowsForNonAdmins() {
-        final TaskService service = new TaskService(mock(TaskStore.class));
+        // Use legacyStore=false to enable security checks (1-arg constructor sets legacyStore=true)
+        final TaskService service = new TaskService(mock(TaskStore.class), false);
         authenticate(Role.USER);
 
         assertThatThrownBy(service::getAllTasksAllUsers)

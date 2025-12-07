@@ -42,26 +42,26 @@ import static contactapp.domain.Validation.MAX_ID_LENGTH;
  */
 public record AppointmentRequest(
         @Schema(description = "Appointment ID")
-        @NotBlank(message = "id must not be null or blank")
-        @Size(min = 1, max = MAX_ID_LENGTH, message = "id length must be between {min} and {max}")
+        @NotBlank(message = "Appointment ID must not be null or blank")
+        @Size(min = 1, max = MAX_ID_LENGTH, message = "Appointment ID length must be between {min} and {max}")
         String id,
 
-        @NotNull(message = "appointmentDate must not be null")
-        @FutureOrPresent(message = "appointmentDate must not be in the past")
+        @NotNull(message = "Appointment Date must not be null")
+        @FutureOrPresent(message = "Appointment Date must not be in the past")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
         Date appointmentDate,
 
         @Schema(description = "Appointment description")
-        @NotBlank(message = "description must not be null or blank")
-        @Size(min = 1, max = MAX_DESCRIPTION_LENGTH, message = "description length must be between {min} and {max}")
+        @NotBlank(message = "Description must not be null or blank")
+        @Size(min = 1, max = MAX_DESCRIPTION_LENGTH, message = "Description length must be between {min} and {max}")
         String description,
 
         @Schema(description = "Associated project ID (optional)")
-        @Size(max = MAX_ID_LENGTH, message = "projectId length must not exceed {max}")
+        @Size(max = MAX_ID_LENGTH, message = "Project ID length must not exceed {max}")
         String projectId,
 
         @Schema(description = "Associated task ID (optional)")
-        @Size(max = MAX_ID_LENGTH, message = "taskId length must not exceed {max}")
+        @Size(max = MAX_ID_LENGTH, message = "Task ID length must not exceed {max}")
         String taskId
 ) {
     /**

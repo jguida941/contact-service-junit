@@ -589,7 +589,7 @@ class TaskControllerTest extends SecuredMockMvcTest {
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        org.hamcrest.Matchers.containsString("dueDate")));
+                        org.hamcrest.Matchers.containsString("Due Date")));
     }
 
     @Test

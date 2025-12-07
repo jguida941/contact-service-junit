@@ -41,12 +41,12 @@ This file defines how AI agents should implement ADR-0052 in safe, reviewable ba
 | `SecurityConfig.java`               | Add `AuthenticationEntryPoint` (401) and `AccessDeniedHandler` (403)        |
 | `JwtService.java`                   | Add `.clockSkewSeconds(60)`, `.requireIssuer()`, `.requireAudience()`       |
 | `api.ts`                            | Separate 401 vs 403 handling (don't auto-logout on 403)                     |
-| `V16__users_uuid_id.sql` (Postgres) | **Data-preserving** UUID migration (add column, backfill, swap PK, fix FKs) |
-| `V16__users_uuid_id.sql` (H2)       | **Data-preserving** UUID migration for H2 compatibility                     |
+| `V15__users_uuid_id.sql` (Postgres) | **Data-preserving** UUID migration (add column, backfill, swap PK, fix FKs) |
+| `V15__users_uuid_id.sql` (H2)       | **Data-preserving** UUID migration for H2 compatibility                     |
 
 **Agent goals:**
 - Apply exactly ADR-0052 Phase 0.1, 0.2, 0.3, 0.4, 0.5
-- V16 must preserve existing data — NOT drop-and-recreate
+- V15 must preserve existing data — NOT drop-and-recreate
 - Frontend: 401 → throw for refresh handling; 403 → throw error, keep session
 - Output summary table: file, change type, expected behavior
 
@@ -140,14 +140,14 @@ This file defines how AI agents should implement ADR-0052 in safe, reviewable ba
 |----------------------------------|-----------------------------------------------------------------------------------|
 | `RefreshToken.java`              | CREATE entity with `user` (UUID FK), `token`, `expiryDate`, `revoked`             |
 | `RefreshTokenRepository.java`    | CREATE with `findByTokenAndRevokedFalse`, `revokeAllByUserId`, `deleteAllExpired` |
-| `V17__create_refresh_tokens.sql` | CREATE table with indexes (user_id is UUID)                                       |
+| `V16__create_refresh_tokens.sql` | CREATE table with indexes (user_id is UUID)                                       |
 | `SchedulingConfig.java`          | CREATE — `@EnableScheduling` for cleanup job                                      |
 
 **Agent goals:**
 - Entity uses `@ManyToOne(fetch = LAZY)` to `User`
 - `user_id` column is `UUID` type referencing `users(id)`
 - No Lombok — manual getters/setters per project style
-- Migration version strictly greater than V16
+- Migration version strictly greater than V15
 
 **Known follow-up:** Batch 7 adds service layer.
 
@@ -297,7 +297,7 @@ This file defines how AI agents should implement ADR-0052 in safe, reviewable ba
 - [x] Added fingerprint claim tests (`generateToken_includesFingerprintClaim`, `generateToken_withNullFingerprint_producesTokenWithoutFphClaim`)
 - [x] Fixed cookie max-age mismatch: `TokenFingerprintService.createFingerprintCookie()` now accepts `Duration maxAge`
 - [x] `AuthController.setFingerprintCookie()` passes JWT expiration to cookie creation
-- [x] 1109 tests pass
+- [x] 1107 tests pass
 
 ### Batch 6 Checklist (Completed 2025-12-03)
 - [x] `RefreshToken` entity has `user` (`@ManyToOne(fetch = LAZY)` to `User`)
@@ -308,7 +308,7 @@ This file defines how AI agents should implement ADR-0052 in safe, reviewable ba
 - [x] Migration V17 created for both PostgreSQL and H2
 - [x] `RefreshTokenRepository` with `findByTokenAndRevokedFalse`, `revokeAllByUserId`, `deleteAllExpired`
 - [x] `RefreshToken.isValid()` checks both revoked and expiry
-- [x] 1109 tests pass
+- [x] 1107 tests pass
 
 ### Batch 7 Checklist (Completed 2025-12-03)
 - [x] `createRefreshToken()` revokes existing tokens first (single active session)
@@ -319,7 +319,7 @@ This file defines how AI agents should implement ADR-0052 in safe, reviewable ba
 - [x] `refresh_token` cookie path is `/api/auth/refresh`
 - [x] Cleanup job annotated with `@Scheduled(cron = "0 0 * * * *")`
 - [x] `jwt.refresh-expiration` is `604800000` (7 days)
-- [x] 1109 tests pass
+- [x] 1107 tests pass
 
 ### Batch 8 Checklist (Completed 2025-12-03)
 - [x] Proactive token refresh before expiration (scheduleTokenRefresh)
@@ -327,14 +327,14 @@ This file defines how AI agents should implement ADR-0052 in safe, reviewable ba
 - [x] Failed refresh clears session via `tokenStorage.clear()`
 - [x] No infinite retry loops (single refresh timer, cancelled before rescheduling)
 - [x] Frontend stores absolute expiration timestamp
-- [x] 1109 tests pass
+- [x] 1107 tests pass
 
 ### Batch 9 Checklist (Completed 2025-12-03)
 - [x] `RefreshTokenServiceTest` has 17 test methods (exceeds 4+ requirement)
 - [x] `AuthControllerTest` covers login → refresh → logout flow (20 tests)
 - [x] ADR-0052 Security Checklist all items marked `[x]`
 - [x] CHANGELOG has entries for Batches 1-9
-- [x] 1109 tests pass
+- [x] 1107 tests pass
 
 ---
 

@@ -68,7 +68,7 @@ public final class Task {
             final TaskStatus status,
             final LocalDate dueDate) {
         // Use Validation utility (validates and trims in one call)
-        this.taskId = Validation.validateTrimmedLength(taskId, "taskId", MIN_LENGTH, ID_MAX_LENGTH);
+        this.taskId = Validation.validateTrimmedLength(taskId, "Task ID", MIN_LENGTH, ID_MAX_LENGTH);
 
         setName(name);
         setDescription(description);
@@ -123,7 +123,7 @@ public final class Task {
             final UUID assigneeId,
             final Instant createdAt,
             final Instant updatedAt) {
-        this.taskId = Validation.validateTrimmedLength(taskId, "taskId", MIN_LENGTH, ID_MAX_LENGTH);
+        this.taskId = Validation.validateTrimmedLength(taskId, "Task ID", MIN_LENGTH, ID_MAX_LENGTH);
 
         setName(name);
         setDescription(description);
@@ -232,10 +232,15 @@ public final class Task {
     /**
      * Sets the task due date.
      *
+     * <p>Note: The "due date must not be in the past" business rule is enforced
+     * at the service layer where the Clock is properly injected. This setter
+     * only stores the value.
+     *
      * @param dueDate the new due date (nullable)
+     * @see contactapp.service.TaskService
      */
     public void setDueDate(final LocalDate dueDate) {
-        this.dueDate = Validation.validateOptionalDateNotPast(dueDate, "dueDate");
+        this.dueDate = dueDate;
     }
 
     /**
@@ -309,7 +314,8 @@ public final class Task {
         this.name = validatedName;
         this.description = validatedDescription;
         this.status = validatedStatus;
-        this.dueDate = Validation.validateOptionalDateNotPast(newDueDate, "dueDate");
+        // Note: "due date must not be in the past" is validated at service layer with injected Clock
+        this.dueDate = newDueDate;
         this.projectId = newProjectId != null ? newProjectId.trim() : null;
         this.assigneeId = newAssigneeId;
         this.updatedAt = Instant.now();
@@ -474,7 +480,7 @@ public final class Task {
             final Instant updatedAt,
             final boolean archived) {
         // Validate ID, name, description, and timestamps, but NOT the past-date rule for dueDate
-        final String validatedId = Validation.validateTrimmedLength(taskId, "taskId", MIN_LENGTH, ID_MAX_LENGTH);
+        final String validatedId = Validation.validateTrimmedLength(taskId, "Task ID", MIN_LENGTH, ID_MAX_LENGTH);
         final String validatedName = normalizeTaskName(name);
         final String validatedDesc = normalizeTaskDescription(description);
         final TaskStatus validatedStatus = (status == null) ? TaskStatus.TODO : status;

@@ -10,7 +10,7 @@ This project is a **full-stack contact management application** built with enter
 
 **Key Metrics:**
 - **54 Architecture Decision Records** documenting engineering choices
-- **1109 test executions** across the current unit and integration suites
+- **1107 test executions** across the current unit and integration suites
 - **90% code coverage** (JaCoCo) with **84% mutation coverage** (PITest)
 - **7 enforced quality gates** in CI/CD pipeline
 - **17 Flyway migrations** (V1-V14, V16-V18) with multi-tenant schema evolution
@@ -470,7 +470,7 @@ Built-in lifecycle management for time-sensitive entities:
 - Comprehensive ADR documentation (53 records)
 
 ### Testing Excellence
-- 1109 test executions with 90% line coverage
+- 1107 test executions with 90% line coverage
 - Mutation testing validates test effectiveness (84% kill rate)
 - Integration tests with real PostgreSQL via Testcontainers
 - API fuzzing with 30,000+ generated requests
@@ -618,13 +618,13 @@ gh workflow run "Java CI"
 ### Demo 6: Run All Tests
 
 ```bash
-# Run unit tests (1109 tests)
+# Run unit tests (1107 tests)
 mvn test
 ```
 
 **Expected Output:**
 ```
-[INFO] Tests run: 1109, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 1107, Failures: 0, Errors: 0, Skipped: 0
 [INFO] BUILD SUCCESS
 ```
 

@@ -24,7 +24,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { TaskForm } from '@/components/forms/TaskForm';
 import { DeleteConfirmDialog } from '@/components/dialogs/DeleteConfirmDialog';
-import { tasksApi } from '@/lib/api';
+import { tasksApi, getErrorMessage } from '@/lib/api';
 import { useFilteredSortedPaginatedData } from '@/lib/hooks/useTableState';
 import { useToast } from '@/hooks/useToast';
 import type { Task, TaskRequest } from '@/lib/schemas';
@@ -94,7 +94,12 @@ export function TasksPage() {
     mutationFn: tasksApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Task created successfully');
       closeSheet();
+    },
+    onError: (error) => {
+      console.error('Create task failed:', error);
+      toast.error(getErrorMessage(error, 'Failed to create task'));
     },
   });
 
@@ -103,7 +108,12 @@ export function TasksPage() {
       tasksApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Task updated successfully');
       closeSheet();
+    },
+    onError: (error) => {
+      console.error('Update task failed:', error);
+      toast.error(getErrorMessage(error, 'Failed to update task'));
     },
   });
 
@@ -111,10 +121,15 @@ export function TasksPage() {
     mutationFn: tasksApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Task deleted successfully');
       setDeleteTarget(null);
       if (selectedTask?.id === deleteTarget?.id) {
         closeSheet();
       }
+    },
+    onError: (error) => {
+      console.error('Delete task failed:', error);
+      toast.error(getErrorMessage(error, 'Failed to delete task'));
     },
   });
 
@@ -128,7 +143,7 @@ export function TasksPage() {
     },
     onError: (error) => {
       console.error('Archive failed:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to archive task');
+      toast.error(getErrorMessage(error, 'Failed to archive task'));
     },
   });
 
@@ -142,7 +157,7 @@ export function TasksPage() {
     },
     onError: (error) => {
       console.error('Unarchive failed:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to unarchive task');
+      toast.error(getErrorMessage(error, 'Failed to unarchive task'));
     },
   });
 

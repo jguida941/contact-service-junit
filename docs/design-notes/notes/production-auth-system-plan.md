@@ -48,7 +48,7 @@ while refresh tokens require more infrastructure (new DB table, cookie scope cha
 | H2 migration V16 fix | ✅ Done | Drop projects unique constraint before column drop |
 | ActuatorEndpointsTest | ✅ Done | 403 → 401 for unauthenticated requests |
 | JwtServiceTest | ✅ Done | Updated for 60-second clock skew tolerance |
-| All tests pass | ✅ Done | 1109 tests |
+| All tests pass | ✅ Done | 1107 tests |
 
 ### ✅ Batch 3 Complete (2025-12-03) - HTTPS Setup
 
@@ -69,7 +69,7 @@ while refresh tokens require more infrastructure (new DB table, cookie scope cha
 | Filter verification | ✅ Done | `JwtAuthenticationFilter` validates match |
 | `AuthController` integration | ✅ Done | Login sets fingerprint cookie + JWT claim |
 | Cookie name logic | ✅ Done | Prefix based on secure flag |
-| Unit tests | ✅ Done | `TokenFingerprintServiceTest` (1109 tests pass) |
+| Unit tests | ✅ Done | `TokenFingerprintServiceTest` (1107 tests pass) |
 
 ### ✅ Batch 5 Complete (2025-12-03) - Call Site Migration (Phase C Complete)
 
@@ -658,7 +658,7 @@ To reduce risk and complexity, implement in phases:
 - Filter validates fingerprint before processing JWT claims
 - All production code and tests migrated (AuthController, JwtServiceTest)
 - Cookie max-age aligned: 30 minutes for both access token and fingerprint
-- All 1109 tests passing including `TokenFingerprintServiceTest`
+- All 1107 tests passing including `TokenFingerprintServiceTest`
 
 ---
 

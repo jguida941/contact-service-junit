@@ -121,6 +121,34 @@ export interface ApiError {
 }
 
 /**
+ * Type guard to check if an error is an ApiError.
+ */
+export function isApiError(error: unknown): error is ApiError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    'status' in error &&
+    typeof (error as ApiError).message === 'string' &&
+    typeof (error as ApiError).status === 'number'
+  );
+}
+
+/**
+ * Extract error message from any error type (ApiError, Error, or unknown).
+ * Use this in onError handlers to show the actual backend error message.
+ */
+export function getErrorMessage(error: unknown, fallback: string): string {
+  if (isApiError(error)) {
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return fallback;
+}
+
+/**
  * Handles fetch response, throwing ApiError on non-2xx status.
  * Returns parsed JSON for successful responses.
  * Automatically logs out and redirects on 401 errors.

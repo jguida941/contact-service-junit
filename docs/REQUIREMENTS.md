@@ -46,12 +46,12 @@
 - Global exception handler (`GlobalExceptionHandler`) maps exceptions to JSON error responses (400, 401, 403, 404, 409 including optimistic locking conflicts).
 - Custom error controller (`CustomErrorController`) ensures ALL errors return JSON, including container-level errors, and `RequestLoggingFilter` logs masked IP/query data + user agents whenever request logging is enabled.
 - Persistence implemented via Spring Data repositories + mapper components; schema managed by Flyway migrations targeting Postgres (dev/prod) and Postgres Testcontainers (SpringBootTests) with H2 reserved for targeted slices. The default (no profile) run uses in-memory H2 in PostgreSQL compatibility mode so `mvn spring-boot:run` works out of the box; `dev`/`integration`/`prod` profiles point at Postgres. Shared migrations now live under `db/migration/common`, with profile-specific overrides under `db/migration/h2` and `db/migration/postgresql`.
-- Testcontainers-based integration suites cover Contact/Task/Appointment services against real Postgres, while new JWT/config/filter/unit tests bring the total to 1109 test executions.
+- Testcontainers-based integration suites cover Contact/Task/Appointment services against real Postgres, while new JWT/config/filter/unit tests bring the total to 1107 test executions.
 - Additional unit coverage for composite keys (ProjectContactId) and controller/filter DTOs.
 - Mapper/unit suites now include null-guard coverage plus JPA entity accessor tests to keep persistence mutation-safe even when Hibernate instantiates proxies through the protected constructors.
 - OpenAPI/Swagger UI available at `/swagger-ui.html` and `/v3/api-docs` (springdoc-openapi).
 - Health/info actuator endpoints available; other actuator endpoints locked down.
-- Latest CI: 1109 tests passing (unit + slice + Testcontainers + security + filter + config + Project/Task/Appointment enhancement tests), 84% mutation score, 90% line coverage overall with stores/mappers still above 95%, SpotBugs clean.
+- Latest CI: 1107 tests passing (unit + slice + Testcontainers + security + filter + config + Project/Task/Appointment enhancement tests), 84% mutation score, 90% line coverage overall with stores/mappers still above 95%, SpotBugs clean.
 - Test execution strategy: Linux CI runs the full suite with Testcontainers/Postgres; Windows CI uses the `skip-testcontainers` profile to run the same service/controller suites on H2 (no Docker) while still reporting JaCoCo; legacy `getInstance()` suites are tagged `legacy-singleton` and can be run separately via `mvn test -Plegacy-singleton` to avoid interfering with the main pipeline.
 - Testcontainers-backed Postgres integration tests run automatically in CI (Ubuntu jobs pass `-DskipITs=false`) while local `mvn verify` runs set `skipITs=true` by default; enable them locally with `mvn verify -DskipITs=false` once Docker Desktop/Colima is running.
 - Controller tests (75 tests): ContactControllerTest (21), TaskControllerTest (35), AppointmentControllerTest (19).
@@ -604,7 +604,7 @@ export function useCreateContact() {
 
 | Document | Path | Purpose |
 |----------|------|---------|
-| ADR Index | [`docs/adrs/README.md`](adrs/README.md) | Architecture decisions (ADR-0001–0049) |
+| ADR Index | [`docs/adrs/README.md`](adrs/README.md) | Architecture decisions (ADR-0001–0054) |
 | Roadmap | [`docs/roadmaps/ROADMAP.md`](roadmaps/ROADMAP.md) | Phase overview and completion status |
 | Future Roadmap | [`docs/roadmaps/FUTURE_ROADMAP.md`](roadmaps/FUTURE_ROADMAP.md) | Jira-like evolution (Phases 8-17) |
 | CI/CD Plan | [`docs/ci-cd/ci_cd_plan.md`](ci-cd/ci_cd_plan.md) | Pipeline phases including security testing |

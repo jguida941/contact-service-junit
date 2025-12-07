@@ -28,7 +28,6 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.AndRequestMatcher;
@@ -136,19 +135,18 @@ public class SecurityConfig {
         try {
             // CSRF configuration for SPA (React frontend):
             // - CookieCsrfTokenRepository with HttpOnly=false so JavaScript can read the token
-            // - XorCsrfTokenRequestAttributeHandler provides BREACH protection and handles X-XSRF-TOKEN header
+            // - SpaCsrfTokenRequestHandler accepts raw tokens from headers (SPA) while providing
+            //   BREACH protection via XOR masking for server-rendered forms
             // - SameSite=Lax prevents CSRF while allowing same-site navigation
             // - Secure flag set based on environment (HTTPS in production)
-            // Note: We explicitly configure instead of using .spa() to ensure cookie customizer is applied
             final CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
             csrfTokenRepository.setCookieCustomizer(cookie -> cookie
                     .sameSite("Lax")
                     .secure(secureSessionCookie));
 
-            // XorCsrfTokenRequestAttributeHandler handles BREACH protection for SPAs
-            final XorCsrfTokenRequestAttributeHandler csrfHandler = new XorCsrfTokenRequestAttributeHandler();
-            // Setting to null means the token is available immediately (not deferred) - required for SPAs
-            csrfHandler.setCsrfRequestAttributeName(null);
+            // SpaCsrfTokenRequestHandler: accepts raw CSRF tokens from X-XSRF-TOKEN header (SPA)
+            // while delegating to XorCsrfTokenRequestAttributeHandler for form parameters
+            final SpaCsrfTokenRequestHandler csrfHandler = new SpaCsrfTokenRequestHandler();
 
             http
                     .cors(cors -> cors.configurationSource(corsConfigurationSource()))

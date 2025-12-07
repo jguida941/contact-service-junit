@@ -42,18 +42,19 @@ import static contactapp.domain.Validation.MAX_TASK_NAME_LENGTH;
  */
 public record TaskRequest(
         @Schema(description = "Task ID")
-        @NotBlank(message = "id must not be null or blank")
-        @Size(min = 1, max = MAX_ID_LENGTH, message = "id length must be between {min} and {max}")
+        @NotBlank(message = "Task ID must not be null or blank")
+        @Size(min = 1, max = MAX_ID_LENGTH, message = "Task ID length must be between {min} and {max}")
         String id,
 
         @Schema(description = "Task name")
-        @NotBlank(message = "name must not be null or blank")
-        @Size(min = 1, max = MAX_TASK_NAME_LENGTH, message = "name length must be between {min} and {max}")
+        @NotBlank(message = "Task Name must not be null or blank")
+        @Size(min = 1, max = MAX_TASK_NAME_LENGTH, message = "Task Name length must be between {min} and {max}")
         String name,
 
         @Schema(description = "Task description")
-        @NotBlank(message = "description must not be null or blank")
-        @Size(min = 1, max = MAX_DESCRIPTION_LENGTH, message = "description length must be between {min} and {max}")
+        @NotBlank(message = "Task Description must not be null or blank")
+        @Size(min = 1, max = MAX_DESCRIPTION_LENGTH,
+                message = "Task Description length must be between {min} and {max}")
         String description,
 
         @Schema(description = "Task status (defaults to TODO if not provided)")
@@ -63,7 +64,7 @@ public record TaskRequest(
         LocalDate dueDate,
 
         @Schema(description = "Associated project ID (optional)")
-        @Size(max = MAX_ID_LENGTH, message = "projectId length must not exceed {max}")
+        @Size(max = MAX_ID_LENGTH, message = "Project ID length must not exceed {max}")
         String projectId,
 
         @Schema(description = "Assignee user ID (optional)")

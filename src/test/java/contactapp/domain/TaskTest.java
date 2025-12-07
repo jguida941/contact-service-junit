@@ -89,10 +89,10 @@ public class TaskTest {
      */
     @CsvSource(value = {
             // taskId validation
-            "' ', name, description, 'taskId must not be null or blank'",
-            "'', name, description, 'taskId must not be null or blank'",
-            "null, name, description, 'taskId must not be null or blank'",
-            "12345678901, name, description, 'taskId length must be between 1 and 10'",
+            "' ', name, description, 'Task ID must not be null or blank'",
+            "'', name, description, 'Task ID must not be null or blank'",
+            "null, name, description, 'Task ID must not be null or blank'",
+            "12345678901, name, description, 'Task ID length must be between 1 and 10'",
 
             // name validation
             "1, ' ', description, 'name must not be null or blank'",
@@ -276,7 +276,7 @@ public class TaskTest {
         assertThatThrownBy(() ->
                 new Task("12345678901", "Task name", "Task description"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("taskId length must be between 1 and 10");
+                .hasMessage("Task ID length must be between 1 and 10");
     }
 
     /**
@@ -757,15 +757,22 @@ public class TaskTest {
     }
 
     /**
-     * Tests that due dates in the past are rejected.
+     * Tests that domain accepts past due dates (validation moved to service layer).
+     *
+     * <p>Since ADR-0053 (Clock injection), the "due date must not be in the past" business rule
+     * is enforced at the service layer where Clock is properly injected. Domain objects
+     * only enforce structural validation (length, null checks).
+     *
+     * @see contactapp.service.TaskService#addTask(Task)
      */
     @Test
-    void constructor_rejectsPastDueDate() {
+    void constructor_acceptsPastDueDate_validationAtServiceLayer() {
         final LocalDate past = pastDueDate();
 
-        assertThatThrownBy(() -> new Task("1", "Name", "Desc", TaskStatus.TODO, past))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("dueDate must not be in the past");
+        // Domain now accepts past dates - service layer validates with injected Clock
+        final Task task = new Task("1", "Name", "Desc", TaskStatus.TODO, past);
+
+        assertThat(task.getDueDate()).isEqualTo(past);
     }
 
     /**
@@ -809,22 +816,36 @@ public class TaskTest {
         assertThat(copy.getDueDate()).isEqualTo(newDate);
     }
 
+    /**
+     * Tests that setDueDate accepts past dates (validation moved to service layer).
+     *
+     * @see contactapp.service.TaskService
+     */
     @Test
-    void setDueDate_rejectsPastDates() {
+    void setDueDate_acceptsPastDates_validationAtServiceLayer() {
         final Task task = new Task("1", "Name", "Desc", TaskStatus.TODO, null);
+        final LocalDate pastDate = LocalDate.now().minusDays(1);
 
-        assertThatThrownBy(() -> task.setDueDate(LocalDate.now().minusDays(1)))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("dueDate must not be in the past");
+        // Domain now accepts past dates - service layer validates with injected Clock
+        task.setDueDate(pastDate);
+
+        assertThat(task.getDueDate()).isEqualTo(pastDate);
     }
 
+    /**
+     * Tests that update accepts past due dates (validation moved to service layer).
+     *
+     * @see contactapp.service.TaskService
+     */
     @Test
-    void updateWithPastDueDateThrows() {
+    void update_acceptsPastDueDate_validationAtServiceLayer() {
         final Task task = new Task("1", "Name", "Desc", TaskStatus.TODO, null);
+        final LocalDate pastDate = LocalDate.now().minusDays(5);
 
-        assertThatThrownBy(() -> task.update("N", "D", TaskStatus.TODO, LocalDate.now().minusDays(5)))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("dueDate must not be in the past");
+        // Domain now accepts past dates - service layer validates with injected Clock
+        task.update("N", "D", TaskStatus.TODO, pastDate);
+
+        assertThat(task.getDueDate()).isEqualTo(pastDate);
     }
 
     // ==================== Tests for reconstitute() and isOverdue() ====================

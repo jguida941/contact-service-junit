@@ -82,7 +82,8 @@ class TaskServiceLegacyTest {
         legacy.addTask(new Task("T-77", "Legacy Task", "Cutover fixture"));
 
         CapturingTaskStore store = new CapturingTaskStore();
-        TaskService springBean = new TaskService(store);
+        // Use legacyStore=false to simulate Spring bean (triggers migration)
+        TaskService springBean = new TaskService(store, false);
 
         assertThat(store.findById("T-77")).isPresent();
         assertThat(TaskService.getInstance()).isSameAs(springBean);

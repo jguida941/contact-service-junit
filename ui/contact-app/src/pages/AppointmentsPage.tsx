@@ -24,7 +24,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { AppointmentForm } from '@/components/forms/AppointmentForm';
 import { DeleteConfirmDialog } from '@/components/dialogs/DeleteConfirmDialog';
-import { appointmentsApi } from '@/lib/api';
+import { appointmentsApi, getErrorMessage } from '@/lib/api';
 import { useFilteredSortedPaginatedData } from '@/lib/hooks/useTableState';
 import { useToast } from '@/hooks/useToast';
 import type { Appointment, AppointmentRequest } from '@/lib/schemas';
@@ -93,7 +93,12 @@ export function AppointmentsPage() {
     mutationFn: appointmentsApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      toast.success('Appointment created successfully');
       closeSheet();
+    },
+    onError: (error) => {
+      console.error('Create appointment failed:', error);
+      toast.error(getErrorMessage(error, 'Failed to create appointment'));
     },
   });
 
@@ -102,7 +107,12 @@ export function AppointmentsPage() {
       appointmentsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      toast.success('Appointment updated successfully');
       closeSheet();
+    },
+    onError: (error) => {
+      console.error('Update appointment failed:', error);
+      toast.error(getErrorMessage(error, 'Failed to update appointment'));
     },
   });
 
@@ -110,10 +120,16 @@ export function AppointmentsPage() {
     mutationFn: appointmentsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      toast.success('Appointment deleted successfully');
       setDeleteTarget(null);
       if (selectedAppointment?.id === deleteTarget?.id) {
         closeSheet();
       }
+    },
+    onError: (error) => {
+      console.error('Delete appointment failed:', error);
+      toast.error(getErrorMessage(error, 'Failed to delete appointment'));
+      setDeleteTarget(null);
     },
   });
 
@@ -128,7 +144,7 @@ export function AppointmentsPage() {
     },
     onError: (error) => {
       console.error('Archive failed:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to archive appointment');
+      toast.error(getErrorMessage(error, 'Failed to archive appointment'));
     },
   });
 
@@ -143,7 +159,7 @@ export function AppointmentsPage() {
     },
     onError: (error) => {
       console.error('Unarchive failed:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to unarchive appointment');
+      toast.error(getErrorMessage(error, 'Failed to unarchive appointment'));
     },
   });
 

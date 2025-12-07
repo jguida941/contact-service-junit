@@ -319,8 +319,8 @@ public class AppointmentTest {
                 Arguments.of("1", future, "", "description must not be null or blank"),
                 Arguments.of("1", future, null, "description must not be null or blank"),
                 Arguments.of("1", future, longDesc, "description length must be between 1 and 50"),
-                Arguments.of("1", null, "Desc", "appointmentDate must not be null"),
-                Arguments.of("1", past, "Desc", "appointmentDate must not be in the past")
+                Arguments.of("1", null, "Desc", "Appointment Date must not be null"),
+                Arguments.of("1", past, "Desc", "Appointment Date must not be in the past")
         );
     }
 
@@ -332,8 +332,8 @@ public class AppointmentTest {
         Date future = futureDate(30);
         String longDesc = "This description is intentionally made way too long to exceed the fifty character limit set";
         return Stream.of(
-                Arguments.of(null, "Valid", "appointmentDate must not be null"),
-                Arguments.of(past, "Valid", "appointmentDate must not be in the past"),
+                Arguments.of(null, "Valid", "Appointment Date must not be null"),
+                Arguments.of(past, "Valid", "Appointment Date must not be in the past"),
                 Arguments.of(future, " ", "description must not be null or blank"),
                 Arguments.of(future, "", "description must not be null or blank"),
                 Arguments.of(future, null, "description must not be null or blank"),

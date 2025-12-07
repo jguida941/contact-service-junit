@@ -217,7 +217,7 @@ private Claims extractAllClaims(final String token) {
 
 **Issue:** Sequential Long IDs enable user count enumeration attacks.
 
-**Decision:** Migrate to UUID via V16 data-preserving migration. This approach safely handles existing data in any environment (dev, staging, production).
+**Decision:** Migrate to UUID via V15 data-preserving migration. This approach safely handles existing data in any environment (dev, staging, production).
 
 #### Database Migration Strategy
 
@@ -232,10 +232,10 @@ The migration uses a **data-preserving pattern** that works with existing data:
 7. **Promote** UUID column to primary key
 8. **Recreate** foreign key constraints and indexes
 
-#### PostgreSQL Migration: `V16__users_uuid_id.sql`
+#### PostgreSQL Migration: `V15__users_uuid_id.sql`
 
 ```sql
--- V16: Migrate users.id from BIGSERIAL to UUID (data-preserving)
+-- V15: Migrate users.id from BIGSERIAL to UUID (data-preserving)
 -- ADR-0052 Phase 0.5: UUID migration to prevent user enumeration attacks
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -331,9 +331,9 @@ ALTER TABLE projects DROP CONSTRAINT IF EXISTS uq_projects_project_id_user_id;
 ALTER TABLE projects ADD CONSTRAINT uq_projects_project_id_user_id UNIQUE (project_id, user_id);
 ```
 
-#### H2 Migration: `V16__users_uuid_id.sql` (h2 folder)
+#### H2 Migration: `V15__users_uuid_id.sql` (h2 folder)
 
-H2 uses `RANDOM_UUID()` instead of `gen_random_uuid()` and has slightly different syntax for UPDATE...FROM. See `src/main/resources/db/migration/h2/V16__users_uuid_id.sql` for H2-specific implementation.
+H2 uses `RANDOM_UUID()` instead of `gen_random_uuid()` and has slightly different syntax for UPDATE...FROM. See `src/main/resources/db/migration/h2/V15__users_uuid_id.sql` for H2-specific implementation.
 
 #### Entity Update
 
@@ -715,7 +715,7 @@ public class RefreshToken {
 
 ### 3.2 Flyway Migration
 
-**File:** `src/main/resources/db/migration/common/V17__create_refresh_tokens.sql`
+**File:** `src/main/resources/db/migration/common/V16__create_refresh_tokens.sql`
 
 **⚠️ POST-AUDIT UPDATE:** Per Phase 0.5, `User.id` is now `UUID`. Migration uses UUID for `user_id` FK.
 
@@ -941,7 +941,7 @@ server:
 | `src/main/java/contactapp/security/SecurityConfig.java`                 | MODIFY (add AccessDeniedHandler for 403)                    |
 | `src/main/java/contactapp/security/JwtService.java`                     | MODIFY (clock skew tolerance, issuer/audience claims)       |
 | `ui/contact-app/src/lib/api.ts`                                         | MODIFY (fix 403 handling - don't auto-logout)               |
-| `src/main/resources/db/migration/common/V16__users_uuid_id.sql`         | CREATE (migrate users.id from BIGINT to UUID)               |
+| `src/main/resources/db/migration/common/V15__users_uuid_id.sql`         | CREATE (migrate users.id from BIGINT to UUID)               |
 
 ### Main Implementation Phases (A-C)
 
@@ -952,7 +952,7 @@ server:
 | `src/main/java/contactapp/security/RefreshToken.java`                   | CREATE                             |
 | `src/main/java/contactapp/security/RefreshTokenRepository.java`         | CREATE                             |
 | `src/main/java/contactapp/security/RefreshTokenService.java`            | CREATE                             |
-| `src/main/resources/db/migration/common/V17__create_refresh_tokens.sql` | CREATE (after V16 UUID migration)  |
+| `src/main/resources/db/migration/common/V16__create_refresh_tokens.sql` | CREATE (after V15 UUID migration)  |
 | `src/main/java/contactapp/security/JwtService.java`                     | MODIFY (add fingerprint claim)     |
 | `src/main/java/contactapp/security/JwtAuthenticationFilter.java`        | MODIFY (verify fingerprint)        |
 | `src/main/java/contactapp/api/AuthController.java`                      | MODIFY (refresh endpoint, cookies) |
@@ -1318,7 +1318,7 @@ def test_setup_ssl_shows_trust_instructions(tmp_path, monkeypatch):
 |                   | `src/main/java/contactapp/security/SecurityConfig.java`                  | MODIFY (AccessDeniedHandler for 403)           |
 |                   | `src/main/java/contactapp/security/JwtService.java`                      | MODIFY (clock skew, issuer/audience)           |
 |                   | `ui/contact-app/src/lib/api.ts`                                          | MODIFY (fix 403 - don't auto-logout)           |
-| **Migration**     | `src/main/resources/db/migration/common/V16__users_uuid_id.sql`          | CREATE (users.id BIGINT→UUID)                  |
+| **Migration**     | `src/main/resources/db/migration/common/V15__users_uuid_id.sql`          | CREATE (users.id BIGINT→UUID)                  |
 
 ### Main Implementation (Phases A-C)
 
@@ -1331,7 +1331,7 @@ def test_setup_ssl_shows_trust_instructions(tmp_path, monkeypatch):
 |                   | `src/main/java/contactapp/security/RefreshToken.java`                    | CREATE                                     |
 |                   | `src/main/java/contactapp/security/RefreshTokenRepository.java`          | CREATE                                     |
 |                   | `src/main/java/contactapp/security/RefreshTokenService.java`             | CREATE                                     |
-|                   | `src/main/resources/db/migration/common/V17__create_refresh_tokens.sql`  | CREATE (after V16 UUID migration)          |
+|                   | `src/main/resources/db/migration/common/V16__create_refresh_tokens.sql`  | CREATE (after V15 UUID migration)          |
 |                   | `src/main/java/contactapp/security/JwtService.java`                      | MODIFY (add fingerprint, 20 call sites)    |
 |                   | `src/main/java/contactapp/security/JwtAuthenticationFilter.java`         | MODIFY                                     |
 |                   | `src/main/java/contactapp/api/AuthController.java`                       | MODIFY (3 generateToken calls)             |
@@ -1472,7 +1472,7 @@ Add this config class or the cleanup will never run.
 
 ### 5. Flyway Migration Version
 
-You call it `V17__create_refresh_tokens.sql` (after V16 UUID migration). That must be **strictly greater** than all existing migrations or Flyway will skip it. Confirm your current top migration number and keep this one as the next.
+You call it `V16__create_refresh_tokens.sql` (after V15 UUID migration). That must be **strictly greater** than all existing migrations or Flyway will skip it. Confirm your current top migration number and keep this one as the next.
 
 ### 6. Token Fingerprinting - API Migration Warning
 
@@ -1884,7 +1884,7 @@ server:
 
 ### Phase 0 Prerequisites
 
-- [x] **V16 migration handles existing data safely** - Uses add-column/backfill/swap-PK pattern, not destructive TRUNCATE *(2025-12-03)*
+- [x] **V15 migration handles existing data safely** - Uses add-column/backfill/swap-PK pattern, not destructive TRUNCATE *(2025-12-03)*
 - [x] **pgcrypto extension enabled** - Migration includes `CREATE EXTENSION IF NOT EXISTS "pgcrypto"` *(2025-12-03)*
 - [ ] **No legacy `Long` user ID references** - Search for `1L` sentinel values in tests, update to `UUID.randomUUID()` *(Batch 2)*
 
@@ -1959,8 +1959,8 @@ server:
 
 ### Flyway Migration Order
 
-- [ ] **V16 = UUID migration** - `V16__users_uuid_id.sql`
-- [ ] **V17 = Refresh tokens** - `V17__create_refresh_tokens.sql` (depends on V16)
+- [ ] **V15 = UUID migration** - `V15__users_uuid_id.sql`
+- [ ] **V16 = Refresh tokens** - `V16__create_refresh_tokens.sql` (depends on V15)
 - [ ] **Version numbers are next after existing migrations** - Check `flyway_schema_history` table
 
 ---
@@ -1973,7 +1973,7 @@ server:
 | Phase 0.5: UUID + Claims | ✅ Complete | User.id → UUID, issuer/audience claims (Batch 1 - 2025-12-03) |
 | Phase 0.6: UUID Cascade | ✅ Complete | Task.assigneeId → UUID, UserRepository → UUID, test fixes (Batch 2 - 2025-12-03) |
 | Phase A: HTTPS Setup | ✅ Complete | ./cs setup-ssl, SSL config in application.yml (Batch 3 - 2025-12-03) |
-| Phase B: Refresh Tokens | ✅ Complete | RefreshToken entity, RefreshTokenService, V17 migration, token rotation, scheduled cleanup (Batches 6-7 - 2025-12-03) |
+| Phase B: Refresh Tokens | ✅ Complete | RefreshToken entity, RefreshTokenService, V16 migration, token rotation, scheduled cleanup (Batches 6-7 - 2025-12-03) |
 | Phase C: Token Fingerprinting | ✅ Complete | TokenFingerprintService, JwtService fingerprint binding, JwtAuthenticationFilter verification (Batch 4 - 2025-12-03) |
 | Phase C.5: Call Site Migration | ✅ Complete | Deleted old generateToken overloads, migrated AuthController (3 sites) and JwtServiceTest (18+ calls) to fingerprint-aware signature (Batch 5 - 2025-12-03) |
 | Phase D: Docs + Tests | 🔲 Not Started | Test coverage, documentation updates |

@@ -37,27 +37,27 @@ import static contactapp.domain.Validation.MAX_NAME_LENGTH;
  */
 public record ContactRequest(
         @Schema(description = "Contact ID")
-        @NotBlank(message = "id must not be null or blank")
-        @Size(min = 1, max = MAX_ID_LENGTH, message = "id length must be between {min} and {max}")
+        @NotBlank(message = "Contact ID must not be null or blank")
+        @Size(min = 1, max = MAX_ID_LENGTH, message = "Contact ID length must be between {min} and {max}")
         String id,
 
         @Schema(description = "First name")
-        @NotBlank(message = "firstName must not be null or blank")
-        @Size(min = 1, max = MAX_NAME_LENGTH, message = "firstName length must be between {min} and {max}")
+        @NotBlank(message = "First Name must not be null or blank")
+        @Size(min = 1, max = MAX_NAME_LENGTH, message = "First Name length must be between {min} and {max}")
         String firstName,
 
         @Schema(description = "Last name")
-        @NotBlank(message = "lastName must not be null or blank")
-        @Size(min = 1, max = MAX_NAME_LENGTH, message = "lastName length must be between {min} and {max}")
+        @NotBlank(message = "Last Name must not be null or blank")
+        @Size(min = 1, max = MAX_NAME_LENGTH, message = "Last Name length must be between {min} and {max}")
         String lastName,
 
-        @NotBlank(message = "phone must not be null or blank")
-        @Pattern(regexp = "\\d{10}", message = "phone must be exactly 10 digits")
+        @NotBlank(message = "Phone must not be null or blank")
+        @Pattern(regexp = "\\d{10}", message = "Phone must be exactly 10 digits")
         String phone,
 
         @Schema(description = "Address")
-        @NotBlank(message = "address must not be null or blank")
-        @Size(min = 1, max = MAX_ADDRESS_LENGTH, message = "address length must be between {min} and {max}")
+        @NotBlank(message = "Address must not be null or blank")
+        @Size(min = 1, max = MAX_ADDRESS_LENGTH, message = "Address length must be between {min} and {max}")
         String address
 ) {
 }

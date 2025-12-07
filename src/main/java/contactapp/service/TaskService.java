@@ -49,15 +49,41 @@ public class TaskService {
 
     private final TaskStore store;
     private final boolean legacyStore;
-    private Clock clock = Clock.systemUTC();
+    private Clock clock;  // Non-final for test support (setClock)
 
     @org.springframework.beans.factory.annotation.Autowired
-    public TaskService(final TaskStore store) {
-        this(store, false);
+    public TaskService(final TaskStore store, final Clock clock) {
+        this(store, clock, false);
     }
 
-    private TaskService(final TaskStore store, final boolean legacyStore) {
+    /**
+     * Package-private constructor for tests that don't need a custom clock.
+     *
+     * <p>Uses systemDefaultZone() as the clock. For tests that need clock control,
+     * use the two-arg constructor or the factory method withClock().
+     *
+     * @param store the task store
+     */
+    TaskService(final TaskStore store) {
+        this(store, Clock.systemDefaultZone(), true);
+    }
+
+    /**
+     * Package-private constructor for legacy tests that need to control the legacyStore flag.
+     *
+     * <p>Uses systemDefaultZone() as the clock. This maintains backward compatibility
+     * with tests that use reflection to call the (store, boolean) constructor.
+     *
+     * @param store the task store
+     * @param legacyStore whether this is a legacy in-memory store
+     */
+    TaskService(final TaskStore store, final boolean legacyStore) {
+        this(store, Clock.systemDefaultZone(), legacyStore);
+    }
+
+    private TaskService(final TaskStore store, final Clock clock, final boolean legacyStore) {
         this.store = store;
+        this.clock = clock != null ? clock : Clock.systemDefaultZone();
         this.legacyStore = legacyStore;
         registerInstance(this);
     }
@@ -96,7 +122,7 @@ public class TaskService {
         if (context != null) {
             return context.getBean(TaskService.class);
         }
-        return new TaskService(new InMemoryTaskStore(), true);
+        return new TaskService(new InMemoryTaskStore(), Clock.systemDefaultZone(), true);
     }
 
     /**
@@ -137,9 +163,12 @@ public class TaskService {
      * consistently translate them into HTTP 409 responses. This relies on database uniqueness
      * constraints instead of manual {@code existsById} checks to avoid TOCTOU races.
      *
+     * <p>The "due date must not be in the past" business rule is validated here using the
+     * injected Clock, ensuring consistent timezone handling across the application.
+     *
      * @param task the task to add; must not be null
      * @return true if the task was added
-     * @throws IllegalArgumentException if task is null
+     * @throws IllegalArgumentException if task is null or dueDate is in the past
      * @throws DuplicateResourceException if a task with the same ID already exists
      */
     public boolean addTask(final Task task) {
@@ -150,6 +179,9 @@ public class TaskService {
         if (taskId == null) {
             throw new IllegalArgumentException("taskId must not be null");
         }
+
+        // Validate dueDate using the injected clock for proper timezone handling
+        Validation.validateOptionalDateNotPast(task.getDueDate(), "Due Date", clock);
 
         // Use user-aware store methods if available
         if (store instanceof JpaTaskStore) {
@@ -287,6 +319,9 @@ public class TaskService {
     /**
      * Updates all fields of an existing task for the authenticated user, including project link and assignee.
      *
+     * <p>The "due date must not be in the past" business rule is validated here using the
+     * injected Clock, ensuring consistent timezone handling across the application.
+     *
      * @param taskId the id of the task to update
      * @param newName new task name
      * @param description new description
@@ -295,7 +330,7 @@ public class TaskService {
      * @param projectId new project ID (nullable, can unlink from project)
      * @param assigneeId new assignee user ID (nullable, can unassign)
      * @return true if the task exists and was updated, false if no task with that id exists
-     * @throws IllegalArgumentException if any new field value is invalid
+     * @throws IllegalArgumentException if any new field value is invalid or dueDate is in the past
      */
     public boolean updateTask(
             final String taskId,
@@ -307,6 +342,9 @@ public class TaskService {
             final UUID assigneeId) {
         Validation.validateNotBlank(taskId, "taskId");
         final String normalizedId = taskId.trim();
+
+        // Validate dueDate using the injected clock for proper timezone handling
+        Validation.validateOptionalDateNotPast(dueDate, "Due Date", clock);
 
         if (store instanceof JpaTaskStore) {
             final JpaTaskStore jpaStore = (JpaTaskStore) store;
@@ -667,10 +705,40 @@ public class TaskService {
     }
 
     /**
-     * Overrides the clock used for date-based computations. Intended for tests that need
-     * deterministic "today" values when calculating overdue tasks.
+     * Returns the clock used for date-based computations.
+     *
+     * <p>Exposed for tests to verify clock configuration and for service methods
+     * that need to validate dates against the configured timezone.
+     *
+     * @return the configured clock
+     */
+    Clock getClock() {
+        return clock;
+    }
+
+    /**
+     * Overrides the clock used for date-based computations.
+     *
+     * <p>This method is package-private and intended for tests that need to simulate
+     * time progression (e.g., testing overdue task detection by adding tasks, then
+     * advancing the clock to make them appear overdue).
+     *
+     * <p>In production, prefer constructor injection of Clock for proper DI.
+     *
+     * @param clock the clock to use for date-based computations; null defaults to systemDefaultZone
      */
     void setClock(final Clock clock) {
-        this.clock = clock != null ? clock : Clock.systemUTC();
+        this.clock = clock != null ? clock : Clock.systemDefaultZone();
+    }
+
+    /**
+     * Factory method for tests to create a TaskService with a custom clock.
+     *
+     * @param store the task store
+     * @param clock the clock to use for date-based computations
+     * @return a TaskService configured with the specified clock
+     */
+    static TaskService withClock(final TaskStore store, final Clock clock) {
+        return new TaskService(store, clock, true);
     }
 }

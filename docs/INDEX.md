@@ -21,10 +21,10 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`cs320-requirements/`](cs320-requirements/) | Original CS320 assignment requirements (contact, task, appointment specs). |
 | [`showcase/`](showcase/) | Project showcase materials for recruiters and portfolio. |
 | [`architecture/`](architecture/) | Feature design briefs (e.g., Task entity/service plan with Definition of Done). |
-| [`adrs/`](adrs/) | Architecture Decision Records: CS320 Foundation + Production Auth + Frontend fixes (ADR-0001-0053) + Jira Evolution (ADR-0054+). |
+| [`adrs/`](adrs/) | Architecture Decision Records: CS320 Foundation + Production Auth + Frontend fixes + Security Audit (ADR-0001-0054). |
 | [`design-notes/`](design-notes/) | Personal design note hub with supporting explanations under `design-notes/notes/`. |
 | [`logs/`](logs/) | Changelog, backlog, and code review reports. |
-| [`test-plan-sdlc-audit-v2.1.0.md`](test-plan-sdlc-audit-v2.1.0.md) | Comprehensive test plan and SDLC audit report (1109 tests, 90% coverage analysis). |
+| [`test-plan-sdlc-audit-v2.1.0.md`](test-plan-sdlc-audit-v2.1.0.md) | Comprehensive test plan and SDLC audit report (1107 tests, 90% coverage analysis). |
 | [`operations/`](operations/) | Operations documentation (Docker setup, Actuator endpoints, deployment guides). |
 | [`security-reviews/`](security-reviews/) | Security audit reports and vulnerability assessments. |
 
@@ -217,7 +217,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`../src/test/java/contactapp/AppointmentControllerTest.java`](../src/test/java/contactapp/AppointmentControllerTest.java) | MockMvc integration tests for Appointment API (CRUD/auth/validation). |
 | [`../src/test/java/contactapp/ProjectControllerUnitTest.java`](../src/test/java/contactapp/ProjectControllerUnitTest.java) | Unit tests proving the controller-level ADMIN guard blocks non-admin users before calling the service. |
 | [`../src/test/java/contactapp/AuthControllerTest.java`](../src/test/java/contactapp/AuthControllerTest.java) | MockMvc integration tests for Auth API (login, register, validation). |
-| [`../src/test/java/contactapp/AuthControllerUnitTest.java`](../src/test/java/contactapp/AuthControllerUnitTest.java) | Unit tests covering cookie extraction and helper logic that PIT flagged previously. |
+| [`../src/test/java/contactapp/AuthControllerUnitTest.java`](../src/test/java/contactapp/AuthControllerUnitTest.java) | Unit tests for AuthController logout behavior and token revocation. |
 | [`../src/test/java/contactapp/GlobalExceptionHandlerTest.java`](../src/test/java/contactapp/GlobalExceptionHandlerTest.java) | Unit tests for GlobalExceptionHandler methods. |
 | [`../src/test/java/contactapp/CustomErrorControllerTest.java`](../src/test/java/contactapp/CustomErrorControllerTest.java) | Unit tests for CustomErrorController JSON responses. |
 | [`../src/test/java/contactapp/api/dto/AppointmentRequestTest.java`](../src/test/java/contactapp/api/dto/AppointmentRequestTest.java) | Bean validation tests for AppointmentRequest DTO (@FutureOrPresent, required fields). |
@@ -254,7 +254,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 
 ### Security Layer (`contactapp.security`)
 
-> **ADR-0052 Complete (2025-12-06):** All phases implemented - UUID migration, JWT hardening, HTTPS setup, refresh tokens, token fingerprinting. 1109 tests pass.
+> **ADR-0052 Complete (2025-12-06):** All phases implemented - UUID migration, JWT hardening, HTTPS setup, refresh tokens, token fingerprinting. 1107 tests pass.
 
 | Path | Description |
 |------|-------------|
@@ -373,7 +373,7 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`architecture/2025-11-19-task-entity-and-service.md`](architecture/2025-11-19-task-entity-and-service.md) | Task entity/service plan with Definition of Done and phase breakdown. |
 | [`architecture/2025-11-24-appointment-entity-and-service.md`](architecture/2025-11-24-appointment-entity-and-service.md) | Appointment entity/service implementation record. |
 | [`architecture/threat-model.md`](architecture/threat-model.md) | End-to-end threat model (assets, trust zones, mitigations, residual risks). |
-| [`adrs/README.md`](adrs/README.md) | ADR index: CS320 Foundation + Production Auth + Frontend fixes (ADR-0001-0053) complete + Jira Evolution (ADR-0054+) planned phases. |
+| [`adrs/README.md`](adrs/README.md) | ADR index: CS320 Foundation + Production Auth + Frontend fixes + Security Audit (ADR-0001-0054) complete. |
 | [`design-notes/README.md`](design-notes/README.md) | Landing page for informal design notes (individual topics in `design-notes/notes/`). |
 | [`logs/backlog.md`](logs/backlog.md) | Backlog for reporting and domain enhancements. |
 | [`logs/CHANGELOG.md`](logs/CHANGELOG.md) | Project changelog. |

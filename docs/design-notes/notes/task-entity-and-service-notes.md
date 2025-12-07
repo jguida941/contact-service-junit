@@ -37,6 +37,14 @@ Related: [Task.java](../../../src/main/java/contactapp/domain/Task.java), [TaskS
 - `getDatabase()` returns defensive copies of each Task (via `copy()`) in an unmodifiable map; `clearAllTasks()` (package-private) resets state for tests, preventing accidental production use while allowing test access from the same package.
 - `copy()` validates source state and uses `reconstitute()` to preserve overdue tasks and existing timestamps, keeping defensive copies aligned with validation rules.
 
+## Clock injection for timezone-safe date validation
+- Per ADR-0053, due date validation uses a configurable `Clock` bean instead of hardcoded `Clock.systemUTC()`.
+- The "not in past" validation is performed at the **service layer**, not in domain objects, because services have access to the injected Clock.
+- `TaskService` receives `Clock` via constructor injection from Spring's DI container.
+- The `ClockConfig.java` bean configures the clock using `app.timezone` from application.yml.
+- This solves the timezone bug where users behind UTC had "today" rejected as "in the past".
+- Domain objects (`Task.java`) handle only structural validation (lengths, nulls); time-sensitive rules live in services.
+
 ## Tests hit
-- `TaskTest`: constructor trimming, setter/update happy paths, invalid constructor/setter/update cases (null/blank/over-length), status enum validation, dueDate past-date rejection, atomic update rejection, and `testCopyRejectsNullInternalState` (parameterized test using reflection to corrupt each field and verify validateCopySource throws).
-- `TaskServiceTest`: singleton, add/duplicate/null add, delete success/blank/missing, update success/blank/missing/trimmed IDs with status/dueDate, clear-all, defensive copy verification.
+- `TaskTest`: constructor trimming, setter/update happy paths, invalid constructor/setter/update cases (null/blank/over-length), status enum validation, atomic update rejection, and `testCopyRejectsNullInternalState` (parameterized test using reflection to corrupt each field and verify validateCopySource throws). Note: past-date validation tests moved to service layer per ADR-0053.
+- `TaskServiceTest`: singleton, add/duplicate/null add, delete success/blank/missing, update success/blank/missing/trimmed IDs with status/dueDate, clear-all, defensive copy verification, and timezone-aware past-date validation using injected Clock.

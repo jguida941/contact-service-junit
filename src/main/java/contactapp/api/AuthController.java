@@ -410,24 +410,6 @@ public class AuthController {
     }
 
     /**
-     * Extracts the JWT token from request cookies.
-     *
-     * @param request the HTTP request
-     * @return the token value or null if not found
-     */
-    private String extractTokenFromCookies(final jakarta.servlet.http.HttpServletRequest request) {
-        final jakarta.servlet.http.Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (final jakarta.servlet.http.Cookie cookie : cookies) {
-                if (AUTH_COOKIE_NAME.equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
      * Extracts the refresh token from request cookies.
      *
      * @param request the HTTP request

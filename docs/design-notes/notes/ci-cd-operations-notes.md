@@ -88,7 +88,7 @@ graph TD
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. The table includes colored icons, ASCII bars, and severity breakdowns.
 
 **Current Test Metrics (full Linux matrix):**
-- 1109 test executions (parameterized)
+- 1107 test executions (parameterized)
 - Mutation-focused tests targeting boundary conditions across domain/service layers
 - Mutation kill rate is 80% (down from ~83.1% after recent auth/fingerprint changes); mitigation is to add PIT targets for refresh token revocation/fingerprint fallbacks to regain the delta.
 - ~88% line coverage overall (down from ~89.9%); coverage dropped from the new auth flows and CLI helpers, so targeted controller/integration tests are queued to restore the previous level.

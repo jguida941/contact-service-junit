@@ -44,7 +44,7 @@ open target/spotbugs.html               # Static analysis
 ## Show Testing
 
 ```bash
-# Run all quality checks (1109 tests)
+# Run all quality checks (1107 tests)
 ./cs test
 
 # Quick tests only (skip mutation/fuzzing)
@@ -128,7 +128,7 @@ git push origin main
 | Metric | Value |
 |--------|-------|
 | Test Classes | 91 |
-| Test Executions | 1109 |
+| Test Executions | 1107 |
 | Line Coverage | 90% (80% enforced) |
 | Mutation Coverage | 84% (70% enforced) |
 | ADRs | 54 |

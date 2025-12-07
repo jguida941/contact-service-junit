@@ -268,13 +268,13 @@ class AuthControllerTest extends SecuredMockMvcTest {
                 // Password validation - strength (must have uppercase, lowercase, digit)
                 Arguments.of("password (no uppercase)", """
                     {"username": "testuser", "email": "test@example.com", "password": "password123"}
-                    """, "password must contain"),
+                    """, "Password must contain"),
                 Arguments.of("password (no lowercase)", """
                     {"username": "testuser", "email": "test@example.com", "password": "PASSWORD123"}
-                    """, "password must contain"),
+                    """, "Password must contain"),
                 Arguments.of("password (no digit)", """
                     {"username": "testuser", "email": "test@example.com", "password": "PasswordABC"}
-                    """, "password must contain")
+                    """, "Password must contain")
         );
     }
 

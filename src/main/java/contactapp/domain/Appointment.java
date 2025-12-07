@@ -115,7 +115,7 @@ public final class Appointment {
             final String newProjectId,
             final String newTaskId) {
         // Validate both inputs before mutating state to keep the update atomic
-        Validation.validateDateNotPast(newDate, "appointmentDate");
+        Validation.validateDateNotPast(newDate, "Appointment Date");
         final String validatedDescription = Validation.validateTrimmedLength(
                 newDescription, "description", DESCRIPTION_MAX_LENGTH);
 
@@ -144,7 +144,7 @@ public final class Appointment {
      * <p>Stores a defensive copy to prevent external mutation.
      */
     private void setAppointmentDate(final Date appointmentDate) {
-        Validation.validateDateNotPast(appointmentDate, "appointmentDate");
+        Validation.validateDateNotPast(appointmentDate, "Appointment Date");
         this.appointmentDate = new Date(appointmentDate.getTime());
     }
 

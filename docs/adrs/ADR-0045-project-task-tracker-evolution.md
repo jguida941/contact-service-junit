@@ -26,7 +26,7 @@
 
 **API Endpoints**: Full CRUD at `/api/v1/projects`, enhanced `/api/v1/tasks` and `/api/v1/appointments` with query parameters for filtering by project, task, status, assignee, and due dates.
 
-**Test Coverage**: 1109 total tests with comprehensive coverage across domain, persistence, service, and API layers for all implemented phases.
+**Test Coverage**: 1107 total tests with comprehensive coverage across domain, persistence, service, and API layers for all implemented phases.
 
 ## Context
 

@@ -53,7 +53,7 @@ public final class Project {
             final ProjectStatus status) {
 
         // Use Validation utility for constructor field checks (validates and trims in one call)
-        this.projectId = Validation.validateTrimmedLength(projectId, "projectId", MIN_LENGTH, ID_MAX_LENGTH);
+        this.projectId = Validation.validateTrimmedLength(projectId, "Project ID", MIN_LENGTH, ID_MAX_LENGTH);
 
         // Reuse setter validation for the mutable fields
         setName(name);

@@ -6,7 +6,7 @@
 
 ## ADR-0052 Production Auth System (Complete - 2025-12-06)
 
-All phases of ADR-0052 are now implemented. 1109 tests pass with 90% line coverage and 84% mutation score.
+All phases of ADR-0052 are now implemented. 1107 tests pass with 90% line coverage and 84% mutation score.
 
 ### Phase A: Critical Fixes (Batch 1-2)
 

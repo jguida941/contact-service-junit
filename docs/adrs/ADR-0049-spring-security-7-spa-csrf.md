@@ -27,14 +27,23 @@ All CRUD operations failed while GET requests (which don't require CSRF) worked 
 
 ## Decision
 
-Replace the custom CSRF configuration with Spring Security 7's built-in `.spa()` method:
+Use `SpaCsrfTokenRequestHandler` with custom cookie configuration for full control over CSRF token handling:
 
 ```java
+final CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+csrfTokenRepository.setCookieCustomizer(cookie -> cookie
+        .sameSite("Lax")
+        .secure(secureSessionCookie));
+
+final SpaCsrfTokenRequestHandler csrfHandler = new SpaCsrfTokenRequestHandler();
+
 http.csrf(csrf -> csrf
     .ignoringRequestMatchers(CSRF_IGNORED_MATCHERS)
     .csrfTokenRepository(csrfTokenRepository)
-    .spa());  // Spring Security 7+ SPA integration
+    .csrfTokenRequestHandler(csrfHandler));
 ```
+
+> **Note**: Spring Security 7's `.spa()` method provides similar functionality, but we use explicit configuration to ensure `SameSite=Lax` and environment-specific `Secure` flag are applied to the CSRF cookie.
 
 ### Additional Fixes Applied
 
@@ -69,10 +78,10 @@ The `.spa()` method (introduced in Spring Security 6.4, refined in 7.0) internal
 
 ### Positive
 
-- **Works Out-of-the-Box**: No custom handler code to maintain; Spring Security handles SPA quirks internally
+- **Correct Token Handling**: `SpaCsrfTokenRequestHandler` accepts raw tokens from headers (SPAs) while preserving XOR masking for form parameters (SSR)
 - **BREACH Protected**: Server-rendered responses still get XOR-masked tokens; SPAs use raw tokens safely because they're not embedded in HTML
-- **Simpler Configuration**: Removed ~60 lines of custom `SpaCsrfTokenRequestHandler` code
-- **Forward Compatible**: Future Spring Security updates will automatically improve SPA support
+- **Custom Cookie Control**: Explicit configuration allows setting `SameSite=Lax` and environment-specific `Secure` flag
+- **Spring Security Recommended**: This is the official pattern from Spring Security's migration guide
 
 ### Negative
 
@@ -88,9 +97,9 @@ The `.spa()` method (introduced in Spring Security 6.4, refined in 7.0) internal
 
 | File | Change |
 |------|--------|
-| `SecurityConfig.java` | Replaced custom handler with `.spa()` |
-| `CsrfCookieFilter.java` | Added to eagerly load CSRF token |
-| `SpaCsrfTokenRequestHandler.java` | Deprecated (can be removed) |
+| `SecurityConfig.java` | Uses `SpaCsrfTokenRequestHandler` with custom cookie configuration |
+| `CsrfCookieFilter.java` | Added to eagerly load CSRF token on every request |
+| `SpaCsrfTokenRequestHandler.java` | Custom handler that accepts raw tokens from headers (SPA) and XOR-masked from forms (SSR) |
 
 ## References
 

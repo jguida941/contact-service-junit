@@ -32,23 +32,23 @@ import static contactapp.domain.Validation.MIN_PASSWORD_LENGTH;
 public record RegisterRequest(
 
         @Schema(description = "Desired username", example = "johndoe")
-        @NotBlank(message = "username must not be null or blank")
-        @Size(min = 1, max = MAX_USERNAME_LENGTH, message = "username length must be between {min} and {max}")
+        @NotBlank(message = "Username must not be null or blank")
+        @Size(min = 1, max = MAX_USERNAME_LENGTH, message = "Username length must be between {min} and {max}")
         String username,
 
         @Schema(description = "Email address", example = "john.doe@example.com")
-        @NotBlank(message = "email must not be null or blank")
-        @Size(min = 1, max = MAX_EMAIL_LENGTH, message = "email length must be between {min} and {max}")
-        @Email(message = "email must be a valid email address")
+        @NotBlank(message = "Email must not be null or blank")
+        @Size(min = 1, max = MAX_EMAIL_LENGTH, message = "Email length must be between {min} and {max}")
+        @Email(message = "Email must be a valid email address")
         String email,
 
         @Schema(description = "Password (8+ chars, uppercase, lowercase, digit)",
                 example = "SecurePass123")
-        @NotBlank(message = "password must not be null or blank")
+        @NotBlank(message = "Password must not be null or blank")
         @Size(min = MIN_PASSWORD_LENGTH, max = MAX_PASSWORD_LENGTH,
-                message = "password length must be between {min} and {max}")
+                message = "Password length must be between {min} and {max}")
         @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$",
-                message = "password must contain at least one uppercase letter, "
+                message = "Password must contain at least one uppercase letter, "
                         + "one lowercase letter, and one digit")
         String password
 ) {

@@ -36,22 +36,22 @@ import static contactapp.domain.Validation.MAX_PROJECT_NAME_LENGTH;
  */
 public record ProjectRequest(
         @Schema(description = "Project ID")
-        @NotBlank(message = "id must not be null or blank")
-        @Size(min = 1, max = MAX_ID_LENGTH, message = "id length must be between {min} and {max}")
+        @NotBlank(message = "Project ID must not be null or blank")
+        @Size(min = 1, max = MAX_ID_LENGTH, message = "Project ID length must be between {min} and {max}")
         String id,
 
         @Schema(description = "Project name")
-        @NotBlank(message = "name must not be null or blank")
-        @Size(min = 1, max = MAX_PROJECT_NAME_LENGTH, message = "name length must be between {min} and {max}")
+        @NotBlank(message = "Project Name must not be null or blank")
+        @Size(min = 1, max = MAX_PROJECT_NAME_LENGTH, message = "Project Name length must be between {min} and {max}")
         String name,
 
         @Schema(description = "Project description")
-        @NotNull(message = "description must not be null")
-        @Size(max = MAX_PROJECT_DESCRIPTION_LENGTH, message = "description length must not exceed {max}")
+        @NotNull(message = "Description must not be null")
+        @Size(max = MAX_PROJECT_DESCRIPTION_LENGTH, message = "Description length must not exceed {max}")
         String description,
 
         @Schema(description = "Project status")
-        @NotNull(message = "status must not be null")
+        @NotNull(message = "Status must not be null")
         ProjectStatus status
 ) {
 }

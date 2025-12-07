@@ -1,5 +1,6 @@
 package contactapp.security;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -72,6 +73,10 @@ public class RefreshToken {
      * @param token the opaque token string (should be cryptographically random)
      * @param expiryDate when this token expires
      */
+    @SuppressFBWarnings(
+            value = "CT_CONSTRUCTOR_THROW",
+            justification = "Validation in constructor is intentional; class has no finalizers"
+    )
     public RefreshToken(final User user, final String token, final Instant expiryDate) {
         this.user = Objects.requireNonNull(user, "User must not be null");
         this.token = Objects.requireNonNull(token, "Token must not be null");
@@ -118,6 +123,10 @@ public class RefreshToken {
         return id;
     }
 
+    @SuppressFBWarnings(
+            value = "EI_EXPOSE_REP",
+            justification = "JPA entity relationship requires returning the actual User object"
+    )
     public User getUser() {
         return user;
     }

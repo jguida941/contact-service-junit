@@ -39,7 +39,7 @@
 | **Backend**  | Spring Boot 3.4, Spring Security 7, JPA/Hibernate           |
 | **Frontend** | React 19, Vite 7, Tailwind v4, shadcn/ui, TanStack Query    |
 | **Database** | PostgreSQL + Flyway (17 migrations)                         |
-| **Testing**  | 1109 tests, 84% mutation coverage, E2E with Playwright      |
+| **Testing**  | 1107 tests, 84% mutation coverage, E2E with Playwright      |
 | **CI/CD**    | GitHub Actions, CodeQL, ZAP, API fuzzing, Docker            |
 | **Security** | JWT HttpOnly cookies, CSRF, rate limiting, refresh tokens   |
 | **Docs**     | 54 ADRs, threat model, design notes                         |
@@ -188,7 +188,7 @@ CREATE INDEX idx_tasks_type ON tasks(type);
 CREATE INDEX idx_tasks_priority ON tasks(priority);
 CREATE INDEX idx_tasks_parent ON tasks(parent_task_id);
 
--- V15__create_labels_table.sql
+-- V18__create_labels_table.sql (future - after current V17)
 CREATE TABLE labels (
     id BIGSERIAL PRIMARY KEY,
     label_id VARCHAR(20) NOT NULL,
@@ -271,7 +271,7 @@ private String sprintId;         // FK to current sprint (nullable = backlog)
 ### Database Migrations
 
 ```sql
--- V16__create_sprints_table.sql
+-- V19__create_sprints_table.sql (future)
 CREATE TABLE sprints (
     id BIGSERIAL PRIMARY KEY,
     sprint_id VARCHAR(20) NOT NULL,
@@ -294,7 +294,7 @@ CREATE TABLE sprints (
 CREATE INDEX idx_sprints_project_id ON sprints(project_id);
 CREATE INDEX idx_sprints_status ON sprints(status);
 
--- V17__add_sprint_to_tasks.sql
+-- V20__add_sprint_to_tasks.sql (future)
 ALTER TABLE tasks ADD COLUMN sprint_id BIGINT;
 ALTER TABLE tasks ADD CONSTRAINT fk_tasks_sprint
     FOREIGN KEY (sprint_id) REFERENCES sprints(id) ON DELETE SET NULL;
@@ -390,7 +390,7 @@ public enum ActivityType {
 ### Database Migrations
 
 ```sql
--- V18__create_comments_table.sql
+-- V21__create_comments_table.sql (future)
 CREATE TABLE comments (
     id BIGSERIAL PRIMARY KEY,
     comment_id VARCHAR(36) NOT NULL,
@@ -410,7 +410,7 @@ CREATE INDEX idx_comments_task_id ON comments(task_id);
 CREATE INDEX idx_comments_author_id ON comments(author_id);
 CREATE INDEX idx_comments_created_at ON comments(created_at);
 
--- V19__create_activity_log.sql
+-- V22__create_activity_log.sql (future)
 CREATE TABLE activity_log (
     id BIGSERIAL PRIMARY KEY,
     task_id BIGINT NOT NULL,
@@ -2247,4 +2247,4 @@ Week 7-8:   Phase 11 (Kanban Board) + UI-3 (Advanced Frontend)
 
 ---
 
-*This roadmap builds on the solid foundation of 54 ADRs, 1109 tests, production-grade auth (ADR-0052), and enterprise CI/CD. UI phases (UI-1 through UI-3) were added 2025-12-03 based on screenshot analysis and best practices research.*
+*This roadmap builds on the solid foundation of 54 ADRs, 1107 tests, production-grade auth (ADR-0052), and enterprise CI/CD. UI phases (UI-1 through UI-3) were added 2025-12-03 based on screenshot analysis and best practices research.*

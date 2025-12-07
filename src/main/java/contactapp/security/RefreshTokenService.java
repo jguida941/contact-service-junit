@@ -1,5 +1,6 @@
 package contactapp.security;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
@@ -53,6 +54,10 @@ public class RefreshTokenService {
     @Value("${app.auth.cookie.secure:true}")
     private boolean secureCookie;
 
+    @SuppressFBWarnings(
+            value = "EI_EXPOSE_REP2",
+            justification = "Spring-managed singleton repository is intentionally stored without copy"
+    )
     public RefreshTokenService(final RefreshTokenRepository refreshTokenRepository) {
         this.refreshTokenRepository = refreshTokenRepository;
     }

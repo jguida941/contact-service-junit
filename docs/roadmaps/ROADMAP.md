@@ -7,7 +7,7 @@
 ```
 Phase 0   ✅ Pre-API fixes (defensive copies, date validation)
 Phase 1   ✅ Spring Boot scaffold (layered packages, actuator, smoke tests)
-Phase 2   ✅ REST API + DTOs + OpenAPI (1109 tests; PIT mutation 84% / 96%+ store coverage)
+Phase 2   ✅ REST API + DTOs + OpenAPI (1107 tests; PIT mutation 84% / 96%+ store coverage)
 Phase 2.5 ✅ API fuzzing in CI (Schemathesis 30,668 tests, ZAP-ready artifacts)
 Phase 3   ✅ Persistence (Spring Data JPA, Flyway, Postgres, Testcontainers)
 Phase 4   ✅ React UI (Vite + React 19 + Tailwind v4 + shadcn/ui, full CRUD, Maven-integrated)
@@ -41,7 +41,7 @@ Test fixtures now reset stale SecurityContext entries and recreate the seed user
 - **Phase 5 (Task Assignment)**: Team collaboration with task assignment and access control, migration V12
 - **Phase 6 (Contact-Project Linking)**: ✅ Stakeholder management via V13 junction table (complete 2025-12-02)
 
-Total test count: 1109, PIT mutation 84%, store coverage 96%+, mapper coverage 95%+.
+Total test count: 1107, PIT mutation 84%, store coverage 96%+, mapper coverage 95%+.
 
 CI note: Linux job runs the full suite with Testcontainers/Postgres; Windows job uses the `skip-testcontainers` profile to exercise service/controller suites on H2 (no Docker) while still reporting JaCoCo. Legacy `getInstance()` suites are tagged `legacy-singleton` and can be run separately via `mvn test -Plegacy-singleton`.
 

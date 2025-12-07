@@ -55,7 +55,7 @@ public final class Contact {
             final String address) {
 
         // Use Validation utility for constructor field checks (validates and trims in one call)
-        this.contactId = Validation.validateTrimmedLength(contactId, "contactId", MIN_LENGTH, ID_MAX_LENGTH);
+        this.contactId = Validation.validateTrimmedLength(contactId, "Contact ID", MIN_LENGTH, ID_MAX_LENGTH);
 
         // Reuse setter validation for the mutable fields
         setFirstName(firstName);
@@ -87,11 +87,11 @@ public final class Contact {
 
     // Setters
     public void setFirstName(final String firstName) {
-        this.firstName = normalizeName(firstName, "firstName");
+        this.firstName = normalizeName(firstName, "First Name");
     }
 
     public void setLastName(final String lastName) {
-        this.lastName = normalizeName(lastName, "lastName");
+        this.lastName = normalizeName(lastName, "Last Name");
     }
 
     public void setPhone(final String phone) {
@@ -120,8 +120,8 @@ public final class Contact {
             final String newPhone,
             final String newAddress) {
         // Validate all incoming values before mutating state so the update is all-or-nothing
-        final String validatedFirst = normalizeName(newFirstName, "firstName");
-        final String validatedLast = normalizeName(newLastName, "lastName");
+        final String validatedFirst = normalizeName(newFirstName, "First Name");
+        final String validatedLast = normalizeName(newLastName, "Last Name");
         final String validatedPhone = validatePhoneNumber(newPhone);
         final String validatedAddress = normalizeAddress(newAddress);
 

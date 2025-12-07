@@ -12,9 +12,9 @@
 ## Executive Summary
 
 - **Overview**: Full-stack contact, task, appointment, and project tracker built with Spring Boot 4.0.0 and React 19.
-- **Architecture highlights**: PostgreSQL + JPA with 17 Flyway migrations (V1-V14, V16-V18), JWT authentication with RBAC (issuer/audience claims, clock skew tolerance, token fingerprinting per ADR-0052), per-user data isolation, token-bucket rate limiting, structured logging with PII masking, Prometheus metrics, Docker packaging, Kubernetes-ready health probes, and 6 GitHub Actions workflows (CI/CD with OWASP Dependency-Check, CodeQL, ZAP DAST, API fuzzing, Claude Code, Claude Code Review).
+- **Architecture highlights**: PostgreSQL + JPA with 17 Flyway migrations (V1-V17), JWT authentication with RBAC (issuer/audience claims, clock skew tolerance, token fingerprinting per ADR-0052), per-user data isolation, token-bucket rate limiting, structured logging with PII masking, Prometheus metrics, Docker packaging, Kubernetes-ready health probes, and 6 GitHub Actions workflows (CI/CD with OWASP Dependency-Check, CodeQL, ZAP DAST, API fuzzing, Claude Code, Claude Code Review).
 - **My role**: Designed the schema (17 migrations), built 4 domain aggregates with services and controllers, wired the JWT security and observability stack, created a React 19 SPA using TanStack Query, packaged everything with Docker + Compose, and automated the stack via a Makefile (55 targets) and CI/CD pipelines.
-- **Quality bar**: 1109 test executions on the latest Linux matrix run, 90% line coverage (JaCoCo), 84% mutation score (PITest), and 7 CI quality gates (JaCoCo, PITest, SpotBugs, Checkstyle, OWASP Dependency-Check, Schemathesis API fuzzing, ZAP DAST).
+- **Quality bar**: 1107 test executions on the latest Linux matrix run, 90% line coverage (JaCoCo), 84% mutation score (PITest), and 7 CI quality gates (JaCoCo, PITest, SpotBugs, Checkstyle, OWASP Dependency-Check, Schemathesis API fuzzing, ZAP DAST).
   - Linux CI runs the full suite with Testcontainers/Postgres and enforces coverage/mutation gates; Windows CI uses the `skip-testcontainers` profile on H2 with a **reduced JaCoCo gate** that excludes container-only code paths while still running PITest. Legacy `getInstance()` suites are tagged `legacy-singleton` and can be run separately via `mvn test -Plegacy-singleton` without touching the main pipeline.
 
 ---
@@ -148,7 +148,7 @@ mvn package -DskipTests && java -jar target/*.jar
 
 Open the folder in IntelliJ/VS Code for IDE assistance—the Maven project model is auto-detected.
 
-**Planning note**: Phases 0-7 complete. **1109 tests** (latest Linux full suite) cover the JPA path, legacy singleton fallbacks, JWT auth, User entity validation, Project CRUD, and validation helpers (PIT mutation coverage 85% with 90% line coverage). See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for details.
+**Planning note**: Phases 0-7 complete. **1107 tests** (latest Linux full suite) cover the JPA path, legacy singleton fallbacks, JWT auth, User entity validation, Project CRUD, and validation helpers (PIT mutation coverage 85% with 90% line coverage). See [Phase Roadmap & Highlights](#phase-roadmap--highlights) for details.
 
 ## CLI Tool
 
@@ -342,7 +342,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 |--------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
 | [`src/main/java/contactapp/Application.java`](src/main/java/contactapp/Application.java)                                             | Spring Boot entrypoint (`@SpringBootApplication`).                                                                                |
 | [`src/main/java/contactapp/domain/Contact.java`](src/main/java/contactapp/domain/Contact.java)                                       | Contact entity enforcing the ID/name/phone/address constraints.                                                                   |
-| [`src/main/java/contactapp/domain/Task.java`](src/main/java/contactapp/domain/Task.java)                                             | Task entity (ID/name/description/status/dueDate/projectId/assigneeId/archived) with status enum, due date validation, UUID assignee (per ADR-0052), and soft-delete archive support (V18). |
+| [`src/main/java/contactapp/domain/Task.java`](src/main/java/contactapp/domain/Task.java)                                             | Task entity (ID/name/description/status/dueDate/projectId/assigneeId/archived) with status enum, due date validation, UUID assignee (per ADR-0052), and soft-delete archive support (V17). |
 | [`src/main/java/contactapp/domain/Appointment.java`](src/main/java/contactapp/domain/Appointment.java)                               | Appointment entity (ID/date/description/projectId/taskId/archived) with date-not-past enforcement and soft-delete archive support (V14). |
 | [`src/main/java/contactapp/domain/Validation.java`](src/main/java/contactapp/domain/Validation.java)                                 | Centralized validation helpers (not blank, length, numeric, date-not-past, enum not-null checks).                                 |
 | [`src/main/java/contactapp/service/ContactService.java`](src/main/java/contactapp/service/ContactService.java)                       | @Service bean backed by a `ContactStore` abstraction (Spring Data or legacy fallback).                                            |
@@ -353,7 +353,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`src/main/java/contactapp/persistence/repository`](src/main/java/contactapp/persistence/repository)                                 | Spring Data repositories plus in-memory fallbacks for legacy `getInstance()` callers.                                             |
 | [`src/main/java/contactapp/persistence/store`](src/main/java/contactapp/persistence/store)                                           | `DomainDataStore` abstraction + JPA-backed implementations injected into services.                                                |
 | [`src/main/resources/application.yml`](src/main/resources/application.yml)                                                           | Multi-document profile configuration (dev/test/integration/prod + Flyway/JPA settings).                                           |
-| [`src/main/resources/db/migration`](src/main/resources/db/migration)                                                                 | Flyway migrations (V1-V14, V16-V18) split by database (common/h2/postgresql): contacts (V1), tasks (V2), appointments (V3), users (V4), user FKs (V5), surrogate keys (V6), version columns (V7), projects (V8), task status/dueDate (V9), task-project FK (V10), appointment-task/project FKs (V11), task assignment FK (V12), project-contacts junction table (V13), archived appointments (V14), User.id UUID migration (V16), refresh tokens (V17), archived tasks (V18). |
+| [`src/main/resources/db/migration`](src/main/resources/db/migration)                                                                 | Flyway migrations (V1-V17) split by database (common/h2/postgresql): contacts (V1), tasks (V2), appointments (V3), users (V4), user FKs (V5), surrogate keys (V6), version columns (V7), projects (V8), task status/dueDate (V9), task-project FK (V10), appointment-task/project FKs (V11), task assignment FK (V12), project-contacts junction table (V13), archived appointments (V14), User.id UUID migration (V15), refresh tokens (V16), archived tasks (V17). |
 | [`src/test/java/contactapp/ApplicationTest.java`](src/test/java/contactapp/ApplicationTest.java)                                     | Spring Boot context load smoke test.                                                                                              |
 | [`src/test/java/contactapp/ActuatorEndpointsTest.java`](src/test/java/contactapp/ActuatorEndpointsTest.java)                         | Verifies actuator endpoint security (health/info exposed, others blocked).                                                        |
 | [`src/test/java/contactapp/ServiceBeanTest.java`](src/test/java/contactapp/ServiceBeanTest.java)                                     | Verifies service beans are injectable and singletons.                                                                             |
@@ -425,7 +425,7 @@ We tag releases from both branches so GitHub’s “Releases” view exposes the
 | [`src/test/java/contactapp/ContactControllerUnitTest.java`](src/test/java/contactapp/ContactControllerUnitTest.java)                 | Unit tests for Contact controller getAll() branch coverage (mutation testing).                                                    |
 | [`src/test/java/contactapp/TaskControllerUnitTest.java`](src/test/java/contactapp/TaskControllerUnitTest.java)                       | Unit tests for Task controller getAll() branch coverage (mutation testing).                                                       |
 | [`src/test/java/contactapp/AppointmentControllerUnitTest.java`](src/test/java/contactapp/AppointmentControllerUnitTest.java)         | Unit tests for Appointment controller getAll() branch coverage (mutation testing).                                                |
-| [`src/test/java/contactapp/AuthControllerUnitTest.java`](src/test/java/contactapp/AuthControllerUnitTest.java)                       | Unit tests for AuthController login branch coverage (mutation testing).                                                           |
+| [`src/test/java/contactapp/AuthControllerUnitTest.java`](src/test/java/contactapp/AuthControllerUnitTest.java)                       | Unit tests for AuthController logout behavior and token revocation.                                                               |
 | [`src/test/java/contactapp/SecurityConfigIntegrationTest.java`](src/test/java/contactapp/SecurityConfigIntegrationTest.java)         | Tests security filter chain order, CORS config, BCrypt encoder, CSP headers (`frame-ancestors 'none'`), CSRF cookie config (Secure, HttpOnly=false).                                                         |
 | [`src/test/java/contactapp/service/ContactServiceIT.java`](src/test/java/contactapp/service/ContactServiceIT.java)                   | Testcontainers-backed ContactService integration tests (Postgres).                                                                |
 | [`src/test/java/contactapp/service/TaskServiceIT.java`](src/test/java/contactapp/service/TaskServiceIT.java)                         | Testcontainers-backed TaskService integration tests.                                                                              |
@@ -648,7 +648,7 @@ void testFailedCreation(String contactId, String firstName, String lastName, Str
 - `RequestLoggingFilterTest` now covers `sanitizeForLog`, `sanitizeLogValue`, query-string inclusion/exclusion, and duration math to stop PIT from flipping boundaries or stripping sanitizers.
 - Spring Boot tests use Mockito's subclass mock-maker (`src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker`) to avoid agent attach issues on newer JDKs while still enabling MockMvc/context testing.
 - `ContactControllerUnitTest` and `ProjectControllerUnitTest` mock the service to prove the controller-level ADMIN guard (`?all=true`) blocks non-admin callers before falling back to the service guard, killing the surviving `isAdmin` mutants.
-- `AuthControllerUnitTest` covers the cookie parsing helper used during logout/token refresh so PIT can't rewrite it to always return `null`.
+- `AuthControllerUnitTest` verifies that logout properly revokes all user tokens even when refresh cookies are missing from the request.
 
 > **Note (JDK 25+):** When running tests on JDK 25 or later, you may see a warning like `Mockito is currently self-attaching to enable the inline-mock-maker`. This is expected and harmless; Mockito's subclass mock-maker handles mocking without requiring the Java agent, so the warning does not affect test correctness.
 
@@ -738,7 +738,7 @@ graph TD
 - Mapper tests (`ContactMapperTest`, `TaskMapperTest`, `AppointmentMapperTest`) now assert the null-input short-circuit paths so PIT can mutate those guards without leaving uncovered lines.
 - New JPA entity tests (`ContactEntityTest`, `TaskEntityTest`, `AppointmentEntityTest`) exercise the protected constructors and setters to prove Hibernate proxies can hydrate every column even when instantiated via reflection.
 - Legacy `InMemory*Store` suites assert the `Optional.empty` branch of `findById` so both success and miss paths copy data defensively.
-- Combined with the existing controller/service suites and the security additions above, this brings the repo to **1109 tests** on the full suite with **85% mutation kills** and **90% line coverage** (higher on stores/mappers; container-dependent coverage enforced on Linux only).
+- Combined with the existing controller/service suites and the security additions above, this brings the repo to **1107 tests** on the full suite with **84% mutation kills** and **90% line coverage** (higher on stores/mappers; container-dependent coverage enforced on Linux only).
 
 #### Mutation-Focused Test Additions (+71 Tests)
 
@@ -2050,9 +2050,9 @@ graph TD
 Each GitHub Actions matrix job writes a QA table (tests, coverage, mutation score, Dependency-Check status) to the run summary. The table now includes colored icons, ASCII bars, and severity breakdowns so drift stands out immediately. Open any workflow's "Summary" tab and look for the "QA Metrics" section for the latest numbers.
 
 **Current Test Metrics (latest Linux matrix):**
-- 1109 test executions covering controllers, services, security, persistence, and UI wiring
+- 1107 test executions covering controllers, services, security, persistence, and UI wiring
 - Mutation-focused tests target boundary conditions and comparison operators across domain and service layers
-- 85% mutation kill rate (PIT) and 90% line coverage overall (higher on stores/mappers)
+- 84% mutation kill rate (PIT) and 90% line coverage overall (higher on stores/mappers)
 - All domain entities have comprehensive boundary testing
 - Test fixtures use centralized `TestCleanupUtility` to reset the SecurityContext, reseed test users, and reset singleton instances via reflection, ensuring complete test isolation and eliminating DuplicateResource exceptions
 - Windows matrix runs the H2 `-DskipTestcontainersTests=true` lane with a reduced JaCoCo gate that excludes container-only code paths; full coverage/mutation gates are enforced on the Linux Testcontainers lanes
