@@ -27,7 +27,7 @@ Phase 5 focus: End-to-end authentication/authorization, per-tenant data isolatio
 Test fixtures now reset stale SecurityContext entries and recreate the seed user when missing to prevent FK/unique collisions during singleton-sharing service tests.
 
 **ADR-0052 Production Auth System (Implemented 2025-12-06).** Complete production-grade authentication:
-- **Phase A (UUID Migration)**: User.id migrated from Long to UUID via V16 migration, Task.assigneeId updated
+- **Phase A (UUID Migration)**: User.id migrated from Long to UUID via V15 migration, Task.assigneeId updated
 - **Phase B (Refresh Tokens)**: RefreshToken entity, single-session model, token rotation, V17 migration
 - **Phase C (Token Fingerprinting)**: TokenFingerprintService with SHA-256 binding, OWASP sidejacking prevention
 - **Phase D (HTTPS Setup)**: `./scripts/run setup-ssl` command, self-signed cert generation for dev

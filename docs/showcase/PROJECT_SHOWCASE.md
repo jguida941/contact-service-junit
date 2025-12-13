@@ -329,8 +329,8 @@ The project documents **53 ADRs** covering all major engineering decisions:
 | V6-V7 | Surrogate keys and optimistic locking |
 | V8-V13 | Projects, task status, relationships |
 | V14 | Add archived flag to appointments |
-| V16-V17 | User UUID migration, refresh tokens |
-| V18 | Add archived flag to tasks |
+| V15-V16 | User UUID migration, refresh tokens |
+| V17 | Add archived flag to tasks |
 
 ### Entity Relationships
 
@@ -470,7 +470,7 @@ Built-in lifecycle management for time-sensitive entities:
 - Domain-Driven Design principles (immutable entities, validation in constructors)
 - Repository pattern with Store abstraction for testability
 - Reconstitution pattern for loading temporal data from persistence
-- Comprehensive ADR documentation (54 records)
+- Comprehensive ADR documentation (53 records)
 
 ### Testing Excellence
 - 1107 test executions with 90% line coverage

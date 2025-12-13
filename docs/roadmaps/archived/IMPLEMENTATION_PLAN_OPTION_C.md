@@ -168,7 +168,7 @@ public static LocalDate validateDueDateNotPast(LocalDate date, String label, Clo
 
 ### 2.2 Database Migration
 
-**New File: `src/main/resources/db/migration/common/V8__enhance_tasks_with_status_and_duedate.sql`**
+**New File: `src/main/resources/db/migration/common/V9__enhance_tasks_with_status_and_duedate.sql`**
 
 ```sql
 ALTER TABLE tasks ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'TODO';

@@ -232,7 +232,7 @@ Implementation details:
   - ProjectStatus enum: ACTIVE (default), ON_HOLD, COMPLETED, ARCHIVED
 - **Phase 2 Complete - Task Status/Due Date**:
   - Enhanced Task domain with status (TODO/IN_PROGRESS/DONE), dueDate (LocalDate), createdAt/updatedAt timestamps
-  - Flyway migration V8__enhance_tasks_with_status_and_duedate.sql
+  - Flyway migration V9__enhance_tasks_with_status_and_duedate.sql
   - TaskStatus enum with defaults (TODO)
   - Query parameters: `?status={status}` for filtering tasks by status
 - **Phase 3 Complete - Task-Project Linking**:
@@ -438,7 +438,7 @@ Implementation details:
 **Phase 2: Task Status/Due Date ✅**
 - [x] Task domain enhanced with status (TaskStatus enum), dueDate (LocalDate), createdAt/updatedAt timestamps
 - [x] TaskStatus enum implemented (TODO, IN_PROGRESS, DONE)
-- [x] Flyway migration V8__enhance_tasks_with_status_and_duedate.sql
+- [x] Flyway migration V9__enhance_tasks_with_status_and_duedate.sql
 - [x] TaskEntity updated with new fields and constraints
 - [x] TaskMapper updated to handle new fields
 - [x] TaskService methods for status filtering and date queries

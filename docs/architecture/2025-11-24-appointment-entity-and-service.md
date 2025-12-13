@@ -2,7 +2,7 @@
 Status: Implemented  
 Owner: Justin Guida  
 Implemented: 2025-11-24  
-Links: [requirements/appointment-requirements/requirements.md](../requirements/appointment-requirements/requirements.md), [ADR-0012](../adrs/ADR-0012-appointment-validation-and-tests.md), [ADR-0013](../adrs/ADR-0013-appointmentservice-singleton-and-crud-tests.md)<br>
+Links: [cs320-requirements/appointment-requirements/requirements.md](../cs320-requirements/appointment-requirements/requirements.md), [ADR-0012](../adrs/ADR-0012-appointment-validation-and-tests.md), [ADR-0013](../adrs/ADR-0013-appointmentservice-singleton-and-crud-tests.md)<br>
 Summary: Implements Appointment (id, date, description) with date-not-past validation and an AppointmentService singleton for add/delete/update.
 
 ## Implementation Plan Overview
@@ -35,7 +35,7 @@ Key points:
 ## Phase Breakdown
 
 ### Phase 1 - Domain & Validation Foundations
-- Confirm requirements from `docs/requirements/appointment-requirements/requirements.md` and align with Contact/Task patterns.
+- Confirm requirements from `docs/cs320-requirements/appointment-requirements/requirements.md` and align with Contact/Task patterns.
 - Implement `Appointment` class:
   - Fields: `appointmentId` (immutable, ≤10 chars), `appointmentDate` (required `Date`, not in past), `description` (required, ≤50 chars).
   - Constructor validates and trims string inputs; delegates mutable fields to setters; stores dates via defensive copies.

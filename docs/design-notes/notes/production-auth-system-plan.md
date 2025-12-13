@@ -31,7 +31,7 @@ while refresh tokens require more infrastructure (new DB table, cookie scope cha
 | Item | Status | Details |
 |------|--------|---------|
 | `@JsonIgnore` on `User.password` | ✅ Done | Field and getter protected |
-| `User.id` Long → UUID | ✅ Done | V16 migration (Postgres + H2) |
+| `User.id` Long → UUID | ✅ Done | V15 migration (Postgres + H2) |
 | `AuthenticationEntryPoint` (401) | ✅ Done | JSON response with UTF-8 |
 | `AccessDeniedHandler` (403) | ✅ Done | JSON response with UTF-8 |
 | JWT clock skew tolerance | ✅ Done | 60 seconds via `.clockSkewSeconds(60)` |
@@ -221,7 +221,7 @@ public class TokenFingerprintService {
      * Generate a random fingerprint for token binding.
      * Returns the raw fingerprint (for cookie) and its SHA256 hash (for JWT).
      */
-    public FingerprintPair generateFingerprint() {
+    public FingerprintPair generateFingerprintPair() {
         byte[] randomBytes = new byte[FINGERPRINT_LENGTH];
         secureRandom.nextBytes(randomBytes);
         String rawFingerprint = HexFormat.of().formatHex(randomBytes);
@@ -471,7 +471,7 @@ public ResponseEntity<AuthResponse> login(@RequestBody @Valid LoginRequest reque
     User user = (User) auth.getPrincipal();
 
     // Generate fingerprint
-    var fingerprint = fingerprintService.generateFingerprint();
+    var fingerprint = fingerprintService.generateFingerprintPair();
 
     // Generate access token with fingerprint hash
     String accessToken = jwtService.generateToken(user, fingerprint.hashed());
@@ -520,7 +520,7 @@ public ResponseEntity<?> refresh(HttpServletRequest request) {
             RefreshToken newRefresh = refreshTokenService.createRefreshToken(user.getId());
 
             // Generate new fingerprint and access token
-            var fingerprint = fingerprintService.generateFingerprint();
+            var fingerprint = fingerprintService.generateFingerprintPair();
             String newAccess = jwtService.generateToken(user, fingerprint.hashed());
 
             // Return new cookies
@@ -839,8 +839,8 @@ class TokenFingerprintServiceTest {
 
     @Test
     void generateFingerprint_returnsUniqueValues() {
-        var fp1 = service.generateFingerprint();
-        var fp2 = service.generateFingerprint();
+        var fp1 = service.generateFingerprintPair();
+        var fp2 = service.generateFingerprintPair();
 
         assertThat(fp1.raw()).isNotEqualTo(fp2.raw());
         assertThat(fp1.hashed()).isNotEqualTo(fp2.hashed());
@@ -848,26 +848,26 @@ class TokenFingerprintServiceTest {
 
     @Test
     void generateFingerprint_rawIs100HexChars() {
-        var fp = service.generateFingerprint();
+        var fp = service.generateFingerprintPair();
         assertThat(fp.raw()).hasSize(100); // 50 bytes = 100 hex chars
         assertThat(fp.raw()).matches("[0-9a-f]+");
     }
 
     @Test
     void hashFingerprint_producesSha256() {
-        var fp = service.generateFingerprint();
+        var fp = service.generateFingerprintPair();
         assertThat(fp.hashed()).hasSize(64); // SHA-256 = 64 hex chars
     }
 
     @Test
     void verifyFingerprint_matchesWhenCorrect() {
-        var fp = service.generateFingerprint();
+        var fp = service.generateFingerprintPair();
         assertThat(service.verifyFingerprint(fp.raw(), fp.hashed())).isTrue();
     }
 
     @Test
     void verifyFingerprint_failsWhenTampered() {
-        var fp = service.generateFingerprint();
+        var fp = service.generateFingerprintPair();
         assertThat(service.verifyFingerprint("tampered", fp.hashed())).isFalse();
     }
 

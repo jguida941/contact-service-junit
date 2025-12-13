@@ -4,8 +4,6 @@
 
 **Related:** ADR-0018 (Auth Model), ADR-0038 (Auth Implementation), ADR-0043 (HttpOnly Cookies)
 
-**Code Review Reference:** [CODE_REVIEW.md](../logs/CODE_REVIEW.md) (2025-12-03)
-
 ---
 
 ## Code Review Findings Integration

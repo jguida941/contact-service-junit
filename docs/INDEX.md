@@ -21,10 +21,9 @@ Index for easy navigation of the CS320 Milestone 1 codebase.
 | [`cs320-requirements/`](cs320-requirements/) | Original CS320 assignment requirements (contact, task, appointment specs). |
 | [`showcase/`](showcase/) | Project showcase materials for recruiters and portfolio. |
 | [`architecture/`](architecture/) | Feature design briefs (e.g., Task entity/service plan with Definition of Done). |
-| [`adrs/`](adrs/) | Architecture Decision Records: CS320 Foundation + Production Auth + Frontend fixes + Security Audit (ADR-0001-0054). |
+| [`adrs/`](adrs/) | Architecture Decision Records: CS320 Foundation + Production Auth + Frontend fixes + Security Audit (ADR-0001-0053). |
 | [`design-notes/`](design-notes/) | Personal design note hub with supporting explanations under `design-notes/notes/`. |
 | [`logs/`](logs/) | Changelog, backlog, and code review reports. |
-| [`test-plan-sdlc-audit-v2.1.0.md`](test-plan-sdlc-audit-v2.1.0.md) | Comprehensive test plan and SDLC audit report (1107 tests, 90% coverage analysis). |
 | [`operations/`](operations/) | Operations documentation (Docker setup, Actuator endpoints, deployment guides). |
 | [`security-reviews/`](security-reviews/) | Security audit reports and vulnerability assessments. |
 

@@ -12,7 +12,7 @@ All phases of ADR-0052 are now implemented. 1107 tests pass with 90% line covera
 
 | Enhancement | Description |
 |-------------|-------------|
-| **User.id UUID** | Migrated from sequential Long to UUID via V16 migration to prevent user enumeration attacks |
+| **User.id UUID** | Migrated from sequential Long to UUID via V15 migration to prevent user enumeration attacks |
 | **@JsonIgnore on password** | Defense-in-depth to prevent BCrypt hash leakage in JSON serialization |
 | **JWT claim hardening** | Added issuer (`contact-service`), audience (`contact-service-api`), 60s clock skew tolerance |
 | **401 vs 403 separation** | `AuthenticationEntryPoint` for 401, `AccessDeniedHandler` for 403 with JSON responses |
